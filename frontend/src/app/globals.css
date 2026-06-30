@@ -1,0 +1,176 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Dragonica Grind Tracker — "Garmoth" dark theme.
+ * Single always-dark palette: near-black surfaces, gold accent, MMO/database feel.
+ * Token names are kept stable so existing utility classes (bg-surface,
+ * text-foreground, border-border, var(--blue) ...) keep working.
+ */
+:root {
+  /* Core Palette - Gold (primary accent) */
+  --gold-soft: rgba(224, 165, 60, 0.12);
+  --gold: #e0a53c;
+  --gold-strong: #f2bd55;
+  --gold-dim: #b5821f;
+
+  /* Currency denominations */
+  --coin-gold: #e0a53c;
+  --coin-silver: #c2c8d2;
+  --coin-copper: #cd7f4d;
+
+  /* Core Palette - Gray (dark scale) */
+  --gray-50: #f4f5f7;
+  --gray-100: #d7d9df;
+  --gray-200: #b4b7c1;
+  --gray-300: #898c97;
+  --gray-400: #6a6d77;
+  --gray-500: #545761;
+  --gray-600: #3d404a;
+  --gray-700: #30343f;
+  --gray-800: #262932;
+  --gray-900: #1a1c23;
+  --gray-950: #101218;
+
+  /* Core Palette - Blue (secondary / links / charts) */
+  --blue-300: #8ec0ff;
+  --blue-400: #5b9bf0;
+  --blue-500: #3d7fde;
+
+  /* Semantic - Background */
+  --root: #0c0d11;
+  --background: #101218;
+  --surface: #16181f;
+  --cream: #1a1c23;
+  --raised: #1f222b;
+
+  /* Semantic - Text */
+  --foreground: #e6e7ea;
+  --muted: #898c97;
+  --dark-gray: #6a6d77;
+
+  /* Semantic - Border */
+  --border: #262932;
+  --border-dark: #30343f;
+
+  /* Accent (primary action = gold) */
+  --blue: #e0a53c;
+  --light-blue: #f2bd55;
+  --focus: #e0a53c;
+
+  /* Item rarity (Dragonica / MMO grades) */
+  --rarity-common: #b8bcc6;
+  --rarity-uncommon: #5fd17a;
+  --rarity-rare: #4ea1f0;
+  --rarity-epic: #b07bf0;
+  --rarity-legendary: #e0a53c;
+
+  /* Status */
+  --success-soft: #06281f;
+  --success: #10b981;
+  --success-strong: #0c8f63;
+  --danger-soft: #3a0d18;
+  --danger: #f43f5e;
+  --danger-strong: #c01a3e;
+  --warning-soft: #3a2a0c;
+  --warning: #fbbf24;
+  --warning-strong: #d99412;
+
+  /* Status Text */
+  --fg-success: #34d399;
+  --fg-danger: #fb7185;
+  --fg-warning: #fbbf24;
+  --fg-disabled: #5a5d66;
+
+  /* Status Border */
+  --border-success: #0f7a52;
+  --border-danger: #be123c;
+  --border-warning: #b45309;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Render native controls (select popups, date pickers, scrollbars) dark. */
+  color-scheme: dark;
+}
+
+/* Themed native <select> dropdown list */
+select option {
+  background-color: var(--surface);
+  color: var(--foreground);
+}
+select option:checked {
+  background-color: var(--raised);
+  color: var(--gold);
+}
+
+body {
+  font-family: var(--default-font-family), system-ui, sans-serif;
+  background-color: var(--root);
+  color: var(--foreground);
+  /* Subtle vignette/gradient so the near-black feels like a game UI, not flat. */
+  background-image:
+    radial-gradient(1200px 600px at 100% -10%, rgba(224, 165, 60, 0.05), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(61, 127, 222, 0.04), transparent 60%);
+  background-attachment: fixed;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+}
+
+/* Custom scrollbar — thin, dark, gold on hover */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-700) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--gray-700);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
+  background-clip: padding-box;
+}
+
+/* Hide the native up/down spinner on number inputs across the app */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+::selection {
+  background: var(--gold-soft);
+  color: var(--gold-strong);
+}
+
+/* Gold focus ring offset blends with dark surfaces instead of white */
+*:focus-visible {
+  outline: none;
+}
+.ring-offset-2 {
+  --tw-ring-offset-color: var(--root);
+}
