@@ -2,7 +2,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
+import { useDateFormatter } from '@/lib/i18n';
 import { Coins, Clock, TrendingUp, MapPin } from 'lucide-react';
 import type { Session, Character, DashboardSummary } from '@/types';
 import { GoldChart } from '@/components/gold-chart';
@@ -11,6 +13,8 @@ import { DungeonStats } from '@/components/dungeon-stats';
 import { Currency } from '@/components/currency';
 
 export default function DashboardPage() {
+  const t = useTranslations('dashboard');
+  const formatDate = useDateFormatter();
   const [dateRange, setDateRange] = useState<'7d' | '30d' | 'all' | 'custom'>('all');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
@@ -61,7 +65,7 @@ export default function DashboardPage() {
   if (isSummaryLoading) {
     return (
       <div className="min-h-screen bg-root flex items-center justify-center">
-        <p className="text-sm text-muted">Loading dashboard...</p>
+        <p className="text-sm text-muted">{t('loading')}</p>
       </div>
     );
   }
@@ -73,25 +77,25 @@ export default function DashboardPage() {
     currency?: boolean;
   }[] = [
     {
-      label: 'Total Value',
+      label: t('statTotalValue'),
       value: summary?.totalGold ?? 0,
       icon: Coins,
       currency: true,
     },
     {
-      label: 'Total Hours',
+      label: t('statTotalHours'),
       value: `${summary?.totalHours ?? 0}h`,
       icon: Clock,
     },
     {
-      label: 'Value / Hour',
+      label: t('statValuePerHour'),
       value: summary?.goldPerHour ?? 0,
       icon: TrendingUp,
       currency: true,
     },
     {
-      label: 'Favorite Dungeon',
-      value: summary?.favoriteDungeon ?? 'N/A',
+      label: t('statFavoriteDungeon'),
+      value: summary?.favoriteDungeon ?? t('na'),
       icon: MapPin,
     },
   ];
@@ -117,10 +121,10 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-10">
             <div>
               <h1 className="text-xl laptop:text-2xl font-medium text-foreground">
-                Dashboard
+                {t('title')}
               </h1>
               <p className="text-sm text-muted mt-2">
-                Your grinding summary at a glance
+                {t('subtitle')}
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -135,7 +139,7 @@ export default function DashboardPage() {
                         : 'text-muted hover:text-foreground'
                     }`}
                   >
-                    {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : range === 'all' ? 'All' : 'Custom'}
+                    {range === '7d' ? t('range7d') : range === '30d' ? t('range30d') : range === 'all' ? t('rangeAll') : t('rangeCustom')}
                   </button>
                 ))}
               </div>
@@ -191,15 +195,15 @@ export default function DashboardPage() {
           {/* Overview row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
-              <p className="text-xs text-muted mb-1">Characters</p>
+              <p className="text-xs text-muted mb-1">{t('characters')}</p>
               <p className="text-lg font-medium text-foreground">{totalCharacters}</p>
             </div>
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
-              <p className="text-xs text-muted mb-1">Total Sessions</p>
+              <p className="text-xs text-muted mb-1">{t('totalSessions')}</p>
               <p className="text-lg font-medium text-foreground">{totalSessions}</p>
             </div>
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
-              <p className="text-xs text-muted mb-1">Avg Value / Session</p>
+              <p className="text-xs text-muted mb-1">{t('avgValuePerSession')}</p>
               <Currency
                 copper={
                   totalSessions > 0
@@ -229,18 +233,18 @@ export default function DashboardPage() {
             {/* Recent Sessions Table */}
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
               <h2 className="text-sm font-medium text-foreground mb-4">
-                Recent Sessions
+                {t('recentSessions')}
               </h2>
               {recentSessions.length === 0 ? (
-                <p className="text-xs text-muted">No sessions recorded yet.</p>
+                <p className="text-xs text-muted">{t('noSessions')}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
                       <tr className="border-b border-border">
-                        <th className="pb-3 text-xs font-medium text-muted">Character</th>
-                        <th className="pb-3 text-xs font-medium text-muted">Date</th>
-                        <th className="pb-3 text-xs font-medium text-muted text-right">Value</th>
+                        <th className="pb-3 text-xs font-medium text-muted">{t('colCharacter')}</th>
+                        <th className="pb-3 text-xs font-medium text-muted">{t('colDate')}</th>
+                        <th className="pb-3 text-xs font-medium text-muted text-right">{t('colValue')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -254,7 +258,7 @@ export default function DashboardPage() {
                           </td>
                           <td className="py-3 text-xs text-muted">
                             {session.started_at
-                              ? new Date(session.started_at).toLocaleDateString('th-TH', {
+                              ? formatDate(session.started_at, {
                                   day: 'numeric',
                                   month: 'short',
                                 })

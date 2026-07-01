@@ -14,25 +14,26 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { api } from '@/lib/api';
 import type { User } from '@supabase/supabase-js';
 
 type NavItem = {
   href: string;
-  label: string;
+  key: string;
   icon: typeof LayoutDashboard;
   admin?: boolean;
 };
 
 const NAV: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/grind', label: 'Grind', icon: Swords },
-  { href: '/characters', label: 'Characters', icon: Users },
-  { href: '/sessions', label: 'Sessions', icon: ScrollText },
-  { href: '/admin', label: 'Admin', icon: Shield, admin: true },
-  { href: '/support', label: 'Support', icon: Heart },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/dashboard', key: 'dashboard', icon: LayoutDashboard },
+  { href: '/grind', key: 'grind', icon: Swords },
+  { href: '/characters', key: 'characters', icon: Users },
+  { href: '/sessions', key: 'sessions', icon: ScrollText },
+  { href: '/admin', key: 'admin', icon: Shield, admin: true },
+  { href: '/support', key: 'support', icon: Heart },
+  { href: '/settings', key: 'settings', icon: Settings },
 ];
 
 // Routes that render full-bleed without the app chrome.
@@ -73,6 +74,7 @@ function useAuthNav() {
 }
 
 function Brand() {
+  const t = useTranslations('nav');
   return (
     <Link
       href="/dashboard"
@@ -83,10 +85,10 @@ function Brand() {
       </span>
       <span className="flex flex-col leading-none">
         <span className="text-sm font-bold tracking-tight text-foreground">
-          Dragonica
+          {t('brand')}
         </span>
         <span className="text-[10px] uppercase tracking-[0.18em] text-gold-dim">
-          Grind Tracker
+          {t('brandSubtitle')}
         </span>
       </span>
     </Link>
@@ -96,6 +98,7 @@ function Brand() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslations('nav');
   const { user, isAdmin, isLoading } = useAuthNav();
 
   // Display name (falls back to email when unset). Shared cache with Settings.
@@ -120,7 +123,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => (
     <>
-      {items.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, key, icon: Icon }) => {
         const active =
           pathname === href || pathname.startsWith(href + '/');
         return (
@@ -144,7 +147,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   : 'text-dark-gray group-hover:text-foreground'
               }`}
             />
-            {label}
+            {t(key)}
           </Link>
         );
       })}
@@ -159,7 +162,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           <NavLinks />
         </nav>
-        <div className="border-t border-border p-3">
+        <div className="space-y-2 border-t border-border p-3">
           {isLoading ? (
             <div className="h-9 animate-pulse rounded-base bg-raised" />
           ) : user ? (
@@ -175,7 +178,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className="flex w-full items-center gap-2 rounded-base border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-[var(--border-danger)] hover:text-[var(--fg-danger)]"
               >
                 <LogOut className="h-3.5 w-3.5" />
-                Logout
+                {t('logout')}
               </button>
             </div>
           ) : (
@@ -183,7 +186,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               href="/login"
               className="block rounded-base bg-[var(--blue)] px-3 py-2 text-center text-xs font-semibold text-[#1b1407] shadow-button hover:opacity-90"
             >
-              Sign In
+              {t('signIn')}
             </Link>
           )}
         </div>
@@ -195,13 +198,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="flex h-7 w-7 items-center justify-center rounded-base bg-gold-soft text-gold">
             <Swords className="h-4 w-4" />
           </span>
-          <span className="text-sm font-bold text-foreground">Dragonica</span>
+          <span className="text-sm font-bold text-foreground">{t('brand')}</span>
         </Link>
         {user && (
           <button
             onClick={handleLogout}
             className="rounded-base border border-border p-1.5 text-muted hover:text-[var(--fg-danger)]"
-            aria-label="Logout"
+            aria-label={t('logout')}
           >
             <LogOut className="h-4 w-4" />
           </button>

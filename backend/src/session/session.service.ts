@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { I18nService } from 'nestjs-i18n';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
@@ -7,7 +8,10 @@ import { UpdateDropDto } from './dto/update-drop.dto';
 
 @Injectable()
 export class SessionService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly i18n: I18nService,
+  ) {}
 
   async findAllByUser(userId: string) {
     const { data, error } = await this.supabase
@@ -33,7 +37,7 @@ export class SessionService {
       .single();
 
     if (error || !data) {
-      throw new NotFoundException('Session not found');
+      throw new NotFoundException(this.i18n.t('errors.session.not_found'));
     }
 
     return data;
@@ -153,7 +157,7 @@ export class SessionService {
       .single();
 
     if (error || !drop) {
-      throw new NotFoundException('Drop not found');
+      throw new NotFoundException(this.i18n.t('errors.session.drop_not_found'));
     }
 
     await this.findOneByUser(drop.session_id, userId);

@@ -5,6 +5,11 @@ import { createSupabaseMock } from '../test/supabase.mock';
 const USER = 'user-1';
 const OTHER = 'user-2';
 
+// Minimal i18n stub — tests assert on exception type, not localized text.
+const i18n = {
+  t: (key: string) => key,
+} as unknown as import('nestjs-i18n').I18nService;
+
 describe('SessionService (drop ownership)', () => {
   describe('addDrop', () => {
     it('inserts the drop after confirming the session belongs to the user', async () => {
@@ -14,7 +19,7 @@ describe('SessionService (drop ownership)', () => {
         { data: session, error: null }, // findOneByUser(session)
         { data: inserted, error: null }, // insert drop
       ]);
-      const svc = new SessionService(supabase);
+      const svc = new SessionService(supabase, i18n);
 
       await expect(
         svc.addDrop(USER, { sessionId: 's1', itemId: 'i1', quantity: 2 }),
@@ -26,7 +31,7 @@ describe('SessionService (drop ownership)', () => {
       const { service: supabase, fromTables } = createSupabaseMock([
         { data: null, error: { code: 'PGRST116' } }, // session not found for user
       ]);
-      const svc = new SessionService(supabase);
+      const svc = new SessionService(supabase, i18n);
 
       await expect(
         svc.addDrop(OTHER, { sessionId: 's1', itemId: 'i1', quantity: 1 }),
@@ -43,7 +48,7 @@ describe('SessionService (drop ownership)', () => {
         { data: { id: 's1', user_id: USER }, error: null }, // session ownership
         { data: null, error: null }, // delete
       ]);
-      const svc = new SessionService(supabase);
+      const svc = new SessionService(supabase, i18n);
 
       await expect(svc.removeDrop(USER, 'd1')).resolves.toEqual({
         deleted: true,
@@ -59,7 +64,7 @@ describe('SessionService (drop ownership)', () => {
       const { service: supabase, fromTables } = createSupabaseMock([
         { data: null, error: { code: 'PGRST116' } }, // drop lookup fails
       ]);
-      const svc = new SessionService(supabase);
+      const svc = new SessionService(supabase, i18n);
 
       await expect(svc.removeDrop(USER, 'missing')).rejects.toBeInstanceOf(
         NotFoundException,
@@ -72,7 +77,7 @@ describe('SessionService (drop ownership)', () => {
         { data: { id: 'd1', session_id: 's1' }, error: null }, // drop exists
         { data: null, error: { code: 'PGRST116' } }, // session not owned by OTHER
       ]);
-      const svc = new SessionService(supabase);
+      const svc = new SessionService(supabase, i18n);
 
       await expect(svc.removeDrop(OTHER, 'd1')).rejects.toBeInstanceOf(
         NotFoundException,
@@ -88,7 +93,7 @@ describe('SessionService (drop ownership)', () => {
         { data: { id: 'd1', session_id: 's1' }, error: null }, // drop exists
         { data: null, error: { code: 'PGRST116' } }, // session not owned
       ]);
-      const svc = new SessionService(supabase);
+      const svc = new SessionService(supabase, i18n);
 
       await expect(
         svc.updateDrop(OTHER, 'd1', { quantity: 99 }),

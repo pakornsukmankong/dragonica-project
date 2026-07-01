@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Camera, Upload } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/toast';
@@ -12,6 +13,7 @@ interface ImageUploadProps {
 }
 
 export function ImageUpload({ currentUrl, onUploaded, className = '' }: ImageUploadProps) {
+  const t = useTranslations('imageUpload');
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentUrl ?? null);
@@ -45,7 +47,7 @@ export function ImageUpload({ currentUrl, onUploaded, className = '' }: ImageUpl
     } catch (err) {
       setPreview(currentUrl ?? null);
       toast({
-        title: 'Upload failed',
+        title: t('uploadFailed'),
         description: (err as Error).message,
         variant: 'error',
       });
@@ -74,7 +76,7 @@ export function ImageUpload({ currentUrl, onUploaded, className = '' }: ImageUpl
         className="flex items-center gap-1.5 rounded-base px-3 py-1.5 text-xs font-medium text-foreground border border-border hover:bg-raised transition-colors duration-150 disabled:opacity-50"
       >
         <Upload className="w-3 h-3" />
-        {isUploading ? 'Uploading...' : preview ? 'Change' : 'Upload'}
+        {isUploading ? t('uploading') : preview ? t('change') : t('upload')}
       </button>
       <input
         ref={fileRef}

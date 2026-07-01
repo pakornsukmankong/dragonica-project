@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { I18nService } from 'nestjs-i18n';
 import { SupabaseService } from '../supabase/supabase.service';
 import {
   OmiseCharge,
@@ -45,13 +46,19 @@ export class DonationService {
     private readonly supabase: SupabaseService,
     private readonly omise: OmiseService,
     private readonly config: ConfigService,
+    private readonly i18n: I18nService,
   ) {}
 
   /** Start a donation: record it, create the Omise charge, return payment info. */
   async create(userId: string, dto: CreateDonationDto) {
     if (dto.amount > MAX_BAHT[dto.channel]) {
       throw new BadRequestException(
-        `Maximum for ${dto.channel} is ฿${MAX_BAHT[dto.channel].toLocaleString()}.`,
+        this.i18n.t('errors.donation.max_exceeded', {
+          args: {
+            channel: dto.channel,
+            max: MAX_BAHT[dto.channel].toLocaleString(),
+          },
+        }),
       );
     }
 
@@ -138,7 +145,8 @@ export class DonationService {
       .eq('id', id)
       .single();
 
-    if (error || !data) throw new NotFoundException('Donation not found');
+    if (error || !data)
+      throw new NotFoundException(this.i18n.t('errors.donation.not_found'));
 
     const { error: deleteError } = await this.supabase
       .from('donations')
@@ -174,7 +182,8 @@ export class DonationService {
       .eq('user_id', userId)
       .single();
 
-    if (error || !data) throw new NotFoundException('Donation not found');
+    if (error || !data)
+      throw new NotFoundException(this.i18n.t('errors.donation.not_found'));
 
     let donation = data as DonationRow;
     if (donation.status === 'pending' && donation.omise_charge_id) {

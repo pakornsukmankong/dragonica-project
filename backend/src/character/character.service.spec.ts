@@ -5,6 +5,11 @@ import { createSupabaseMock } from '../test/supabase.mock';
 const USER = 'user-1';
 const OTHER = 'user-2';
 
+// Minimal i18n stub — tests assert on exception type, not localized text.
+const i18n = {
+  t: (key: string) => key,
+} as unknown as import('nestjs-i18n').I18nService;
+
 describe('CharacterService (user scoping)', () => {
   describe('findOneByUser', () => {
     it('returns the row when it belongs to the user', async () => {
@@ -12,7 +17,7 @@ describe('CharacterService (user scoping)', () => {
       const { service: supabase, fromTables } = createSupabaseMock([
         { data: char, error: null },
       ]);
-      const svc = new CharacterService(supabase);
+      const svc = new CharacterService(supabase, i18n);
 
       await expect(svc.findOneByUser('c1', USER)).resolves.toEqual(char);
       expect(fromTables).toEqual(['characters']);
@@ -23,7 +28,7 @@ describe('CharacterService (user scoping)', () => {
       const { service: supabase } = createSupabaseMock([
         { data: null, error: { code: 'PGRST116' } },
       ]);
-      const svc = new CharacterService(supabase);
+      const svc = new CharacterService(supabase, i18n);
 
       await expect(svc.findOneByUser('c1', OTHER)).rejects.toBeInstanceOf(
         NotFoundException,
@@ -39,7 +44,7 @@ describe('CharacterService (user scoping)', () => {
         { data: existing, error: null }, // findOneByUser
         { data: updated, error: null }, // update
       ]);
-      const svc = new CharacterService(supabase);
+      const svc = new CharacterService(supabase, i18n);
 
       await expect(svc.update('c1', USER, { name: 'New' })).resolves.toEqual(
         updated,
@@ -52,7 +57,7 @@ describe('CharacterService (user scoping)', () => {
       const { service: supabase, fromTables } = createSupabaseMock([
         { data: null, error: { code: 'PGRST116' } }, // findOneByUser fails
       ]);
-      const svc = new CharacterService(supabase);
+      const svc = new CharacterService(supabase, i18n);
 
       await expect(
         svc.update('c1', OTHER, { name: 'Hack' }),
@@ -67,7 +72,7 @@ describe('CharacterService (user scoping)', () => {
       const { service: supabase, fromTables } = createSupabaseMock([
         { data: null, error: { code: 'PGRST116' } }, // findOneByUser fails
       ]);
-      const svc = new CharacterService(supabase);
+      const svc = new CharacterService(supabase, i18n);
 
       await expect(svc.remove('c1', OTHER)).rejects.toBeInstanceOf(
         NotFoundException,
@@ -80,7 +85,7 @@ describe('CharacterService (user scoping)', () => {
         { data: { id: 'c1', user_id: USER, name: 'Hero' }, error: null }, // owned
         { data: null, error: null, count: 3 }, // sessions count
       ]);
-      const svc = new CharacterService(supabase);
+      const svc = new CharacterService(supabase, i18n);
 
       await expect(svc.remove('c1', USER)).rejects.toBeInstanceOf(
         ConflictException,
@@ -95,7 +100,7 @@ describe('CharacterService (user scoping)', () => {
         { data: null, error: null, count: 0 }, // no sessions
         { data: null, error: null }, // delete
       ]);
-      const svc = new CharacterService(supabase);
+      const svc = new CharacterService(supabase, i18n);
 
       await expect(svc.remove('c1', USER)).resolves.toEqual({ deleted: true });
       expect(fromTables).toEqual(['characters', 'sessions', 'characters']);

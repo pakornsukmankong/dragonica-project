@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { NumericInput } from '@/components/numeric-input';
 import { Currency, CurrencyInput } from '@/components/currency';
@@ -20,6 +21,8 @@ interface DropEntry {
 }
 
 export default function GrindPage() {
+  const t = useTranslations('grind');
+  const tc = useTranslations('common');
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -124,11 +127,11 @@ export default function GrindPage() {
       setHours(1);
       setMinutes(0);
       setGoldDropped(0);
-      toast({ title: 'Session saved', description: 'Added to your dashboard.', variant: 'success' });
+      toast({ title: t('toastSavedTitle'), description: t('toastSavedDesc'), variant: 'success' });
     },
     onError: (e) =>
       toast({
-        title: 'Could not save session',
+        title: t('toastSaveErrorTitle'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -157,10 +160,10 @@ export default function GrindPage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-xl laptop:text-2xl font-medium text-foreground">
-              Grind Tracker
+              {t('title')}
             </h1>
             <p className="text-sm text-muted mt-2">
-              Record drops and calculate gold per hour
+              {t('subtitle')}
             </p>
           </div>
 
@@ -179,11 +182,11 @@ export default function GrindPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 laptop:grid-cols-4 gap-4">
               {/* Dungeon */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted">Dungeon</label>
+                <label className="text-xs font-medium text-muted">{t('dungeon')}</label>
                 <Select
                   value={selectedDungeonId}
                   onChange={setSelectedDungeonId}
-                  placeholder="Select dungeon..."
+                  placeholder={t('selectDungeon')}
                   options={(dungeons ?? []).map((d) => ({
                     value: d.id,
                     label: d.name,
@@ -193,11 +196,11 @@ export default function GrindPage() {
 
               {/* Character */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted">Character</label>
+                <label className="text-xs font-medium text-muted">{t('character')}</label>
                 <Select
                   value={selectedCharacterId}
                   onChange={setSelectedCharacterId}
-                  placeholder="Select character..."
+                  placeholder={t('selectCharacter')}
                   options={(characters ?? []).map((c) => ({
                     value: c.id,
                     label: `${c.name} (Lv.${c.level})`,
@@ -207,7 +210,7 @@ export default function GrindPage() {
 
               {/* Hours + Minutes */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted">Duration</label>
+                <label className="text-xs font-medium text-muted">{t('duration')}</label>
                 <div className="flex items-center gap-2">
                   <NumericInput
                     value={hours}
@@ -215,21 +218,21 @@ export default function GrindPage() {
                     className="w-16 rounded-base border border-border bg-surface px-2 py-2.5 text-sm text-foreground text-center outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
                     placeholder="1"
                   />
-                  <span className="text-xs text-muted">h</span>
+                  <span className="text-xs text-muted">{t('hourShort')}</span>
                   <NumericInput
                     value={minutes}
                     onValueChange={(v) => setMinutes(Math.min(v, 59))}
                     className="w-16 rounded-base border border-border bg-surface px-2 py-2.5 text-sm text-foreground text-center outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
                     placeholder="0"
                   />
-                  <span className="text-xs text-muted">m</span>
+                  <span className="text-xs text-muted">{t('minuteShort')}</span>
                 </div>
               </div>
 
               {/* Raw currency picked up during the run */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted">
-                  Gold Drop <span className="text-dark-gray">(currency picked up)</span>
+                  {t('goldDrop')} <span className="text-dark-gray">{t('goldDropHint')}</span>
                 </label>
                 <CurrencyInput
                   value={goldDropped}
@@ -246,22 +249,22 @@ export default function GrindPage() {
             {/* Drop Items List */}
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
               <h2 className="text-sm font-medium text-foreground mb-4">
-                Item Drops
+                {t('itemDrops')}
               </h2>
 
               {!items || items.length === 0 ? (
                 <p className="text-xs text-muted py-8 text-center">
-                  No items configured yet. Add items in Admin settings.
+                  {t('noItems')}
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-border">
-                        <th className="pb-3 text-left text-xs font-medium text-muted">Item</th>
-                        <th className="pb-3 text-right text-xs font-medium text-muted w-[88px]">Quantity</th>
-                        <th className="pb-3 text-right text-xs font-medium text-muted w-[232px]">Price Each</th>
-                        <th className="pb-3 text-right text-xs font-medium text-muted w-[100px]">Subtotal</th>
+                        <th className="pb-3 text-left text-xs font-medium text-muted">{t('colItem')}</th>
+                        <th className="pb-3 text-right text-xs font-medium text-muted w-[88px]">{t('colQuantity')}</th>
+                        <th className="pb-3 text-right text-xs font-medium text-muted w-[232px]">{t('colPriceEach')}</th>
+                        <th className="pb-3 text-right text-xs font-medium text-muted w-[100px]">{t('colSubtotal')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -340,21 +343,21 @@ export default function GrindPage() {
             {/* Summary Panel */}
             <div className="flex flex-col gap-4">
               <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6 sticky top-6">
-                <h2 className="text-sm font-medium text-foreground mb-4">Summary</h2>
+                <h2 className="text-sm font-medium text-foreground mb-4">{t('summary')}</h2>
 
                 <div className="flex flex-col gap-3 mb-6">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="shrink-0 text-xs text-muted">Item Value</span>
+                    <span className="shrink-0 text-xs text-muted">{t('itemValue')}</span>
                     <Currency copper={dropsValue} className="text-sm" />
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="shrink-0 text-xs text-muted">Gold Drop</span>
+                    <span className="shrink-0 text-xs text-muted">{t('goldDrop')}</span>
                     <Currency copper={goldDropped} className="text-sm" />
                   </div>
 
                   {/* Total — hero, on its own line so the big number has room */}
                   <div className="border-t border-border pt-3">
-                    <span className="text-xs font-medium text-muted">Total Value</span>
+                    <span className="text-xs font-medium text-muted">{t('totalValue')}</span>
                     <div className="mt-1">
                       <Currency
                         copper={totalGold}
@@ -364,17 +367,17 @@ export default function GrindPage() {
                   </div>
 
                   <div className="flex items-center justify-between gap-2">
-                    <span className="shrink-0 text-xs text-muted">Value / Hour</span>
+                    <span className="shrink-0 text-xs text-muted">{t('valuePerHour')}</span>
                     <Currency copper={goldPerHour} className="text-sm" />
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted">Duration</span>
+                    <span className="text-xs text-muted">{t('duration')}</span>
                     <span className="text-sm text-foreground">
-                      {hours}h {minutes}m
+                      {hours}{t('hourShort')} {minutes}{t('minuteShort')}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted">Items Tracked</span>
+                    <span className="text-xs text-muted">{t('itemsTracked')}</span>
                     <span className="text-sm text-foreground">
                       {drops.filter((d) => d.quantity > 0).length}
                     </span>
@@ -386,12 +389,12 @@ export default function GrindPage() {
                   disabled={!selectedCharacterId || saveMutation.isPending}
                   className="w-full rounded-base px-4 py-3 text-sm font-medium text-white bg-[var(--success)] transition-colors duration-150 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {saveMutation.isPending ? 'Saving...' : 'Save Session'}
+                  {saveMutation.isPending ? tc('saving') : t('saveSession')}
                 </button>
 
                 {saveMutation.isSuccess && (
                   <p className="text-xs text-[var(--fg-success)] mt-3 text-center">
-                    Session saved successfully!
+                    {t('sessionSavedInline')}
                   </p>
                 )}
                 {saveMutation.isError && (

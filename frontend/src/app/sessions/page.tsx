@@ -2,9 +2,11 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { X, Pencil, Check } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/toast';
+import { useDateFormatter } from '@/lib/i18n';
 import { Pagination } from '@/components/pagination';
 import { Currency, CurrencyInput } from '@/components/currency';
 import { Select } from '@/components/select';
@@ -15,6 +17,9 @@ import type { Session, Character, Dungeon } from '@/types';
 const PAGE_SIZE = 10;
 
 export default function SessionsPage() {
+  const t = useTranslations('sessions');
+  const tc = useTranslations('common');
+  const formatDate = useDateFormatter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -47,11 +52,11 @@ export default function SessionsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      toast({ title: 'Session deleted', variant: 'success' });
+      toast({ title: t('toastDeleted'), variant: 'success' });
     },
     onError: (e) =>
       toast({
-        title: 'Could not delete session',
+        title: t('toastDeleteError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -65,13 +70,13 @@ export default function SessionsPage() {
       setConfirmDeleteAll(false);
       setPage(1);
       toast({
-        title: `Deleted ${res.deleted} session${res.deleted === 1 ? '' : 's'}`,
+        title: t('toastDeletedAll', { count: res.deleted }),
         variant: 'success',
       });
     },
     onError: (e) =>
       toast({
-        title: 'Could not delete sessions',
+        title: t('toastDeleteAllError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -82,11 +87,11 @@ export default function SessionsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      toast({ title: 'Drop removed', variant: 'success' });
+      toast({ title: t('toastDropRemoved'), variant: 'success' });
     },
     onError: (e) =>
       toast({
-        title: 'Could not remove drop',
+        title: t('toastDropRemoveError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -102,11 +107,11 @@ export default function SessionsPage() {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setEditingDropId(null);
-      toast({ title: 'Drop updated', variant: 'success' });
+      toast({ title: t('toastDropUpdated'), variant: 'success' });
     },
     onError: (e) =>
       toast({
-        title: 'Could not update drop',
+        title: t('toastDropUpdateError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -194,7 +199,7 @@ export default function SessionsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-root flex items-center justify-center">
-        <p className="text-sm text-muted">Loading sessions...</p>
+        <p className="text-sm text-muted">{t('loading')}</p>
       </div>
     );
   }
@@ -216,10 +221,10 @@ export default function SessionsPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-xl laptop:text-2xl font-medium text-foreground">
-                Sessions
+                {t('title')}
               </h1>
               <p className="text-sm text-muted mt-2">
-                View and export your grinding sessions
+                {t('subtitle')}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -228,14 +233,14 @@ export default function SessionsPage() {
                 disabled={filteredSessions.length === 0}
                 className="rounded-base px-4 py-2.5 text-sm font-medium text-foreground border border-border hover:bg-raised transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Export Excel
+                {t('exportExcel')}
               </button>
               {(sessions?.length ?? 0) > 0 && (
                 <button
                   onClick={() => setConfirmDeleteAll(true)}
                   className="rounded-base px-4 py-2.5 text-sm font-medium text-[var(--fg-danger)] border border-[var(--border-danger)] hover:bg-[var(--danger-soft)] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2"
                 >
-                  Delete All
+                  {t('deleteAll')}
                 </button>
               )}
             </div>
@@ -245,18 +250,9 @@ export default function SessionsPage() {
           <ConfirmDialog
             open={confirmDeleteAll}
             onOpenChange={setConfirmDeleteAll}
-            title="Delete all sessions?"
-            description={
-              <>
-                This permanently deletes all{' '}
-                <span className="font-bold text-foreground">
-                  {sessions?.length ?? 0}
-                </span>{' '}
-                session{(sessions?.length ?? 0) === 1 ? '' : 's'} and their drops.
-                This cannot be undone.
-              </>
-            }
-            confirmLabel="Yes, delete all"
+            title={t('deleteAllTitle')}
+            description={t('deleteAllDesc', { count: sessions?.length ?? 0 })}
+            confirmLabel={t('deleteAllConfirm')}
             danger
             loading={deleteAllMutation.isPending}
             onConfirm={() => deleteAllMutation.mutate()}
@@ -266,12 +262,12 @@ export default function SessionsPage() {
           <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-4 mb-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 laptop:grid-cols-4 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted">Character</label>
+                <label className="text-xs font-medium text-muted">{t('character')}</label>
                 <Select
                   value={filterCharId}
                   onChange={setFilterCharId}
                   options={[
-                    { value: '', label: 'All Characters' },
+                    { value: '', label: t('allCharacters') },
                     ...(characters ?? []).map((c) => ({
                       value: c.id,
                       label: c.name,
@@ -280,7 +276,7 @@ export default function SessionsPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted">From</label>
+                <label className="text-xs font-medium text-muted">{t('from')}</label>
                 <input
                   type="date"
                   value={filterDateFrom}
@@ -289,7 +285,7 @@ export default function SessionsPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted">To</label>
+                <label className="text-xs font-medium text-muted">{t('to')}</label>
                 <input
                   type="date"
                   value={filterDateTo}
@@ -298,13 +294,13 @@ export default function SessionsPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted">Sort by</label>
+                <label className="text-xs font-medium text-muted">{t('sortBy')}</label>
                 <Select
                   value={sortBy}
                   onChange={(v) => setSortBy(v as 'date' | 'gold')}
                   options={[
-                    { value: 'date', label: 'Date (newest)' },
-                    { value: 'gold', label: 'Gold (highest)' },
+                    { value: 'date', label: t('sortDate') },
+                    { value: 'gold', label: t('sortGold') },
                   ]}
                 />
               </div>
@@ -318,14 +314,14 @@ export default function SessionsPage() {
                 }}
                 className="mt-3 text-xs text-[var(--blue)] hover:underline"
               >
-                Clear filters
+                {t('clearFilters')}
               </button>
             )}
           </div>
 
           {/* Results count */}
           <p className="text-xs text-muted mb-4">
-            Showing {filteredSessions.length} session{filteredSessions.length !== 1 ? 's' : ''}
+            {t('showing', { count: filteredSessions.length })}
           </p>
 
           {editingSession && (
@@ -340,7 +336,7 @@ export default function SessionsPage() {
           {filteredSessions.length === 0 ? (
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-10 text-center">
               <p className="text-sm text-muted">
-                No sessions found. Try adjusting your filters or start grinding!
+                {t('empty')}
               </p>
             </div>
           ) : (
@@ -353,7 +349,7 @@ export default function SessionsPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="text-sm font-medium text-foreground">
-                        {session.characters?.name ?? 'Unknown Character'}
+                        {session.characters?.name ?? t('unknownCharacter')}
                       </h3>
                       <p className="text-xs text-muted mt-1">
                         {session.dungeons && (
@@ -363,16 +359,16 @@ export default function SessionsPage() {
                           </span>
                         )}
                         {session.started_at
-                          ? new Date(session.started_at).toLocaleDateString('th-TH', {
+                          ? formatDate(session.started_at, {
                               day: 'numeric',
                               month: 'short',
                               year: 'numeric',
                               hour: '2-digit',
                               minute: '2-digit',
                             })
-                          : 'No date'}
+                          : t('noDate')}
                         {session.duration_minutes && (
-                          <span> · {session.duration_minutes} min</span>
+                          <span> · {t('minutesShort', { count: session.duration_minutes })}</span>
                         )}
                       </p>
                     </div>
@@ -381,20 +377,20 @@ export default function SessionsPage() {
                         onClick={() => setEditingSession(session)}
                         className="rounded-base px-3 py-1.5 text-xs font-medium text-muted border border-border hover:text-gold hover:border-gold transition-colors duration-150 focus:outline-none"
                       >
-                        Edit
+                        {tc('edit')}
                       </button>
                       <button
                         onClick={() => deleteMutation.mutate(session.id)}
                         disabled={deleteMutation.isPending}
                         className="rounded-base px-3 py-1.5 text-xs font-medium text-[var(--fg-danger)] border border-[var(--border-danger)] hover:bg-[var(--danger-soft)] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2 disabled:opacity-50"
                       >
-                        Delete
+                        {tc('delete')}
                       </button>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
                     <div className="min-w-0">
-                      <p className="text-xs text-muted">Value</p>
+                      <p className="text-xs text-muted">{t('value')}</p>
                       <Currency
                         copper={Number(session.gold_earned)}
                         className="!flex flex-wrap text-base"
@@ -402,17 +398,17 @@ export default function SessionsPage() {
                     </div>
                     {Number(session.gold_dropped) > 0 && (
                       <div>
-                        <p className="text-xs text-muted">Gold Drop</p>
+                        <p className="text-xs text-muted">{t('goldDrop')}</p>
                         <div className="text-sm">
                           <Currency copper={Number(session.gold_dropped)} className="text-sm" />
                         </div>
                       </div>
                     )}
                     <div>
-                      <p className="text-xs text-muted">Duration</p>
+                      <p className="text-xs text-muted">{t('duration')}</p>
                       <p className="text-sm font-medium text-foreground">
                         {session.duration_minutes
-                          ? `${session.duration_minutes} min`
+                          ? t('minutesShort', { count: session.duration_minutes })
                           : '-'}
                       </p>
                     </div>
@@ -421,7 +417,7 @@ export default function SessionsPage() {
                   {/* Item Drops */}
                   {session.session_drops && session.session_drops.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.05)]">
-                      <p className="text-xs text-muted mb-2">Drops</p>
+                      <p className="text-xs text-muted mb-2">{t('drops')}</p>
                       <div className="flex flex-wrap gap-2">
                         {session.session_drops.map((drop: { id: string; quantity: number; price_each: number; items?: { name: string; icon_url?: string | null } }) =>
                           editingDropId === drop.id ? (
@@ -430,7 +426,7 @@ export default function SessionsPage() {
                               className="flex items-center gap-1.5 rounded-sm bg-raised px-2 py-1 outline outline-1 outline-[rgba(224,165,60,0.4)]"
                             >
                               <span className="text-xs text-foreground">
-                                {drop.items?.name ?? 'Unknown'}
+                                {drop.items?.name ?? t('unknownItem')}
                               </span>
                               <span className="text-[10px] text-muted">x</span>
                               <input
@@ -481,7 +477,7 @@ export default function SessionsPage() {
                                 <img src={drop.items.icon_url} alt="" className="w-4 h-4 rounded-xs object-cover" />
                               )}
                               <span className="text-xs text-foreground">
-                                {drop.items?.name ?? 'Unknown'}
+                                {drop.items?.name ?? t('unknownItem')}
                               </span>
                               <span className="text-xs text-muted">
                                 x{drop.quantity}
@@ -532,6 +528,8 @@ function SessionEditForm({
   characters?: Character[];
   onClose: () => void;
 }) {
+  const t = useTranslations('sessions');
+  const tc = useTranslations('common');
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [characterId, setCharacterId] = useState(session.character_id);
@@ -556,12 +554,12 @@ function SessionEditForm({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      toast({ title: 'Session updated', variant: 'success' });
+      toast({ title: t('toastUpdated'), variant: 'success' });
       onClose();
     },
     onError: (e) =>
       toast({
-        title: 'Could not update session',
+        title: t('toastUpdateError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -569,7 +567,7 @@ function SessionEditForm({
 
   return (
     <div className="bg-surface rounded-base outline outline-1 outline-[rgba(224,165,60,0.35)] p-6 mb-6">
-      <h3 className="text-sm font-medium text-foreground mb-4">Edit Session</h3>
+      <h3 className="text-sm font-medium text-foreground mb-4">{t('editSession')}</h3>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -586,11 +584,11 @@ function SessionEditForm({
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted">Character</label>
+            <label className="text-xs font-medium text-muted">{t('character')}</label>
             <Select
               value={characterId}
               onChange={setCharacterId}
-              placeholder="Select character"
+              placeholder={t('character')}
               options={(characters ?? []).map((c) => ({
                 value: c.id,
                 label: c.name,
@@ -598,12 +596,12 @@ function SessionEditForm({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted">Dungeon</label>
+            <label className="text-xs font-medium text-muted">{t('dungeon')}</label>
             <Select
               value={dungeonId}
               onChange={setDungeonId}
               options={[
-                { value: '', label: 'None' },
+                { value: '', label: tc('none') },
                 ...(dungeons ?? []).map((d) => ({
                   value: d.id,
                   label: d.name,
@@ -612,15 +610,15 @@ function SessionEditForm({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted">Total Value</label>
+            <label className="text-xs font-medium text-muted">{t('totalValue')}</label>
             <CurrencyInput value={gold} onChange={setGold} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted">Gold Drop</label>
+            <label className="text-xs font-medium text-muted">{t('goldDrop')}</label>
             <CurrencyInput value={goldDrop} onChange={setGoldDrop} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted">Duration (min)</label>
+            <label className="text-xs font-medium text-muted">{t('durationMin')}</label>
             <input
               type="number"
               min={0}
@@ -636,14 +634,14 @@ function SessionEditForm({
             disabled={updateMutation.isPending}
             className="rounded-base px-4 py-2 text-sm font-medium text-[#1b1407] bg-[var(--blue)] shadow-button transition-colors duration-150 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2 disabled:opacity-50"
           >
-            {updateMutation.isPending ? 'Saving...' : 'Save'}
+            {updateMutation.isPending ? tc('saving') : tc('save')}
           </button>
           <button
             type="button"
             onClick={onClose}
             className="rounded-base px-4 py-2 text-sm font-medium text-foreground border border-border hover:bg-raised transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2"
           >
-            Cancel
+            {tc('cancel')}
           </button>
         </div>
       </form>

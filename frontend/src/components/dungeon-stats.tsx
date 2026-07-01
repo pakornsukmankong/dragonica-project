@@ -1,12 +1,15 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { Trophy } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Currency } from '@/components/currency';
 import type { DungeonStats as DungeonStat } from '@/types';
 
 export function DungeonStats() {
+  const t = useTranslations('dungeonStats');
+  const tc = useTranslations('common');
   const { data: stats, isLoading } = useQuery<DungeonStat[]>({
     queryKey: ['dashboard', 'dungeon-stats'],
     queryFn: () => api.get('/dashboard/dungeon-stats'),
@@ -16,26 +19,26 @@ export function DungeonStats() {
     <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
       <div className="mb-4 flex items-center gap-2">
         <Trophy className="h-4 w-4 text-gold" />
-        <h2 className="text-sm font-semibold text-foreground">Best Farming Spots</h2>
-        <span className="text-xs text-muted">ranked by gold / hour</span>
+        <h2 className="text-sm font-semibold text-foreground">{t('title')}</h2>
+        <span className="text-xs text-muted">{t('subtitle')}</span>
       </div>
 
       {isLoading ? (
-        <p className="text-xs text-muted">Loading...</p>
+        <p className="text-xs text-muted">{tc('loading')}</p>
       ) : !stats || stats.length === 0 ? (
         <p className="text-xs text-muted">
-          No dungeon runs yet. Log a session with a dungeon to compare efficiency.
+          {t('empty')}
         </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-border">
-                <th className="pb-3 pr-3 text-xs font-medium text-muted">#</th>
-                <th className="pb-3 text-xs font-medium text-muted">Dungeon</th>
-                <th className="pb-3 text-right text-xs font-medium text-muted">Value / hr</th>
-                <th className="pb-3 text-right text-xs font-medium text-muted">Value / core</th>
-                <th className="pb-3 text-right text-xs font-medium text-muted">Runs</th>
+                <th className="pb-3 pr-3 text-xs font-medium text-muted">{t('colRank')}</th>
+                <th className="pb-3 text-xs font-medium text-muted">{t('colDungeon')}</th>
+                <th className="pb-3 text-right text-xs font-medium text-muted">{t('colValuePerHr')}</th>
+                <th className="pb-3 text-right text-xs font-medium text-muted">{t('colValuePerCore')}</th>
+                <th className="pb-3 text-right text-xs font-medium text-muted">{t('colRuns')}</th>
               </tr>
             </thead>
             <tbody>
