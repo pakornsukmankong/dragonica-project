@@ -1,0 +1,20 @@
+{
+  "donation": {
+    "max_exceeded": "ยอดสูงสุดสำหรับ {channel} คือ ฿{max}",
+    "not_found": "ไม่พบรายการบริจาค"
+  },
+  "character": {
+    "not_found": "ไม่พบตัวละคร",
+    "delete_has_sessions": "ลบ \"{name}\" ไม่ได้ — ยังมีรอบฟาร์มที่บันทึกไว้ {count} รอบ กรุณาลบรอบเหล่านั้นก่อน"
+  },
+  "session": {
+    "not_found": "ไม่พบรอบฟาร์ม",
+    "drop_not_found": "ไม่พบไอเทมที่ดรอป"
+  },
+  "auth": {
+    "profile_not_found": "ไม่พบโปรไฟล์"
+  },
+  "payment": {
+    "provider_error": "เกิดข้อผิดพลาดจากผู้ให้บริการชำระเงิน: {message}"
+  }
+}

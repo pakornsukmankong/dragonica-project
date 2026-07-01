@@ -2,23 +2,31 @@ import { createClient } from '@/lib/supabase/client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+// The active UI language, read from the NEXT_LOCALE cookie, so the backend can
+// localize error messages (nestjs-i18n reads Accept-Language).
+function getLocale(): string {
+  if (typeof document === 'undefined') return 'en';
+  const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : 'en';
+}
+
 async function getAuthHeaders(): Promise<HeadersInit> {
   const supabase = createClient();
   const { data: { session } } = await supabase.auth.getSession();
+  const base: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept-Language': getLocale(),
+  };
 
   // If getSession returns null, try refreshing
   if (!session) {
     const { data: { session: refreshed } } = await supabase.auth.refreshSession();
-    return {
-      'Content-Type': 'application/json',
-      ...(refreshed?.access_token ? { Authorization: `Bearer ${refreshed.access_token}` } : {}),
-    };
+    if (refreshed?.access_token) base.Authorization = `Bearer ${refreshed.access_token}`;
+    return base;
   }
 
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${session.access_token}`,
-  };
+  base.Authorization = `Bearer ${session.access_token}`;
+  return base;
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {

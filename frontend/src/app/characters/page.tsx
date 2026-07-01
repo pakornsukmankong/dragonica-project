@@ -2,12 +2,15 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/toast';
 import { Select } from '@/components/select';
 import type { Character, GameClass } from '@/types';
 
 export default function CharactersPage() {
+  const t = useTranslations('characters');
+  const tc = useTranslations('common');
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
@@ -22,11 +25,11 @@ export default function CharactersPage() {
     mutationFn: (id: string) => api.delete(`/characters/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['characters'] });
-      toast({ title: 'Character deleted', variant: 'success' });
+      toast({ title: t('toastDeleted'), variant: 'success' });
     },
     onError: (e) =>
       toast({
-        title: 'Could not delete character',
+        title: t('toastDeleteError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -35,7 +38,7 @@ export default function CharactersPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-root flex items-center justify-center">
-        <p className="text-sm text-muted">Loading characters...</p>
+        <p className="text-sm text-muted">{t('loading')}</p>
       </div>
     );
   }
@@ -56,10 +59,10 @@ export default function CharactersPage() {
           <div className="flex items-center justify-between mb-10">
             <div>
               <h1 className="text-xl laptop:text-2xl font-medium text-foreground">
-                Characters
+                {t('title')}
               </h1>
               <p className="text-sm text-muted mt-2">
-                Manage your Dragonica characters
+                {t('subtitle')}
               </p>
             </div>
             <button
@@ -69,7 +72,7 @@ export default function CharactersPage() {
               }}
               className="rounded-base px-4 py-2.5 text-sm font-medium text-[#1b1407] bg-[var(--blue)] shadow-button transition-colors duration-150 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2"
             >
-              + New Character
+              {t('newCharacter')}
             </button>
           </div>
 
@@ -87,7 +90,7 @@ export default function CharactersPage() {
           {characters && characters.length === 0 ? (
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-10 text-center">
               <p className="text-sm text-muted">
-                No characters yet. Create your first one!
+                {t('empty')}
               </p>
             </div>
           ) : (
@@ -109,11 +112,11 @@ export default function CharactersPage() {
                           {char.name}
                         </h3>
                         <span className="inline-flex shrink-0 items-center rounded-full border border-[rgba(224,165,60,0.35)] bg-gold-soft px-2 py-0.5 text-[11px] font-bold text-gold tabular-nums">
-                          Lv.{char.level}
+                          {t('levelShort', { level: char.level })}
                         </span>
                       </div>
                       <p className="mt-0.5 truncate text-xs text-muted">
-                        {char.classes?.name ?? 'Unknown'}
+                        {char.classes?.name ?? t('unknownClass')}
                         {char.classes?.parent_class && (
                           <span> · {char.classes.parent_class}</span>
                         )}
@@ -128,14 +131,14 @@ export default function CharactersPage() {
                       }}
                       className="rounded-base px-3 py-1.5 text-xs font-medium text-muted hover:text-gold transition-colors duration-150 focus:outline-none"
                     >
-                      Edit
+                      {tc('edit')}
                     </button>
                     <button
                       onClick={() => deleteMutation.mutate(char.id)}
                       disabled={deleteMutation.isPending}
                       className="rounded-base px-3 py-1.5 text-xs font-medium text-muted hover:text-[var(--fg-danger)] transition-colors duration-150 focus:outline-none disabled:opacity-50"
                     >
-                      Delete
+                      {tc('delete')}
                     </button>
                   </div>
                 </div>
@@ -155,6 +158,8 @@ function CharacterForm({
   character?: Character;
   onClose: () => void;
 }) {
+  const t = useTranslations('characters');
+  const tc = useTranslations('common');
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isEdit = !!character;
@@ -176,14 +181,14 @@ function CharacterForm({
       queryClient.invalidateQueries({ queryKey: ['characters'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       toast({
-        title: isEdit ? 'Character updated' : 'Character created',
+        title: isEdit ? t('toastUpdated') : t('toastCreated'),
         variant: 'success',
       });
       onClose();
     },
     onError: (e) =>
       toast({
-        title: isEdit ? 'Could not update character' : 'Could not create character',
+        title: isEdit ? t('toastUpdateError') : t('toastCreateError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -198,13 +203,13 @@ function CharacterForm({
   return (
     <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6 mb-6">
       <h3 className="text-sm font-medium text-foreground mb-4">
-        {isEdit ? 'Edit Character' : 'Create Character'}
+        {isEdit ? t('editTitle') : t('createTitle')}
       </h3>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="char-name" className="text-xs font-medium text-foreground">
-              Name
+              {t('name')}
             </label>
             <input
               id="char-name"
@@ -213,18 +218,18 @@ function CharacterForm({
               onChange={(e) => setName(e.target.value)}
               required
               className="w-full rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
-              placeholder="Character name"
+              placeholder={t('namePlaceholder')}
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="char-class" className="text-xs font-medium text-foreground">
-              Class
+              {t('class')}
             </label>
             <Select
               id="char-class"
               value={classId}
               onChange={setClassId}
-              placeholder="Select class"
+              placeholder={t('selectClass')}
               options={(classes ?? []).map((cls) => ({
                 value: cls.id,
                 label: cls.parent_class
@@ -235,7 +240,7 @@ function CharacterForm({
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="char-level" className="text-xs font-medium text-foreground">
-              Level
+              {t('level')}
             </label>
             <input
               id="char-level"
@@ -255,18 +260,18 @@ function CharacterForm({
           >
             {saveMutation.isPending
               ? isEdit
-                ? 'Saving...'
-                : 'Creating...'
+                ? tc('saving')
+                : tc('creating')
               : isEdit
-                ? 'Save'
-                : 'Create'}
+                ? tc('save')
+                : tc('create')}
           </button>
           <button
             type="button"
             onClick={onClose}
             className="rounded-base px-4 py-2 text-sm font-medium text-foreground border border-border hover:bg-raised transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2"
           >
-            Cancel
+            {tc('cancel')}
           </button>
         </div>
         {saveMutation.isError && (

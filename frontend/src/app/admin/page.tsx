@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import * as Tabs from '@radix-ui/react-tabs';
 import { api } from '@/lib/api';
 import { ImageUpload } from '@/components/image-upload';
@@ -10,6 +11,7 @@ import { rarityStyle } from '@/lib/rarity';
 import { Pagination } from '@/components/pagination';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useToast } from '@/components/toast';
+import { useDateFormatter } from '@/lib/i18n';
 import { Trash2 } from 'lucide-react';
 import { Currency, CurrencyInput } from '@/components/currency';
 import { Select } from '@/components/select';
@@ -25,12 +27,13 @@ const TABS = [
 ] as const;
 
 export default function AdminPage() {
+  const t = useTranslations('admin');
   const { isAdmin, isLoading: isRoleLoading } = useIsAdmin();
 
   if (isRoleLoading) {
     return (
       <div className="min-h-screen bg-root flex items-center justify-center">
-        <p className="text-sm text-muted">Checking permissions...</p>
+        <p className="text-sm text-muted">{t('checkingPermissions')}</p>
       </div>
     );
   }
@@ -39,8 +42,8 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-root flex items-center justify-center">
         <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-8 text-center max-w-sm">
-          <p className="text-sm font-medium text-foreground mb-2">Access Denied</p>
-          <p className="text-xs text-muted">You need admin privileges to access this page.</p>
+          <p className="text-sm font-medium text-foreground mb-2">{t('accessDenied')}</p>
+          <p className="text-xs text-muted">{t('accessDeniedDesc')}</p>
         </div>
       </div>
     );
@@ -61,10 +64,10 @@ export default function AdminPage() {
         <div className="relative z-10 mx-auto max-w-container px-4 sm:px-7">
           <div className="mb-8">
             <h1 className="text-xl laptop:text-2xl font-medium text-foreground">
-              Admin Settings
+              {t('title')}
             </h1>
             <p className="text-sm text-muted mt-2">
-              Manage dungeons, items, classes, and donations
+              {t('subtitle')}
             </p>
           </div>
 
@@ -74,9 +77,9 @@ export default function AdminPage() {
                 <Tabs.Trigger
                   key={value}
                   value={value}
-                  className="rounded-sm px-4 py-2 text-xs font-medium capitalize text-muted outline-none transition-colors duration-150 hover:text-foreground data-[state=active]:bg-surface data-[state=active]:text-foreground data-[state=active]:outline data-[state=active]:outline-1 data-[state=active]:outline-[rgba(255,255,255,0.08)]"
+                  className="rounded-sm px-4 py-2 text-xs font-medium text-muted outline-none transition-colors duration-150 hover:text-foreground data-[state=active]:bg-surface data-[state=active]:text-foreground data-[state=active]:outline data-[state=active]:outline-1 data-[state=active]:outline-[rgba(255,255,255,0.08)]"
                 >
-                  {value}
+                  {t(`tab${value.charAt(0).toUpperCase()}${value.slice(1)}`)}
                 </Tabs.Trigger>
               ))}
             </Tabs.List>
@@ -95,6 +98,8 @@ export default function AdminPage() {
 
 // ===== DUNGEONS TAB =====
 function DungeonsTab() {
+  const t = useTranslations('admin');
+  const tc = useTranslations('common');
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [name, setName] = useState('');
@@ -120,11 +125,11 @@ function DungeonsTab() {
       setImageUrl('');
       setDragonCoreCost('');
       setAverageDuration('');
-      toast({ title: 'Dungeon added', variant: 'success' });
+      toast({ title: t('toastDungeonAdded'), variant: 'success' });
     },
     onError: (e) =>
       toast({
-        title: 'Could not add dungeon',
+        title: t('toastDungeonAddError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -134,11 +139,11 @@ function DungeonsTab() {
     mutationFn: (id: string) => api.delete(`/admin/dungeons/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'dungeons'] });
-      toast({ title: 'Dungeon deleted', variant: 'success' });
+      toast({ title: t('toastDungeonDeleted'), variant: 'success' });
     },
     onError: (e) =>
       toast({
-        title: 'Could not delete dungeon',
+        title: t('toastDungeonDeleteError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -147,7 +152,7 @@ function DungeonsTab() {
   return (
     <div className="space-y-6">
       <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
-        <h3 className="text-sm font-medium text-foreground mb-4">Add Dungeon</h3>
+        <h3 className="text-sm font-medium text-foreground mb-4">{t('addDungeon')}</h3>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -163,17 +168,17 @@ function DungeonsTab() {
         >
           <div className="flex items-end gap-3 flex-wrap">
             <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
-              <label className="text-xs font-medium text-muted">Name</label>
+              <label className="text-xs font-medium text-muted">{t('name')}</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
                 className="rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
-                placeholder="Dragon Nest F1"
+                placeholder={t('dungeonNamePlaceholder')}
               />
             </div>
             <div className="flex flex-col gap-1.5 w-32">
-              <label className="text-xs font-medium text-muted">Core Cost</label>
+              <label className="text-xs font-medium text-muted">{t('coreCost')}</label>
               <input
                 type="number"
                 min={0}
@@ -184,7 +189,7 @@ function DungeonsTab() {
               />
             </div>
             <div className="flex flex-col gap-1.5 w-36">
-              <label className="text-xs font-medium text-muted">Avg Duration (min)</label>
+              <label className="text-xs font-medium text-muted">{t('avgDuration')}</label>
               <input
                 type="number"
                 min={0}
@@ -196,7 +201,7 @@ function DungeonsTab() {
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted">Image</label>
+            <label className="text-xs font-medium text-muted">{t('image')}</label>
             <ImageUpload currentUrl={imageUrl || null} onUploaded={setImageUrl} />
           </div>
           <button
@@ -204,14 +209,14 @@ function DungeonsTab() {
             disabled={createMutation.isPending}
             className="self-start rounded-base px-4 py-2 text-sm font-medium text-[#1b1407] bg-[var(--blue)] shadow-button hover:opacity-90 disabled:opacity-50"
           >
-            Add
+            {t('add')}
           </button>
         </form>
       </div>
 
       <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
         {isLoading ? (
-          <p className="text-xs text-muted">Loading...</p>
+          <p className="text-xs text-muted">{tc('loading')}</p>
         ) : (
           <div className="space-y-2">
             {dungeons?.map((d) => (
@@ -226,9 +231,9 @@ function DungeonsTab() {
                     <span className="text-sm text-foreground font-medium">{d.name}</span>
                     <div className="flex gap-3 text-[11px] text-muted mt-0.5">
                       {d.dragon_core_cost != null && (
-                        <span className="text-gold">◆ {d.dragon_core_cost} cores</span>
+                        <span className="text-gold">◆ {t('cores', { count: d.dragon_core_cost })}</span>
                       )}
-                      {d.average_duration != null && <span>~{d.average_duration} min</span>}
+                      {d.average_duration != null && <span>{t('minShort', { count: d.average_duration })}</span>}
                     </div>
                   </div>
                 </div>
@@ -236,11 +241,11 @@ function DungeonsTab() {
                   onClick={() => deleteMutation.mutate(d.id)}
                   className="text-xs text-[var(--fg-danger)] hover:underline"
                 >
-                  Delete
+                  {tc('delete')}
                 </button>
               </div>
             ))}
-            {dungeons?.length === 0 && <p className="text-xs text-muted">No dungeons yet.</p>}
+            {dungeons?.length === 0 && <p className="text-xs text-muted">{t('noDungeons')}</p>}
           </div>
         )}
       </div>
@@ -250,6 +255,9 @@ function DungeonsTab() {
 
 // ===== ITEMS TAB =====
 function ItemsTab() {
+  const t = useTranslations('admin');
+  const tc = useTranslations('common');
+  const tr = useTranslations('rarity');
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [name, setName] = useState('');
@@ -277,11 +285,11 @@ function ItemsTab() {
       setName('');
       setDefaultPrice('');
       setIconUrl('');
-      toast({ title: 'Item added', variant: 'success' });
+      toast({ title: t('toastItemAdded'), variant: 'success' });
     },
     onError: (e) =>
       toast({
-        title: 'Could not add item',
+        title: t('toastItemAddError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -291,11 +299,11 @@ function ItemsTab() {
     mutationFn: (id: string) => api.delete(`/admin/items/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'items'] });
-      toast({ title: 'Item deleted', variant: 'success' });
+      toast({ title: t('toastItemDeleted'), variant: 'success' });
     },
     onError: (e) =>
       toast({
-        title: 'Could not delete item',
+        title: t('toastItemDeleteError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -304,7 +312,7 @@ function ItemsTab() {
   return (
     <div className="space-y-6">
       <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
-        <h3 className="text-sm font-medium text-foreground mb-4">Add Item</h3>
+        <h3 className="text-sm font-medium text-foreground mb-4">{t('addItem')}</h3>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -320,31 +328,31 @@ function ItemsTab() {
         >
           <div className="flex items-end gap-3 flex-wrap">
             <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
-              <label className="text-xs font-medium text-muted">Name</label>
+              <label className="text-xs font-medium text-muted">{t('name')}</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
                 className="rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
-                placeholder="Dragon Scale"
+                placeholder={t('itemNamePlaceholder')}
               />
             </div>
             <div className="flex flex-col gap-1.5 w-32">
-              <label className="text-xs font-medium text-muted">Rarity</label>
+              <label className="text-xs font-medium text-muted">{t('rarity')}</label>
               <Select
                 value={rarity}
                 onChange={setRarity}
                 options={[
-                  { value: 'common', label: 'Common' },
-                  { value: 'uncommon', label: 'Uncommon' },
-                  { value: 'rare', label: 'Rare' },
-                  { value: 'epic', label: 'Epic' },
-                  { value: 'legendary', label: 'Legendary' },
+                  { value: 'common', label: tr('common') },
+                  { value: 'uncommon', label: tr('uncommon') },
+                  { value: 'rare', label: tr('rare') },
+                  { value: 'epic', label: tr('epic') },
+                  { value: 'legendary', label: tr('legendary') },
                 ]}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted">Default Price</label>
+              <label className="text-xs font-medium text-muted">{t('defaultPrice')}</label>
               <CurrencyInput
                 value={defaultPrice || 0}
                 onChange={(v) => setDefaultPrice(v || '')}
@@ -352,7 +360,7 @@ function ItemsTab() {
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted">Icon</label>
+            <label className="text-xs font-medium text-muted">{t('icon')}</label>
             <ImageUpload currentUrl={iconUrl || null} onUploaded={setIconUrl} />
           </div>
           <button
@@ -360,14 +368,14 @@ function ItemsTab() {
             disabled={createMutation.isPending}
             className="self-start rounded-base px-4 py-2 text-sm font-medium text-[#1b1407] bg-[var(--blue)] shadow-button hover:opacity-90 disabled:opacity-50"
           >
-            Add
+            {t('add')}
           </button>
         </form>
       </div>
 
       <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
         {isLoading ? (
-          <p className="text-xs text-muted">Loading...</p>
+          <p className="text-xs text-muted">{tc('loading')}</p>
         ) : (
           <div className="space-y-2">
             {pagedItems?.map((item) => {
@@ -395,7 +403,7 @@ function ItemsTab() {
                       className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide shrink-0"
                       style={{ color: r.color, background: r.soft }}
                     >
-                      {r.label}
+                      {item.rarity ? tr(item.rarity) : r.label}
                     </span>
                     <span className="shrink-0">
                       <Currency copper={item.default_price ?? 0} className="text-xs" />
@@ -405,12 +413,12 @@ function ItemsTab() {
                     onClick={() => deleteMutation.mutate(item.id)}
                     className="text-xs text-muted hover:text-[var(--fg-danger)] shrink-0"
                   >
-                    Delete
+                    {tc('delete')}
                   </button>
                 </div>
               );
             })}
-            {items?.length === 0 && <p className="text-xs text-muted">No items yet.</p>}
+            {items?.length === 0 && <p className="text-xs text-muted">{t('noItems')}</p>}
             <Pagination page={page} pageCount={pageCount} onChange={setPage} />
           </div>
         )}
@@ -421,6 +429,8 @@ function ItemsTab() {
 
 // ===== CLASSES TAB =====
 function ClassesTab() {
+  const t = useTranslations('admin');
+  const tc = useTranslations('common');
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [name, setName] = useState('');
@@ -439,11 +449,11 @@ function ClassesTab() {
       queryClient.invalidateQueries({ queryKey: ['classes'] });
       setName('');
       setParentClass('');
-      toast({ title: 'Class added', variant: 'success' });
+      toast({ title: t('toastClassAdded'), variant: 'success' });
     },
     onError: (e) =>
       toast({
-        title: 'Could not add class',
+        title: t('toastClassAddError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -454,11 +464,11 @@ function ClassesTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'classes'] });
       queryClient.invalidateQueries({ queryKey: ['classes'] });
-      toast({ title: 'Class deleted', variant: 'success' });
+      toast({ title: t('toastClassDeleted'), variant: 'success' });
     },
     onError: (e) =>
       toast({
-        title: 'Could not delete class',
+        title: t('toastClassDeleteError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -470,7 +480,7 @@ function ClassesTab() {
   return (
     <div className="space-y-6">
       <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
-        <h3 className="text-sm font-medium text-foreground mb-4">Add Class</h3>
+        <h3 className="text-sm font-medium text-foreground mb-4">{t('addClass')}</h3>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -480,22 +490,22 @@ function ClassesTab() {
           className="flex items-end gap-3 flex-wrap"
         >
           <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
-            <label className="text-xs font-medium text-muted">Name</label>
+            <label className="text-xs font-medium text-muted">{t('name')}</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
               className="rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
-              placeholder="Gladiator"
+              placeholder={t('classNamePlaceholder')}
             />
           </div>
           <div className="flex flex-col gap-1.5 w-44">
-            <label className="text-xs font-medium text-muted">Parent Class</label>
+            <label className="text-xs font-medium text-muted">{t('parentClass')}</label>
             <Select
               value={parentClass}
               onChange={setParentClass}
               options={[
-                { value: '', label: 'None (base class)' },
+                { value: '', label: t('parentNone') },
                 ...baseClasses.map((c) => ({ value: c.name, label: c.name })),
               ]}
             />
@@ -505,14 +515,14 @@ function ClassesTab() {
             disabled={createMutation.isPending}
             className="rounded-base px-4 py-2 text-sm font-medium text-[#1b1407] bg-[var(--blue)] shadow-button hover:opacity-90 disabled:opacity-50"
           >
-            Add
+            {t('add')}
           </button>
         </form>
       </div>
 
       <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
         {isLoading ? (
-          <p className="text-xs text-muted">Loading...</p>
+          <p className="text-xs text-muted">{tc('loading')}</p>
         ) : (
           <div className="space-y-2">
             {classes?.map((cls) => (
@@ -525,18 +535,18 @@ function ClassesTab() {
                   {cls.parent_class ? (
                     <span className="text-xs text-muted ml-2">· {cls.parent_class}</span>
                   ) : (
-                    <span className="text-[10px] text-gold ml-2 uppercase tracking-wide">base</span>
+                    <span className="text-[10px] text-gold ml-2 uppercase tracking-wide">{t('base')}</span>
                   )}
                 </div>
                 <button
                   onClick={() => deleteMutation.mutate(cls.id)}
                   className="text-xs text-muted hover:text-[var(--fg-danger)]"
                 >
-                  Delete
+                  {tc('delete')}
                 </button>
               </div>
             ))}
-            {classes?.length === 0 && <p className="text-xs text-muted">No classes yet.</p>}
+            {classes?.length === 0 && <p className="text-xs text-muted">{t('noClasses')}</p>}
           </div>
         )}
       </div>
@@ -560,10 +570,15 @@ const CHANNEL_LABEL: Record<Donation['channel'], string> = {
 };
 
 function DonationsTab() {
+  const t = useTranslations('admin');
+  const tc = useTranslations('common');
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [page, setPage] = useState(1);
   const [pendingDelete, setPendingDelete] = useState<Donation | null>(null);
+  const formatDate = useDateFormatter();
+  const statusText = (s: Donation['status']) =>
+    t(`status${s.charAt(0).toUpperCase()}${s.slice(1)}`);
 
   const { data: donations, isLoading } = useQuery<Donation[]>({
     queryKey: ['admin', 'donations'],
@@ -576,11 +591,11 @@ function DonationsTab() {
       queryClient.invalidateQueries({ queryKey: ['admin', 'donations'] });
       queryClient.invalidateQueries({ queryKey: ['donations', 'wall'] });
       setPendingDelete(null);
-      toast({ title: 'Donation deleted', variant: 'success' });
+      toast({ title: t('toastDonationDeleted'), variant: 'success' });
     },
     onError: (e) =>
       toast({
-        title: 'Could not delete donation',
+        title: t('toastDonationDeleteError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -600,15 +615,15 @@ function DonationsTab() {
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-5">
-          <p className="text-[11px] uppercase tracking-wider text-muted mb-2">Total Raised</p>
+          <p className="text-[11px] uppercase tracking-wider text-muted mb-2">{t('donationsTotalRaised')}</p>
           <p className="text-2xl font-bold text-gold tabular-nums">{bahtFromSatang(totalRaised)}</p>
         </div>
         <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-5">
-          <p className="text-[11px] uppercase tracking-wider text-muted mb-2">Successful</p>
+          <p className="text-[11px] uppercase tracking-wider text-muted mb-2">{t('donationsSuccessful')}</p>
           <p className="text-2xl font-bold text-foreground tabular-nums">{successCount}</p>
         </div>
         <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-5">
-          <p className="text-[11px] uppercase tracking-wider text-muted mb-2">Total Records</p>
+          <p className="text-[11px] uppercase tracking-wider text-muted mb-2">{t('donationsTotalRecords')}</p>
           <p className="text-2xl font-bold text-foreground tabular-nums">{list.length}</p>
         </div>
       </div>
@@ -618,18 +633,18 @@ function DonationsTab() {
         {isLoading ? (
           <p className="text-xs text-muted">Loading...</p>
         ) : list.length === 0 ? (
-          <p className="text-xs text-muted">No donations yet.</p>
+          <p className="text-xs text-muted">{t('donationsNoRecords')}</p>
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="pb-3 pr-3 text-xs font-medium text-muted">Donor</th>
-                    <th className="pb-3 pr-3 text-xs font-medium text-muted">Method</th>
-                    <th className="pb-3 pr-3 text-right text-xs font-medium text-muted">Amount</th>
-                    <th className="pb-3 pr-3 text-xs font-medium text-muted">Status</th>
-                    <th className="pb-3 pr-3 text-xs font-medium text-muted">Date</th>
+                    <th className="pb-3 pr-3 text-xs font-medium text-muted">{t('colDonor')}</th>
+                    <th className="pb-3 pr-3 text-xs font-medium text-muted">{t('colMethod')}</th>
+                    <th className="pb-3 pr-3 text-right text-xs font-medium text-muted">{t('colAmount')}</th>
+                    <th className="pb-3 pr-3 text-xs font-medium text-muted">{t('colStatus')}</th>
+                    <th className="pb-3 pr-3 text-xs font-medium text-muted">{t('colDate')}</th>
                     <th className="pb-3 text-right text-xs font-medium text-muted"></th>
                   </tr>
                 </thead>
@@ -653,13 +668,13 @@ function DonationsTab() {
                       </td>
                       <td className="py-3 pr-3">
                         <span
-                          className={`inline-block rounded-sm px-2 py-0.5 text-[11px] font-medium capitalize ${STATUS_STYLE[d.status]}`}
+                          className={`inline-block rounded-sm px-2 py-0.5 text-[11px] font-medium ${STATUS_STYLE[d.status]}`}
                         >
-                          {d.status}
+                          {statusText(d.status)}
                         </span>
                       </td>
                       <td className="py-3 pr-3 text-xs text-muted">
-                        {new Date(d.created_at).toLocaleDateString('en-US', {
+                        {formatDate(d.created_at, {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
@@ -688,13 +703,16 @@ function DonationsTab() {
       <ConfirmDialog
         open={!!pendingDelete}
         onOpenChange={(open) => !open && setPendingDelete(null)}
-        title="Delete this donation?"
+        title={t('deleteDonationTitle')}
         description={
           pendingDelete
-            ? `This permanently removes the ${bahtFromSatang(pendingDelete.amount)} record from "${pendingDelete.display_name}". This cannot be undone and does not refund any real payment.`
+            ? t('deleteDonationDesc', {
+                amount: bahtFromSatang(pendingDelete.amount),
+                name: pendingDelete.display_name,
+              })
             : undefined
         }
-        confirmLabel="Delete"
+        confirmLabel={tc('delete')}
         danger
         loading={deleteMutation.isPending}
         onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}

@@ -11,6 +11,11 @@ const config = {
   get: () => 'http://localhost:3000',
 } as unknown as ConfigService;
 
+// Minimal i18n stub — tests assert on exception type, not localized text.
+const i18n = {
+  t: (key: string) => key,
+} as unknown as import('nestjs-i18n').I18nService;
+
 function omiseMock(overrides: Partial<jest.Mocked<OmiseService>> = {}) {
   return {
     getCharge: jest.fn(),
@@ -25,7 +30,7 @@ describe('DonationService (ownership & payment integrity)', () => {
       const { service: supabase } = createSupabaseMock([
         { data: null, error: { code: 'PGRST116' } },
       ]);
-      const svc = new DonationService(supabase, omiseMock(), config);
+      const svc = new DonationService(supabase, omiseMock(), config, i18n);
 
       await expect(svc.findOneByUser('d1', OTHER)).rejects.toBeInstanceOf(
         NotFoundException,
@@ -45,7 +50,7 @@ describe('DonationService (ownership & payment integrity)', () => {
           error: null,
         },
       ]);
-      const svc = new DonationService(supabase, omise, config);
+      const svc = new DonationService(supabase, omise, config, i18n);
 
       const result = await svc.findOneByUser('d1', USER);
       expect(result.status).toBe('successful');
@@ -76,7 +81,7 @@ describe('DonationService (ownership & payment integrity)', () => {
         // update reflecting Omise's real (failed) status
         { data: { id: 'd1', status: 'failed' }, error: null },
       ]);
-      const svc = new DonationService(supabase, omise, config);
+      const svc = new DonationService(supabase, omise, config, i18n);
 
       await expect(
         svc.handleWebhook({
@@ -94,7 +99,7 @@ describe('DonationService (ownership & payment integrity)', () => {
       const { service: supabase } = createSupabaseMock([
         { data: null, error: null }, // no matching donation
       ]);
-      const svc = new DonationService(supabase, omise, config);
+      const svc = new DonationService(supabase, omise, config, i18n);
 
       await expect(
         svc.handleWebhook({ data: { id: 'chrg_unknown' } }),

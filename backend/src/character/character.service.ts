@@ -3,13 +3,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { I18nService } from 'nestjs-i18n';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateCharacterDto } from './dto/create-character.dto';
 import { UpdateCharacterDto } from './dto/update-character.dto';
 
 @Injectable()
 export class CharacterService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly i18n: I18nService,
+  ) {}
 
   async findAllByUser(userId: string) {
     const { data, error } = await this.supabase
@@ -31,7 +35,7 @@ export class CharacterService {
       .single();
 
     if (error || !data) {
-      throw new NotFoundException('Character not found');
+      throw new NotFoundException(this.i18n.t('errors.character.not_found'));
     }
 
     return data;
@@ -87,8 +91,9 @@ export class CharacterService {
 
     if (count && count > 0) {
       throw new ConflictException(
-        `Cannot delete "${character.name}" — it still has ${count} recorded ` +
-          `session${count > 1 ? 's' : ''}. Delete those sessions first.`,
+        this.i18n.t('errors.character.delete_has_sessions', {
+          args: { name: character.name, count },
+        }),
       );
     }
 

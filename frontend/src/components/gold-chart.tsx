@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon } from 'lucide-react';
 import { Currency } from '@/components/currency';
 import { formatGoldShort, formatCoins } from '@/lib/currency';
 import type { Session } from '@/types';
+
+const intlLocale = (locale: string) => (locale === 'th' ? 'th-TH' : 'en-US');
 
 interface GoldChartProps {
   sessions: Session[];
@@ -14,14 +17,16 @@ type ChartMode = 'daily' | 'weekly' | 'perSession';
 type ChartType = 'bar' | 'line' | 'pie';
 
 export function GoldChart({ sessions }: GoldChartProps) {
+  const t = useTranslations('goldChart');
+  const locale = useLocale();
   const [mode, setMode] = useState<ChartMode>('daily');
   const [chartType, setChartType] = useState<ChartType>('bar');
 
   const chartData = useMemo(() => {
-    if (mode === 'daily') return getDailyData(sessions);
-    if (mode === 'weekly') return getWeeklyData(sessions);
+    if (mode === 'daily') return getDailyData(sessions, locale);
+    if (mode === 'weekly') return getWeeklyData(sessions, locale);
     return getPerSessionData(sessions);
-  }, [sessions, mode]);
+  }, [sessions, mode, locale]);
 
   const maxValue = Math.max(...chartData.map((d) => d.value), 1);
   const total = chartData.reduce((sum, d) => sum + d.value, 0);
@@ -33,7 +38,7 @@ export function GoldChart({ sessions }: GoldChartProps) {
     <div>
       {/* Header with toggles */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="text-sm font-medium text-foreground">Gold Earned</h2>
+        <h2 className="text-sm font-medium text-foreground">{t('title')}</h2>
         <div className="flex items-center gap-2">
           {/* Chart type */}
           <div className="flex items-center gap-0.5 bg-raised rounded-base p-0.5">
@@ -59,10 +64,10 @@ export function GoldChart({ sessions }: GoldChartProps) {
           {/* Data mode */}
           <div className="flex items-center gap-0.5 bg-raised rounded-base p-0.5">
             {([
-              { key: 'daily', label: 'Daily' },
-              { key: 'weekly', label: 'Weekly' },
-              { key: 'perSession', label: 'Session' },
-            ] as const).map(({ key, label }) => (
+              { key: 'daily', tkey: 'daily' },
+              { key: 'weekly', tkey: 'weekly' },
+              { key: 'perSession', tkey: 'session' },
+            ] as const).map(({ key, tkey }) => (
               <button
                 key={key}
                 onClick={() => setMode(key)}
@@ -72,7 +77,7 @@ export function GoldChart({ sessions }: GoldChartProps) {
                     : 'text-muted hover:text-foreground'
                 }`}
               >
-                {label}
+                {t(tkey)}
               </button>
             ))}
           </div>
@@ -87,15 +92,15 @@ export function GoldChart({ sessions }: GoldChartProps) {
       {/* Summary */}
       <div className="flex gap-6 mt-4 pt-3 border-t border-[rgba(255,255,255,0.05)]">
         <div>
-          <span className="text-[10px] text-muted">Total</span>
+          <span className="text-[10px] text-muted">{t('total')}</span>
           <div className="text-sm"><Currency copper={total} className="text-sm" /></div>
         </div>
         <div>
-          <span className="text-[10px] text-muted">Average</span>
+          <span className="text-[10px] text-muted">{t('average')}</span>
           <div className="text-sm"><Currency copper={average} className="text-sm" /></div>
         </div>
         <div>
-          <span className="text-[10px] text-muted">Peak</span>
+          <span className="text-[10px] text-muted">{t('peak')}</span>
           <div className="text-sm"><Currency copper={peak} className="text-sm" /></div>
         </div>
       </div>
@@ -184,11 +189,12 @@ function LineChart({ data, maxValue }: { data: { label: string; value: number }[
 
 // ===== PIE CHART =====
 function PieChart({ data, total }: { data: { label: string; value: number }[]; total: number }) {
+  const t = useTranslations('goldChart');
   const filtered = data.filter((d) => d.value > 0).sort((a, b) => b.value - a.value);
   // Group small slices
   const topItems = filtered.slice(0, 6);
   const otherValue = filtered.slice(6).reduce((sum, d) => sum + d.value, 0);
-  const slices = otherValue > 0 ? [...topItems, { label: 'Other', value: otherValue }] : topItems;
+  const slices = otherValue > 0 ? [...topItems, { label: t('other'), value: otherValue }] : topItems;
 
   const colors = [
     'var(--blue)',
@@ -262,7 +268,7 @@ function PieChart({ data, total }: { data: { label: string; value: number }[]; t
 
 // ===== Data generators =====
 
-function getDailyData(sessions: Session[]) {
+function getDailyData(sessions: Session[], locale: string) {
   const days: { key: string; label: string }[] = [];
   const now = new Date();
 
@@ -271,7 +277,7 @@ function getDailyData(sessions: Session[]) {
     date.setDate(date.getDate() - i);
     days.push({
       key: date.toISOString().split('T')[0],
-      label: date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+      label: date.toLocaleDateString(intlLocale(locale), { day: 'numeric', month: 'short' }),
     });
   }
 
@@ -289,7 +295,7 @@ function getDailyData(sessions: Session[]) {
   return days.map((d) => ({ label: d.label, value: dailyGold.get(d.key) ?? 0 }));
 }
 
-function getWeeklyData(sessions: Session[]) {
+function getWeeklyData(sessions: Session[], locale: string) {
   const weeks: { start: Date; label: string }[] = [];
   const now = new Date();
 
@@ -298,7 +304,7 @@ function getWeeklyData(sessions: Session[]) {
     start.setDate(start.getDate() - i * 7 - start.getDay());
     weeks.push({
       start,
-      label: start.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+      label: start.toLocaleDateString(intlLocale(locale), { day: 'numeric', month: 'short' }),
     });
   }
 

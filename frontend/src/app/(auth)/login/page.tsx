@@ -3,9 +3,12 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Swords } from 'lucide-react';
 
 export default function LoginPage() {
+  const t = useTranslations('login');
+  const tn = useTranslations('nav');
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +41,7 @@ export default function LoginPage() {
 
       // When email confirmation is enabled, no session is returned yet.
       if (!data.session) {
-        setMessage('Check your email to confirm your account, then sign in.');
+        setMessage(t('confirmEmail'));
         setMode('signin');
         setIsLoading(false);
         return;
@@ -89,21 +92,19 @@ export default function LoginPage() {
             <Swords className="h-6 w-6" />
           </span>
           <h1 className="text-xl font-bold tracking-tight text-foreground">
-            Dragonica <span className="text-gold">Grind Tracker</span>
+            {tn('brand')} <span className="text-gold">{tn('brandSubtitle')}</span>
           </h1>
           <p className="mt-1 text-xs uppercase tracking-[0.2em] text-gold-dim">
-            Hunt · Farm · Profit
+            {t('brandSubtitle')}
           </p>
         </div>
 
         <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-8 laptop:p-10">
           <h2 className="text-base font-semibold text-foreground mb-2">
-            {mode === 'signin' ? 'Sign In' : 'Create Account'}
+            {mode === 'signin' ? t('signIn') : t('createAccount')}
           </h2>
           <p className="text-xs text-muted mb-8">
-            {mode === 'signin'
-              ? 'Enter your credentials to access the tracker'
-              : 'Sign up to start tracking your grind'}
+            {mode === 'signin' ? t('signInSubtitle') : t('signUpSubtitle')}
           </p>
 
           {/* Google OAuth */}
@@ -131,13 +132,13 @@ export default function LoginPage() {
                 fill="#EA4335"
               />
             </svg>
-            {isGoogleLoading ? 'Redirecting...' : 'Continue with Google'}
+            {isGoogleLoading ? t('redirecting') : t('continueWithGoogle')}
           </button>
 
           {/* Divider */}
           <div className="flex items-center gap-3 my-6">
             <div className="flex-1 h-px bg-border" />
-            <span className="text-xs text-muted">or</span>
+            <span className="text-xs text-muted">{t('or')}</span>
             <div className="flex-1 h-px bg-border" />
           </div>
 
@@ -154,7 +155,7 @@ export default function LoginPage() {
                 htmlFor="email"
                 className="text-xs font-medium text-foreground"
               >
-                Email
+                {t('email')}
               </label>
               <input
                 id="email"
@@ -172,7 +173,7 @@ export default function LoginPage() {
                 htmlFor="password"
                 className="text-xs font-medium text-foreground"
               >
-                Password
+                {t('password')}
               </label>
               <input
                 id="password"
@@ -185,7 +186,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
               />
               {mode === 'signup' && (
-                <span className="text-[11px] text-muted">At least 6 characters</span>
+                <span className="text-[11px] text-muted">{t('passwordHint')}</span>
               )}
             </div>
 
@@ -202,17 +203,17 @@ export default function LoginPage() {
             >
               {isLoading
                 ? mode === 'signin'
-                  ? 'Signing in...'
-                  : 'Creating account...'
+                  ? t('signingIn')
+                  : t('creatingAccount')
                 : mode === 'signin'
-                  ? 'Sign In'
-                  : 'Create Account'}
+                  ? t('signIn')
+                  : t('createAccount')}
             </button>
           </form>
 
           {/* Mode toggle */}
           <p className="mt-6 text-center text-xs text-muted">
-            {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}{' '}
+            {mode === 'signin' ? t('noAccount') : t('haveAccount')}{' '}
             <button
               type="button"
               onClick={() => {
@@ -222,7 +223,7 @@ export default function LoginPage() {
               }}
               className="font-semibold text-gold hover:underline"
             >
-              {mode === 'signin' ? 'Sign up' : 'Sign in'}
+              {mode === 'signin' ? t('signUpLink') : t('signInLink')}
             </button>
           </p>
         </div>

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { I18nService } from 'nestjs-i18n';
 import { SupabaseService } from '../supabase/supabase.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
@@ -11,7 +12,10 @@ export interface Profile {
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly i18n: I18nService,
+  ) {}
 
   async getOrCreateProfile(userId: string, email: string): Promise<Profile> {
     const { data: existing } = await this.supabase
@@ -47,7 +51,8 @@ export class AuthService {
       .single();
 
     if (error) throw error;
-    if (!data) throw new NotFoundException('Profile not found');
+    if (!data)
+      throw new NotFoundException(this.i18n.t('errors.auth.profile_not_found'));
     return data as Profile;
   }
 }

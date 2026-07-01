@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Heart,
@@ -28,16 +29,17 @@ const baht = (satang: number) => `฿${(satang / 100).toLocaleString('en-US')}`;
 
 const PRESETS = [20, 50, 100, 300, 500];
 
-const CHANNEL_OPTIONS = [
-  { value: 'promptpay', label: 'PromptPay (QR)' },
-  { value: 'truemoney', label: 'TrueMoney Wallet' },
-];
-
 function SupportPageInner() {
+  const t = useTranslations('support');
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const channelOptions = [
+    { value: 'promptpay', label: t('promptpay') },
+    { value: 'truemoney', label: t('truemoney') },
+  ];
 
   const [amount, setAmount] = useState<number | ''>(100);
   const [channel, setChannel] = useState<DonationChannel>('promptpay');
@@ -107,12 +109,12 @@ function SupportPageInner() {
     if (!charge || status === 'pending' || notified.current) return;
     notified.current = true;
     if (status === 'successful') {
-      toast({ title: 'Thank you for your support! ❤️', variant: 'success' });
+      toast({ title: t('toastThankYou'), variant: 'success' });
       queryClient.invalidateQueries({ queryKey: ['donations', 'wall'] });
     } else {
       toast({
-        title: status === 'expired' ? 'QR code expired' : 'Payment failed',
-        description: 'No charge was made. Feel free to try again.',
+        title: status === 'expired' ? t('toastExpired') : t('toastFailed'),
+        description: t('toastFailedDesc'),
         variant: 'error',
       });
     }
@@ -138,7 +140,7 @@ function SupportPageInner() {
     },
     onError: (e) =>
       toast({
-        title: 'Could not start the donation',
+        title: t('toastStartErrorTitle'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -176,10 +178,10 @@ function SupportPageInner() {
             </span>
             <div>
               <h1 className="text-xl laptop:text-2xl font-medium text-foreground">
-                Support the Project
+                {t('title')}
               </h1>
               <p className="text-sm text-muted mt-1">
-                Donations keep the servers running. Thank you for chipping in ❤️
+                {t('subtitle')}
               </p>
             </div>
           </div>
@@ -188,12 +190,12 @@ function SupportPageInner() {
             {/* Donate form */}
             <div className="laptop:col-span-3 bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
               <h2 className="text-sm font-semibold text-foreground mb-5">
-                Make a donation
+                {t('makeDonation')}
               </h2>
 
               {/* Amount */}
               <label className="block text-xs font-medium text-muted mb-2">
-                Amount (THB) — min ฿20
+                {t('amountLabel')}
               </label>
               <div className="flex flex-wrap gap-2 mb-3">
                 {PRESETS.map((p) => (
@@ -225,13 +227,13 @@ function SupportPageInner() {
 
               {/* Channel */}
               <label className="block text-xs font-medium text-muted mb-2">
-                Payment method
+                {t('paymentMethod')}
               </label>
               <div className="mb-5">
                 <Select
                   value={channel}
                   onChange={(v) => setChannel(v as DonationChannel)}
-                  options={CHANNEL_OPTIONS}
+                  options={channelOptions}
                 />
               </div>
 
@@ -239,7 +241,7 @@ function SupportPageInner() {
               {channel === 'truemoney' && (
                 <div className="mb-5">
                   <label className="block text-xs font-medium text-muted mb-2">
-                    TrueMoney phone number
+                    {t('phoneLabel')}
                   </label>
                   <input
                     value={phone}
@@ -247,12 +249,12 @@ function SupportPageInner() {
                       setPhone(e.target.value.replace(/[^0-9]/g, '').slice(0, 10))
                     }
                     inputMode="numeric"
-                    placeholder="0812345678"
+                    placeholder={t('phonePlaceholder')}
                     className="w-full rounded-base border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-[var(--focus)]"
                   />
                   {phone && !phoneValid && (
                     <p className="mt-1 text-xs text-[var(--fg-danger)]">
-                      Enter a 10-digit number starting with 0.
+                      {t('phoneError')}
                     </p>
                   )}
                 </div>
@@ -260,7 +262,7 @@ function SupportPageInner() {
 
               {/* Display name */}
               <label className="block text-xs font-medium text-muted mb-2">
-                Display name (shown on the wall)
+                {t('displayNameLabel')}
               </label>
               <input
                 value={displayName}
@@ -269,20 +271,20 @@ function SupportPageInner() {
                   setDisplayName(e.target.value);
                 }}
                 maxLength={60}
-                placeholder="Anonymous"
+                placeholder={t('displayNamePlaceholder')}
                 className="w-full rounded-base border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-[var(--focus)] mb-5"
               />
 
               {/* Message */}
               <label className="block text-xs font-medium text-muted mb-2">
-                Message (optional)
+                {t('messageLabel')}
               </label>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 maxLength={200}
                 rows={3}
-                placeholder="Say something nice..."
+                placeholder={t('messagePlaceholder')}
                 className="w-full resize-none rounded-base border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-[var(--focus)] mb-6"
               />
 
@@ -299,12 +301,13 @@ function SupportPageInner() {
                   <Wallet className="h-4 w-4" />
                 )}
                 {createMut.isPending
-                  ? 'Starting...'
-                  : `Donate ${amount ? baht(Number(amount) * 100) : ''}`}
+                  ? t('starting')
+                  : amount
+                    ? t('donate', { amount: baht(Number(amount) * 100) })
+                    : t('donateBlank')}
               </button>
               <p className="mt-3 text-center text-[11px] text-muted">
-                Payments are processed securely by Omise. We never see your card
-                or bank details.
+                {t('secureNote')}
               </p>
             </div>
 
@@ -313,12 +316,12 @@ function SupportPageInner() {
               <div className="mb-4 flex items-center gap-2">
                 <Heart className="h-4 w-4 text-gold" />
                 <h2 className="text-sm font-semibold text-foreground">
-                  Recent Supporters
+                  {t('recentSupporters')}
                 </h2>
               </div>
               {!wall || wall.length === 0 ? (
                 <p className="text-xs text-muted">
-                  No donations yet. Be the first to support the project!
+                  {t('noSupporters')}
                 </p>
               ) : (
                 <ul className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
@@ -372,6 +375,7 @@ function PaymentModal({
   amount: number;
   onClose: () => void;
 }) {
+  const t = useTranslations('support');
   // Live countdown for the PromptPay QR.
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -395,7 +399,7 @@ function PaymentModal({
         <button
           onClick={onClose}
           className="absolute right-3 top-3 text-muted hover:text-foreground"
-          aria-label="Close"
+          aria-label={t('modalClose')}
         >
           <X className="h-4 w-4" />
         </button>
@@ -404,16 +408,16 @@ function PaymentModal({
           <div className="py-4">
             <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-[var(--fg-success)]" />
             <h3 className="text-base font-semibold text-foreground">
-              Thank you! ❤️
+              {t('modalThankYou')}
             </h3>
             <p className="mt-1 text-sm text-muted">
-              Your donation of {baht(amount)} was received.
+              {t('modalReceived', { amount: baht(amount) })}
             </p>
             <button
               onClick={onClose}
               className="mt-5 w-full rounded-base bg-[var(--blue)] px-4 py-2.5 text-sm font-semibold text-[#1b1407] shadow-button hover:opacity-90"
             >
-              Done
+              {t('modalDone')}
             </button>
           </div>
         ) : status === 'failed' || status === 'expired' ? (
@@ -424,26 +428,26 @@ function PaymentModal({
               <XCircle className="mx-auto mb-3 h-12 w-12 text-[var(--fg-danger)]" />
             )}
             <h3 className="text-base font-semibold text-foreground">
-              {status === 'expired' ? 'QR code expired' : 'Payment failed'}
+              {status === 'expired' ? t('modalExpiredTitle') : t('modalFailedTitle')}
             </h3>
             <p className="mt-1 text-sm text-muted">
-              No charge was made. You can try again.
+              {t('modalNoCharge')}
             </p>
             <button
               onClick={onClose}
               className="mt-5 w-full rounded-base border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-raised"
             >
-              Close
+              {t('modalClose')}
             </button>
           </div>
         ) : charge.qrImageUri ? (
           // PromptPay: show the QR and wait.
           <div>
             <h3 className="text-base font-semibold text-foreground">
-              Scan to pay {baht(amount)}
+              {t('modalScanTitle', { amount: baht(amount) })}
             </h3>
             <p className="mt-1 text-xs text-muted">
-              Open your banking app and scan this PromptPay QR.
+              {t('modalScanHint')}
             </p>
             <div className="mx-auto my-4 w-56 rounded-base bg-white p-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -455,8 +459,8 @@ function PaymentModal({
             </div>
             <div className="flex items-center justify-center gap-2 text-xs text-muted">
               <Loader2 className="h-3.5 w-3.5 animate-spin text-gold" />
-              Waiting for payment
-              {mmss && <span className="tabular-nums">· expires in {mmss}</span>}
+              {t('modalWaiting')}
+              {mmss && <span className="tabular-nums">{t('modalExpiresIn', { time: mmss })}</span>}
             </div>
           </div>
         ) : (
@@ -464,9 +468,9 @@ function PaymentModal({
           <div className="py-6">
             <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin text-gold" />
             <h3 className="text-base font-semibold text-foreground">
-              Confirming your payment...
+              {t('modalConfirming')}
             </h3>
-            <p className="mt-1 text-sm text-muted">This only takes a moment.</p>
+            <p className="mt-1 text-sm text-muted">{t('modalConfirmingHint')}</p>
           </div>
         )}
       </div>

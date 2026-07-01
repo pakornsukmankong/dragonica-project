@@ -4,6 +4,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { I18nService } from 'nestjs-i18n';
 
 const OMISE_API = 'https://api.omise.co';
 
@@ -41,7 +42,10 @@ export class OmiseService {
   private readonly logger = new Logger(OmiseService.name);
   private readonly authHeader: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly i18n: I18nService,
+  ) {
     const secretKey = this.configService.getOrThrow<string>('OMISE_SECRET_KEY');
     this.authHeader = `Basic ${Buffer.from(`${secretKey}:`).toString('base64')}`;
   }
@@ -82,7 +86,7 @@ export class OmiseService {
         (json['message'] as string) || `Omise request failed (${res.status})`;
       this.logger.error(`Omise ${method} ${path} → ${message}`);
       throw new InternalServerErrorException(
-        `Payment provider error: ${message}`,
+        this.i18n.t('errors.payment.provider_error', { args: { message } }),
       );
     }
 

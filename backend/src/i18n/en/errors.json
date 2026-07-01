@@ -1,0 +1,20 @@
+{
+  "donation": {
+    "max_exceeded": "Maximum for {channel} is ฿{max}.",
+    "not_found": "Donation not found"
+  },
+  "character": {
+    "not_found": "Character not found",
+    "delete_has_sessions": "Cannot delete \"{name}\" — it still has {count} recorded session(s). Delete those sessions first."
+  },
+  "session": {
+    "not_found": "Session not found",
+    "drop_not_found": "Drop not found"
+  },
+  "auth": {
+    "profile_not_found": "Profile not found"
+  },
+  "payment": {
+    "provider_error": "Payment provider error: {message}"
+  }
+}

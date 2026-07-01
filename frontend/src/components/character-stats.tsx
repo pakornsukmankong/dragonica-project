@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Currency } from '@/components/currency';
 import { formatGoldShort } from '@/lib/currency';
@@ -17,6 +18,7 @@ interface CharacterStat {
 }
 
 export function CharacterStats() {
+  const t = useTranslations('charStats');
   const { data: stats, isLoading } = useQuery<CharacterStat[]>({
     queryKey: ['dashboard', 'character-stats'],
     queryFn: () => api.get('/dashboard/character-stats'),
@@ -25,7 +27,7 @@ export function CharacterStats() {
   if (isLoading) {
     return (
       <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
-        <p className="text-xs text-muted">Loading stats...</p>
+        <p className="text-xs text-muted">{t('loading')}</p>
       </div>
     );
   }
@@ -34,10 +36,10 @@ export function CharacterStats() {
     return (
       <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
         <h2 className="text-sm font-medium text-foreground mb-4">
-          Per-Character Stats
+          {t('title')}
         </h2>
         <p className="text-xs text-muted">
-          No session data yet. Start grinding!
+          {t('empty')}
         </p>
       </div>
     );
@@ -48,7 +50,7 @@ export function CharacterStats() {
   return (
     <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
       <h2 className="text-sm font-medium text-foreground mb-4">
-        Per-Character Stats
+        {t('title')}
       </h2>
       <div className="flex flex-col gap-4">
         {stats.map((stat) => (
@@ -72,9 +74,9 @@ export function CharacterStats() {
               />
             </div>
             <div className="flex gap-4 text-xs text-muted">
-              <span>{stat.totalSessions} sessions</span>
-              <span>{Math.round(stat.totalMinutes / 60)}h played</span>
-              <span>{formatGoldShort(stat.goldPerHour)}/hr</span>
+              <span>{t('sessions', { count: stat.totalSessions })}</span>
+              <span>{t('hoursPlayed', { count: Math.round(stat.totalMinutes / 60) })}</span>
+              <span>{t('perHour', { value: formatGoldShort(stat.goldPerHour) })}</span>
             </div>
           </div>
         ))}
