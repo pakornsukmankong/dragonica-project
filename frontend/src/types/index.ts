@@ -63,6 +63,44 @@ export interface DashboardSummary {
   favoriteDungeon: string | null;
 }
 
+export type DonationChannel = 'promptpay' | 'truemoney';
+export type DonationStatus = 'pending' | 'successful' | 'failed' | 'expired';
+
+// Returned by POST /donations — everything the client needs to collect payment.
+// `amount` is in satang (฿1 = 100 satang), same as everywhere else on the wire.
+export interface DonationCharge {
+  id: string;
+  status: DonationStatus;
+  channel: DonationChannel;
+  amount: number;
+  displayName: string;
+  qrImageUri: string | null; // PromptPay QR
+  authorizeUri: string | null; // TrueMoney redirect
+  expiresAt: string | null;
+}
+
+// A stored donation row (GET /donations/:id, /donations/me).
+export interface Donation {
+  id: string;
+  user_id: string;
+  display_name: string;
+  message: string | null;
+  amount: number; // satang
+  currency: string;
+  channel: DonationChannel;
+  status: DonationStatus;
+  created_at: string;
+  paid_at: string | null;
+}
+
+// Thank-you wall entry (GET /donations/wall).
+export interface DonationWallEntry {
+  display_name: string;
+  amount: number; // satang
+  message: string | null;
+  paid_at: string | null;
+}
+
 export interface DungeonStats {
   dungeonId: string;
   dungeonName: string;

@@ -8,10 +8,12 @@ import { ImageUpload } from '@/components/image-upload';
 import { useIsAdmin } from '@/hooks/use-is-admin';
 import { rarityStyle } from '@/lib/rarity';
 import { Pagination } from '@/components/pagination';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useToast } from '@/components/toast';
+import { Trash2 } from 'lucide-react';
 import { Currency, CurrencyInput } from '@/components/currency';
 import { Select } from '@/components/select';
-import type { Dungeon, Item, GameClass } from '@/types';
+import type { Dungeon, Item, GameClass, Donation } from '@/types';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -19,6 +21,7 @@ const TABS = [
   { value: 'dungeons', Tab: DungeonsTab },
   { value: 'items', Tab: ItemsTab },
   { value: 'classes', Tab: ClassesTab },
+  { value: 'donations', Tab: DonationsTab },
 ] as const;
 
 export default function AdminPage() {
@@ -61,7 +64,7 @@ export default function AdminPage() {
               Admin Settings
             </h1>
             <p className="text-sm text-muted mt-2">
-              Manage dungeons, items, and classes
+              Manage dungeons, items, classes, and donations
             </p>
           </div>
 
@@ -537,6 +540,165 @@ function ClassesTab() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ===== DONATIONS TAB (read-only ledger) =====
+const bahtFromSatang = (s: number) => `฿${(s / 100).toLocaleString('en-US')}`;
+
+const STATUS_STYLE: Record<Donation['status'], string> = {
+  successful: 'bg-[var(--success-soft,rgba(74,222,128,0.12))] text-[var(--fg-success)]',
+  pending: 'bg-gold-soft text-gold',
+  failed: 'bg-[var(--danger-soft)] text-[var(--fg-danger)]',
+  expired: 'bg-raised text-muted',
+};
+
+const CHANNEL_LABEL: Record<Donation['channel'], string> = {
+  promptpay: 'PromptPay',
+  truemoney: 'TrueMoney',
+};
+
+function DonationsTab() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [page, setPage] = useState(1);
+  const [pendingDelete, setPendingDelete] = useState<Donation | null>(null);
+
+  const { data: donations, isLoading } = useQuery<Donation[]>({
+    queryKey: ['admin', 'donations'],
+    queryFn: () => api.get('/donations/admin/all'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/donations/admin/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'donations'] });
+      queryClient.invalidateQueries({ queryKey: ['donations', 'wall'] });
+      setPendingDelete(null);
+      toast({ title: 'Donation deleted', variant: 'success' });
+    },
+    onError: (e) =>
+      toast({
+        title: 'Could not delete donation',
+        description: (e as Error).message,
+        variant: 'error',
+      }),
+  });
+
+  const list = donations ?? [];
+  const totalRaised = list
+    .filter((d) => d.status === 'successful')
+    .reduce((sum, d) => sum + d.amount, 0);
+  const successCount = list.filter((d) => d.status === 'successful').length;
+
+  const pageCount = Math.max(1, Math.ceil(list.length / ITEMS_PER_PAGE));
+  const paged = list.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  return (
+    <div className="space-y-6">
+      {/* Summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-5">
+          <p className="text-[11px] uppercase tracking-wider text-muted mb-2">Total Raised</p>
+          <p className="text-2xl font-bold text-gold tabular-nums">{bahtFromSatang(totalRaised)}</p>
+        </div>
+        <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-5">
+          <p className="text-[11px] uppercase tracking-wider text-muted mb-2">Successful</p>
+          <p className="text-2xl font-bold text-foreground tabular-nums">{successCount}</p>
+        </div>
+        <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-5">
+          <p className="text-[11px] uppercase tracking-wider text-muted mb-2">Total Records</p>
+          <p className="text-2xl font-bold text-foreground tabular-nums">{list.length}</p>
+        </div>
+      </div>
+
+      {/* Ledger */}
+      <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
+        {isLoading ? (
+          <p className="text-xs text-muted">Loading...</p>
+        ) : list.length === 0 ? (
+          <p className="text-xs text-muted">No donations yet.</p>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="pb-3 pr-3 text-xs font-medium text-muted">Donor</th>
+                    <th className="pb-3 pr-3 text-xs font-medium text-muted">Method</th>
+                    <th className="pb-3 pr-3 text-right text-xs font-medium text-muted">Amount</th>
+                    <th className="pb-3 pr-3 text-xs font-medium text-muted">Status</th>
+                    <th className="pb-3 pr-3 text-xs font-medium text-muted">Date</th>
+                    <th className="pb-3 text-right text-xs font-medium text-muted"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paged.map((d) => (
+                    <tr
+                      key={d.id}
+                      className="border-b border-[rgba(255,255,255,0.05)] last:border-0 align-top"
+                    >
+                      <td className="py-3 pr-3">
+                        <p className="text-sm font-medium text-foreground">{d.display_name}</p>
+                        {d.message && (
+                          <p className="max-w-[240px] truncate text-xs text-muted" title={d.message}>
+                            {d.message}
+                          </p>
+                        )}
+                      </td>
+                      <td className="py-3 pr-3 text-xs text-muted">{CHANNEL_LABEL[d.channel]}</td>
+                      <td className="py-3 pr-3 text-right text-sm font-semibold text-foreground tabular-nums">
+                        {bahtFromSatang(d.amount)}
+                      </td>
+                      <td className="py-3 pr-3">
+                        <span
+                          className={`inline-block rounded-sm px-2 py-0.5 text-[11px] font-medium capitalize ${STATUS_STYLE[d.status]}`}
+                        >
+                          {d.status}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-3 text-xs text-muted">
+                        {new Date(d.created_at).toLocaleDateString('en-US', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </td>
+                      <td className="py-3 text-right">
+                        <button
+                          onClick={() => setPendingDelete(d)}
+                          className="rounded-base p-1.5 text-muted transition-colors hover:text-[var(--fg-danger)] hover:bg-[var(--danger-soft)]"
+                          aria-label={`Delete donation from ${d.display_name}`}
+                          title="Delete donation"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination page={page} pageCount={pageCount} onChange={setPage} />
+          </>
+        )}
+      </div>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Delete this donation?"
+        description={
+          pendingDelete
+            ? `This permanently removes the ${bahtFromSatang(pendingDelete.amount)} record from "${pendingDelete.display_name}". This cannot be undone and does not refund any real payment.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        danger
+        loading={deleteMutation.isPending}
+        onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+      />
     </div>
   );
 }

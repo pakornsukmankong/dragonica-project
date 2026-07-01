@@ -43,6 +43,7 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/sessions') ||
     request.nextUrl.pathname.startsWith('/grind') ||
     request.nextUrl.pathname.startsWith('/admin') ||
+    request.nextUrl.pathname.startsWith('/support') ||
     request.nextUrl.pathname.startsWith('/settings');
 
   if (isProtectedRoute && !user) {
