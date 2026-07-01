@@ -8,6 +8,7 @@ import { CharacterModule } from './character/character.module';
 import { SessionModule } from './session/session.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AdminModule } from './admin/admin.module';
+import { DonationModule } from './donation/donation.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AdminModule } from './admin/admin.module';
     SessionModule,
     DashboardModule,
     AdminModule,
+    DonationModule,
   ],
   providers: [
     {

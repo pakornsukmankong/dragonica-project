@@ -34,10 +34,12 @@ export function createSupabaseMock(results: QueryResult[]): {
       'delete',
       'eq',
       'order',
+      'limit',
     ]) {
       qb[method] = jest.fn(() => qb);
     }
     qb.single = jest.fn(() => Promise.resolve(result));
+    qb.maybeSingle = jest.fn(() => Promise.resolve(result));
     qb.then = (
       resolve: (v: QueryResult) => unknown,
       reject?: (e: unknown) => unknown,
