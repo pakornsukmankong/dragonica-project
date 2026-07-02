@@ -247,7 +247,7 @@ function CharacterForm({
               id="char-level"
               value={level}
               onValueChange={setLevel}
-              placeholder="1"
+              placeholder="0"
               className="w-full rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
             />
           </div>

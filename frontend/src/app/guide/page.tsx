@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import * as Accordion from '@radix-ui/react-accordion';
 import {
   BookOpen,
   LogIn,
@@ -11,6 +12,7 @@ import {
   Heart,
   LifeBuoy,
   Settings,
+  ChevronDown,
 } from 'lucide-react';
 
 const SECTIONS = [
@@ -53,52 +55,48 @@ export default function GuidePage() {
             </div>
           </div>
 
-          {/* Table of contents */}
-          <nav className="mb-10 flex flex-wrap gap-2">
-            {SECTIONS.map(({ key }, i) => (
-              <a
-                key={key}
-                href={`#${key}`}
-                className="rounded-base bg-raised px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:text-gold"
-              >
-                {i + 1}. {t(`sections.${key}.title`)}
-              </a>
-            ))}
-          </nav>
-
-          {/* Sections */}
-          <div className="flex flex-col gap-6">
+          {/* Collapsible sections */}
+          <Accordion.Root
+            type="multiple"
+            defaultValue={['gettingStarted']}
+            className="flex flex-col gap-3"
+          >
             {SECTIONS.map(({ key, icon: Icon }, i) => {
               const steps = t.raw(`sections.${key}.steps`) as string[];
               return (
-                <div
+                <Accordion.Item
                   key={key}
-                  id={key}
-                  className="scroll-mt-24 bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6"
+                  value={key}
+                  className="overflow-hidden rounded-base bg-surface outline outline-1 outline-[rgba(255,255,255,0.08)]"
                 >
-                  <div className="mb-4 flex items-center gap-3">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-base bg-gold-soft text-xs font-bold text-gold">
-                      {i + 1}
-                    </span>
-                    <Icon className="h-4 w-4 shrink-0 text-gold" />
-                    <h2 className="text-base font-semibold text-foreground">
-                      {t(`sections.${key}.title`)}
-                    </h2>
-                  </div>
-                  <ol className="flex flex-col gap-3">
-                    {steps.map((step, si) => (
-                      <li key={si} className="flex gap-3 text-sm text-muted">
-                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border text-[11px] font-medium text-foreground tabular-nums">
-                          {si + 1}
-                        </span>
-                        <span className="leading-relaxed">{step}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
+                  <Accordion.Header>
+                    <Accordion.Trigger className="group flex w-full items-center gap-3 p-5 text-left outline-none transition-colors hover:bg-raised">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-base bg-gold-soft text-xs font-bold text-gold">
+                        {i + 1}
+                      </span>
+                      <Icon className="h-4 w-4 shrink-0 text-gold" />
+                      <h2 className="flex-1 text-base font-semibold text-foreground">
+                        {t(`sections.${key}.title`)}
+                      </h2>
+                      <ChevronDown className="h-5 w-5 shrink-0 text-muted transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                    </Accordion.Trigger>
+                  </Accordion.Header>
+                  <Accordion.Content className="accordion-content overflow-hidden">
+                    <ol className="flex flex-col gap-3 px-5 pb-5 pt-1">
+                      {steps.map((step, si) => (
+                        <li key={si} className="flex gap-3 text-sm text-muted">
+                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border text-[11px] font-medium text-foreground tabular-nums">
+                            {si + 1}
+                          </span>
+                          <span className="leading-relaxed">{step}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </Accordion.Content>
+                </Accordion.Item>
               );
             })}
-          </div>
+          </Accordion.Root>
 
           <p className="mt-10 text-center text-xs text-muted">{t('footer')}</p>
         </div>

@@ -112,7 +112,8 @@ select option:checked {
 }
 
 body {
-  font-family: var(--default-font-family), system-ui, sans-serif;
+  font-family: var(--default-font-family), var(--font-noto-thai), system-ui,
+    sans-serif;
   background-color: var(--root);
   color: var(--foreground);
   /* Subtle vignette/gradient so the near-black feels like a game UI, not flat. */
@@ -173,4 +174,28 @@ input[type='number'] {
 }
 .ring-offset-2 {
   --tw-ring-offset-color: var(--root);
+}
+
+/* Radix Accordion expand/collapse (used by the Guide page). */
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+.accordion-content[data-state='open'] {
+  animation: accordion-down 200ms ease-out;
+}
+.accordion-content[data-state='closed'] {
+  animation: accordion-up 200ms ease-out;
 }

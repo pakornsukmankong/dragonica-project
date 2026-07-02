@@ -71,7 +71,7 @@ export function CurrencyInput({
   const { gold, silver, copper } = toParts(value);
 
   const field =
-    'rounded-base border border-border bg-surface px-2 py-1.5 text-sm text-foreground text-right outline-none focus:border-[var(--focus)]';
+    'rounded-base border border-border bg-surface px-2 py-1.5 text-sm text-foreground text-right placeholder:text-muted outline-none focus:border-[var(--focus)]';
   const goldField = `${field} w-20 shrink-0`;
   const subField = `${field} w-12 shrink-0`;
 
@@ -87,6 +87,7 @@ export function CurrencyInput({
           )
         }
         className={goldField}
+        placeholder="0"
         aria-label="Gold"
       />
       <span className="text-xs" style={{ color: GOLD }}>
@@ -100,6 +101,7 @@ export function CurrencyInput({
           onChange(toCopper(gold, clamp(digitsOnly(e.target.value), 99), copper))
         }
         className={subField}
+        placeholder="0"
         aria-label="Silver"
       />
       <span className="text-xs" style={{ color: SILVER }}>
@@ -113,6 +115,7 @@ export function CurrencyInput({
           onChange(toCopper(gold, silver, clamp(digitsOnly(e.target.value), 99)))
         }
         className={subField}
+        placeholder="0"
         aria-label="Copper"
       />
       <span className="text-xs" style={{ color: COPPER }}>

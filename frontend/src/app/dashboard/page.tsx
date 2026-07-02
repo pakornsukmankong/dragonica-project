@@ -184,7 +184,10 @@ export default function DashboardPage() {
                     className="!flex flex-wrap text-2xl"
                   />
                 ) : (
-                  <p className="text-2xl font-bold tracking-tight text-gold tabular-nums truncate">
+                  <p
+                    className="text-xl laptop:text-2xl font-bold tracking-tight text-gold leading-tight break-words line-clamp-2"
+                    title={String(stat.value)}
+                  >
                     {stat.value}
                   </p>
                 )}
