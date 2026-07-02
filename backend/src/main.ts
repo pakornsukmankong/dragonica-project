@@ -11,8 +11,33 @@ async function bootstrap() {
 
   app.use(helmet());
 
+  // CORS: FRONTEND_URL may be a comma-separated allow-list. Requests without an
+  // Origin header (server-to-server, curl, the Omise webhook) are allowed.
+  // Set ALLOW_VERCEL_PREVIEWS=true to also accept *.vercel.app preview deploys.
+  const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  const allowVercelPreviews = process.env.ALLOW_VERCEL_PREVIEWS === 'true';
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (
+      origin: string | undefined,
+      cb: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      try {
+        if (
+          allowVercelPreviews &&
+          new URL(origin).hostname.endsWith('.vercel.app')
+        ) {
+          return cb(null, true);
+        }
+      } catch {
+        // fall through to reject on an unparseable origin
+      }
+      return cb(new Error('Not allowed by CORS'), false);
+    },
     credentials: true,
   });
 

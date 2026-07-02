@@ -18,6 +18,7 @@ import { AdminModule } from './admin/admin.module';
 import { DonationModule } from './donation/donation.module';
 import { TicketModule } from './ticket/ticket.module';
 import { YoutubeModule } from './youtube/youtube.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { YoutubeModule } from './youtube/youtube.module';
     TicketModule,
     YoutubeModule,
   ],
+  controllers: [HealthController],
   providers: [
     {
       provide: APP_GUARD,
