@@ -11,6 +11,10 @@
     "not_found": "Session not found",
     "drop_not_found": "Drop not found"
   },
+  "ticket": {
+    "not_found": "Ticket not found",
+    "closed": "This ticket is closed and can no longer be replied to."
+  },
   "auth": {
     "profile_not_found": "Profile not found"
   },

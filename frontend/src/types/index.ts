@@ -101,6 +101,31 @@ export interface DonationWallEntry {
   paid_at: string | null;
 }
 
+export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+
+export interface TicketMessage {
+  id: string;
+  ticket_id: string;
+  author_id: string;
+  is_admin: boolean;
+  body: string;
+  image_url: string | null;
+  created_at: string;
+}
+
+export interface Ticket {
+  id: string;
+  user_id: string;
+  subject: string;
+  status: TicketStatus;
+  created_at: string;
+  updated_at: string;
+  // Present on detail responses (GET /tickets/:id).
+  ticket_messages?: TicketMessage[];
+  // Present on admin responses — who opened the ticket.
+  profiles?: { username: string | null } | null;
+}
+
 export interface DungeonStats {
   dungeonId: string;
   dungeonName: string;
