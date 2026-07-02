@@ -215,14 +215,14 @@ export default function GrindPage() {
                   <NumericInput
                     value={hours}
                     onValueChange={(v) => setHours(Math.min(v, 24))}
-                    className="w-16 rounded-base border border-border bg-surface px-2 py-2.5 text-sm text-foreground text-center outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
-                    placeholder="1"
+                    className="w-16 rounded-base border border-border bg-surface px-2 py-2.5 text-sm text-foreground text-center placeholder:text-muted outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
+                    placeholder="0"
                   />
                   <span className="text-xs text-muted">{t('hourShort')}</span>
                   <NumericInput
                     value={minutes}
                     onValueChange={(v) => setMinutes(Math.min(v, 59))}
-                    className="w-16 rounded-base border border-border bg-surface px-2 py-2.5 text-sm text-foreground text-center outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
+                    className="w-16 rounded-base border border-border bg-surface px-2 py-2.5 text-sm text-foreground text-center placeholder:text-muted outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
                     placeholder="0"
                   />
                   <span className="text-xs text-muted">{t('minuteShort')}</span>
@@ -392,11 +392,6 @@ export default function GrindPage() {
                   {saveMutation.isPending ? tc('saving') : t('saveSession')}
                 </button>
 
-                {saveMutation.isSuccess && (
-                  <p className="text-xs text-[var(--fg-success)] mt-3 text-center">
-                    {t('sessionSavedInline')}
-                  </p>
-                )}
                 {saveMutation.isError && (
                   <p className="text-xs text-[var(--fg-danger)] mt-3 text-center">
                     {(saveMutation.error as Error).message}

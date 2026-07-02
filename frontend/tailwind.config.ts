@@ -9,7 +9,12 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--default-font-family)', 'system-ui', 'sans-serif'],
+        sans: [
+          'var(--default-font-family)',
+          'var(--font-noto-thai)',
+          'system-ui',
+          'sans-serif',
+        ],
         mono: ['JetBrains Mono', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       colors: {

@@ -1,14 +1,24 @@
 import type { Metadata } from 'next';
-import { Montserrat } from 'next/font/google';
+import { Varela_Round, Noto_Sans_Thai } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { AppShell } from '@/components/app-shell';
 
-const montserrat = Montserrat({
+// Latin text. Varela Round ships a single weight (400); bolder text is
+// synthesized by the browser.
+const varelaRound = Varela_Round({
   subsets: ['latin'],
+  weight: '400',
   variable: '--default-font-family',
+  display: 'swap',
+});
+
+// Thai glyphs (Varela Round has none) fall through to this in the font stack.
+const notoSansThai = Noto_Sans_Thai({
+  subsets: ['thai'],
+  variable: '--font-noto-thai',
   display: 'swap',
 });
 
@@ -26,7 +36,10 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={montserrat.variable}>
+    <html
+      lang={locale}
+      className={`${varelaRound.variable} ${notoSansThai.variable}`}
+    >
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>

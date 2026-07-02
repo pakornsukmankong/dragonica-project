@@ -32,7 +32,7 @@
     "title": "Dragonica",
     "titleAccent": "Grind Tracker",
     "subtitle": "Log your grinding sessions, gold, and item drops. Analyze your efficiency per dungeon and optimize every run.",
-    "featureGold": "Track gold & EXP per run",
+    "featureGold": "Track gold per run",
     "featureEfficiency": "Gold/hour efficiency stats",
     "featureDrops": "Log every item drop",
     "getStarted": "Get Started",
@@ -105,7 +105,6 @@
     "valuePerHour": "Value / Hour",
     "itemsTracked": "Items Tracked",
     "saveSession": "Save Session",
-    "sessionSavedInline": "Session saved successfully!",
     "toastSavedTitle": "Session saved",
     "toastSavedDesc": "Added to your dashboard.",
     "toastSaveErrorTitle": "Could not save session"
@@ -397,15 +396,15 @@
   },
   "guide": {
     "title": "User Guide",
-    "subtitle": "A step-by-step walkthrough of everything you can do — from signing in to tracking every grind.",
+    "subtitle": "A step-by-step walkthrough of everything you can do — from your first character to tracking every grind.",
     "footer": "That's the whole flow. Log a few sessions and your dashboard will start telling you where the best gold is.",
     "sections": {
       "gettingStarted": {
         "title": "Getting Started",
         "steps": [
-          "Open the login page and sign in with your email and password, or with Google or Discord.",
-          "New here? Switch to “Create Account”, enter your email and a password (at least 6 characters), then confirm via the email we send you.",
-          "Signing in later with a different provider that shares the same email links to the same account automatically — your data stays with you."
+          "Here's the whole flow at a glance: register a character, log a grind session, then track your gold and efficiency on the dashboard.",
+          "Expand any section below to see the exact steps for that part.",
+          "You can switch the language (English / ไทย) and set a display name anytime in Settings."
         ]
       },
       "characters": {
