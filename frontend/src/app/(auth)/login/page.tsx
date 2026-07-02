@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isDiscordLoading, setIsDiscordLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
@@ -65,13 +66,16 @@ export default function LoginPage() {
     router.push('/dashboard');
   };
 
-  const handleGoogleLogin = async () => {
-    setIsGoogleLoading(true);
+  const handleOAuthLogin = async (
+    provider: 'google' | 'discord',
+    setLoading: (v: boolean) => void,
+  ) => {
+    setLoading(true);
     setError(null);
 
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -79,9 +83,13 @@ export default function LoginPage() {
 
     if (authError) {
       setError(authError.message);
-      setIsGoogleLoading(false);
+      setLoading(false);
     }
   };
+
+  const handleGoogleLogin = () => handleOAuthLogin('google', setIsGoogleLoading);
+  const handleDiscordLogin = () =>
+    handleOAuthLogin('discord', setIsDiscordLoading);
 
   return (
     <main className="min-h-screen bg-root flex items-center justify-center px-4">
@@ -133,6 +141,22 @@ export default function LoginPage() {
               />
             </svg>
             {isGoogleLoading ? t('redirecting') : t('continueWithGoogle')}
+          </button>
+
+          {/* Discord OAuth */}
+          <button
+            type="button"
+            onClick={handleDiscordLogin}
+            disabled={isDiscordLoading}
+            className="mt-3 w-full flex items-center justify-center gap-3 rounded-base border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground transition-colors duration-150 hover:bg-raised focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="#5865F2"
+                d="M20.317 4.369A19.79 19.79 0 0 0 16.558 3.2a.074.074 0 0 0-.079.037c-.34.607-.718 1.4-.984 2.023a18.27 18.27 0 0 0-5.487 0 12.6 12.6 0 0 0-.998-2.023.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C1.29 7.92.646 11.383.965 14.803a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.099.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.891.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-8.605-3.549-12.152a.06.06 0 0 0-.031-.028ZM8.02 12.72c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.211 0 2.176 1.096 2.157 2.42 0 1.332-.955 2.418-2.157 2.418Zm7.975 0c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.211 0 2.176 1.096 2.157 2.42 0 1.332-.946 2.418-2.157 2.418Z"
+              />
+            </svg>
+            {isDiscordLoading ? t('redirecting') : t('continueWithDiscord')}
           </button>
 
           {/* Divider */}
