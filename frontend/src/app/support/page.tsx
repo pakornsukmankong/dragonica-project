@@ -13,6 +13,7 @@ import {
   XCircle,
   Clock,
   X,
+  PlaySquare,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/toast';
@@ -69,6 +70,20 @@ function SupportPageInner() {
     queryKey: ['donations', 'wall'],
     queryFn: () => api.get('/donations/wall'),
   });
+
+  // Live YouTube channel stats (falls back to static values on failure).
+  const { data: ytChannel } = useQuery<{
+    subscriberCount: number | null;
+    title: string | null;
+    avatarUrl: string | null;
+  }>({
+    queryKey: ['youtube', 'channel'],
+    queryFn: () => api.get('/youtube/channel'),
+    staleTime: 60 * 60 * 1000,
+  });
+  const ytTitle = ytChannel?.title || 'FLOKZ CHANNEL';
+  const ytAvatar = ytChannel?.avatarUrl || '/youtube-avatar.jpg';
+  const ytSubs = ytChannel?.subscriberCount ?? 479;
 
   // After a TrueMoney redirect, Omise returns to ?donation=<id>. Pick that up,
   // open the modal in "confirming" mode, and clear the param from the URL.
@@ -311,42 +326,79 @@ function SupportPageInner() {
               </p>
             </div>
 
-            {/* Thank-you wall */}
-            <div className="laptop:col-span-2 bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
-              <div className="mb-4 flex items-center gap-2">
-                <Heart className="h-4 w-4 text-gold" />
-                <h2 className="text-sm font-semibold text-foreground">
-                  {t('recentSupporters')}
-                </h2>
-              </div>
-              {!wall || wall.length === 0 ? (
-                <p className="text-xs text-muted">
-                  {t('noSupporters')}
-                </p>
-              ) : (
-                <ul className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
-                  {wall.map((d, i) => (
-                    <li
-                      key={i}
-                      className="flex items-start justify-between gap-3 rounded-base bg-raised px-3 py-2.5"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-foreground">
-                          {d.display_name}
-                        </p>
-                        {d.message && (
-                          <p className="truncate text-xs text-muted">
-                            {d.message}
+            {/* Right column: supporters wall + YouTube subscribe */}
+            <div className="laptop:col-span-2 flex flex-col gap-6">
+              {/* Thank-you wall */}
+              <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
+                <div className="mb-4 flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-gold" />
+                  <h2 className="text-sm font-semibold text-foreground">
+                    {t('recentSupporters')}
+                  </h2>
+                </div>
+                {!wall || wall.length === 0 ? (
+                  <p className="text-xs text-muted">{t('noSupporters')}</p>
+                ) : (
+                  <ul className="space-y-2 max-h-[240px] overflow-y-auto pr-1">
+                    {wall.map((d, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start justify-between gap-3 rounded-base bg-raised px-3 py-2.5"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {d.display_name}
                           </p>
-                        )}
-                      </div>
-                      <span className="shrink-0 text-sm font-semibold text-gold tabular-nums">
-                        {baht(d.amount)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                          {d.message && (
+                            <p className="truncate text-xs text-muted">
+                              {d.message}
+                            </p>
+                          )}
+                        </div>
+                        <span className="shrink-0 text-sm font-semibold text-gold tabular-nums">
+                          {baht(d.amount)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* YouTube subscribe */}
+              <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
+                <div className="mb-3 flex items-center gap-2">
+                  <PlaySquare className="h-4 w-4 text-[#FF0000]" />
+                  <h2 className="text-sm font-semibold text-foreground">
+                    {t('youtubeTitle')}
+                  </h2>
+                </div>
+                <p className="mb-4 text-xs text-muted">{t('youtubeSubtitle')}</p>
+                <div className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={ytAvatar}
+                    alt={ytTitle}
+                    className="h-12 w-12 shrink-0 rounded-full outline outline-1 outline-[rgba(255,255,255,0.1)]"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {ytTitle}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {t('subscriberCount', { count: ytSubs })}
+                    </p>
+                  </div>
+                  <a
+                    href="https://www.youtube.com/channel/UC2HoBQZT88jlscMBsWzg8KA?sub_confirmation=1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex shrink-0 items-center gap-1.5 rounded-base bg-[#FF0000] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  >
+                    <PlaySquare className="h-4 w-4" />
+                    {t('subscribe')}
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>

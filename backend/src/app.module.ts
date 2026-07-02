@@ -17,6 +17,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { AdminModule } from './admin/admin.module';
 import { DonationModule } from './donation/donation.module';
 import { TicketModule } from './ticket/ticket.module';
+import { YoutubeModule } from './youtube/youtube.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { TicketModule } from './ticket/ticket.module';
     AdminModule,
     DonationModule,
     TicketModule,
+    YoutubeModule,
   ],
   providers: [
     {
