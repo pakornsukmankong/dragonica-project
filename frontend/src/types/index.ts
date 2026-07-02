@@ -19,7 +19,6 @@ export interface Dungeon {
   id: string;
   name: string;
   dragon_core_cost: number | null;
-  average_duration: number | null;
   image_url: string | null;
 }
 
