@@ -12,6 +12,7 @@ import {
   Settings,
   Heart,
   LifeBuoy,
+  BookOpen,
   LogOut,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -33,6 +34,7 @@ const NAV: NavItem[] = [
   { href: '/characters', key: 'characters', icon: Users },
   { href: '/sessions', key: 'sessions', icon: ScrollText },
   { href: '/admin', key: 'admin', icon: Shield, admin: true },
+  { href: '/guide', key: 'guide', icon: BookOpen },
   { href: '/support', key: 'support', icon: Heart },
   { href: '/tickets', key: 'tickets', icon: LifeBuoy },
   { href: '/settings', key: 'settings', icon: Settings },

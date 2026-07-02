@@ -19,6 +19,7 @@
     "characters": "Characters",
     "sessions": "Sessions",
     "admin": "Admin",
+    "guide": "User Guide",
     "support": "Support",
     "tickets": "Report a Problem",
     "settings": "Settings",
@@ -391,5 +392,80 @@
     "toastCreateError": "Could not submit ticket",
     "toastReplied": "Reply sent",
     "toastReplyError": "Could not send reply"
+  },
+  "guide": {
+    "title": "User Guide",
+    "subtitle": "A step-by-step walkthrough of everything you can do — from signing in to tracking every grind.",
+    "footer": "That's the whole flow. Log a few sessions and your dashboard will start telling you where the best gold is.",
+    "sections": {
+      "gettingStarted": {
+        "title": "Getting Started",
+        "steps": [
+          "Open the login page and sign in with your email and password, or with Google or Discord.",
+          "New here? Switch to “Create Account”, enter your email and a password (at least 6 characters), then confirm via the email we send you.",
+          "Signing in later with a different provider that shares the same email links to the same account automatically — your data stays with you."
+        ]
+      },
+      "characters": {
+        "title": "Register Your Characters",
+        "steps": [
+          "Go to Characters and click “+ New Character”.",
+          "Enter a name, pick a class, set the level, then Create.",
+          "Use Edit to update a character. A character that already has recorded sessions can't be deleted until you remove those sessions first."
+        ]
+      },
+      "grind": {
+        "title": "Track a Grind Session",
+        "steps": [
+          "Open the Grind Tracker.",
+          "Select the dungeon and the character you farmed with, and set the run duration in hours and minutes.",
+          "Fill in “Gold Drop” — the raw Gold/Silver/Copper you picked up during the run.",
+          "For each item you looted, enter the quantity and price each; the subtotal and total value are calculated for you.",
+          "Check the Summary (total value and value per hour), then click “Save Session”."
+        ]
+      },
+      "sessions": {
+        "title": "Review Your Sessions",
+        "steps": [
+          "Open Sessions to see every run you've logged.",
+          "Filter by character or a date range, and sort by newest or highest gold.",
+          "Edit a session or its item drops inline, or delete runs you no longer want.",
+          "Click “Export Excel” to download the filtered sessions as a spreadsheet."
+        ]
+      },
+      "dashboard": {
+        "title": "Read Your Dashboard",
+        "steps": [
+          "The Dashboard summarizes your total value, hours, value per hour and favourite dungeon.",
+          "Use the date range (7 days, 30 days, all, or custom) to focus the charts.",
+          "“Best Farming Spots” ranks dungeons by gold per hour so you know where to farm next.",
+          "Per-character stats and the gold chart show how you're progressing over time."
+        ]
+      },
+      "support": {
+        "title": "Support the Project (optional)",
+        "steps": [
+          "Open Support to donate via PromptPay QR or TrueMoney Wallet.",
+          "Enter an amount (minimum ฿20), your display name and an optional message, then pay.",
+          "Confirmed donations appear on the supporters wall. Donating is entirely optional and only helps cover server costs."
+        ]
+      },
+      "tickets": {
+        "title": "Report a Problem",
+        "steps": [
+          "Hit a bug or need help? Open “Report a Problem” and click “New Ticket”.",
+          "Describe the issue, attach a screenshot if it helps, then submit.",
+          "Open a ticket to chat with the team — a red badge appears on the menu when an admin replies.",
+          "Once the team marks the ticket as closed, it becomes read-only."
+        ]
+      },
+      "settings": {
+        "title": "Personalize",
+        "steps": [
+          "In Settings you can set a Display Name that's shown across the app.",
+          "Switch the language between English and ไทย at any time — your choice is remembered."
+        ]
+      }
+    }
   }
 }
