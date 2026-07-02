@@ -16,6 +16,7 @@ import { SessionModule } from './session/session.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AdminModule } from './admin/admin.module';
 import { DonationModule } from './donation/donation.module';
+import { TicketModule } from './ticket/ticket.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { DonationModule } from './donation/donation.module';
     DashboardModule,
     AdminModule,
     DonationModule,
+    TicketModule,
   ],
   providers: [
     {

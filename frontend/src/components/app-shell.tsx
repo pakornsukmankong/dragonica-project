@@ -11,6 +11,7 @@ import {
   Shield,
   Settings,
   Heart,
+  LifeBuoy,
   LogOut,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -33,6 +34,7 @@ const NAV: NavItem[] = [
   { href: '/sessions', key: 'sessions', icon: ScrollText },
   { href: '/admin', key: 'admin', icon: Shield, admin: true },
   { href: '/support', key: 'support', icon: Heart },
+  { href: '/tickets', key: 'tickets', icon: LifeBuoy },
   { href: '/settings', key: 'settings', icon: Settings },
 ];
 
@@ -109,6 +111,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   });
   const displayName = me?.username?.trim() || user?.email || '';
 
+  // Unread notification counts for the nav badges.
+  const { data: ticketUnread } = useQuery<{ count: number }>({
+    queryKey: ['tickets', 'unread'],
+    queryFn: () => api.get('/tickets/unread-count'),
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+  const { data: adminUnread } = useQuery<{ count: number }>({
+    queryKey: ['admin', 'tickets', 'unread'],
+    queryFn: () => api.get('/admin/tickets/unread-count'),
+    enabled: isAdmin,
+    refetchInterval: 30000,
+  });
+  const badgeFor = (key: string) =>
+    key === 'tickets'
+      ? (ticketUnread?.count ?? 0)
+      : key === 'admin'
+        ? (adminUnread?.count ?? 0)
+        : 0;
+
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -148,6 +170,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               }`}
             />
             {t(key)}
+            {badgeFor(key) > 0 && (
+              <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--danger)] px-1.5 text-[10px] font-bold text-white">
+                {badgeFor(key)}
+              </span>
+            )}
           </Link>
         );
       })}
