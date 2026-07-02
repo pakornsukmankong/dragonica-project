@@ -10,11 +10,6 @@ export class CreateDungeonDto {
   dragonCoreCost?: number;
 
   @IsOptional()
-  @IsInt()
-  @Min(0)
-  averageDuration?: number;
-
-  @IsOptional()
   @IsString()
   imageUrl?: string;
 }

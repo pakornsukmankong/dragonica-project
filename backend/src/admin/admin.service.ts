@@ -24,7 +24,6 @@ export class AdminService {
       .insert({
         name: dto.name,
         dragon_core_cost: dto.dragonCoreCost,
-        average_duration: dto.averageDuration,
         image_url: dto.imageUrl,
       })
       .select('*')
