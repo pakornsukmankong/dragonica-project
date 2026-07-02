@@ -42,7 +42,7 @@ function SupportPageInner() {
     { value: 'truemoney', label: t('truemoney') },
   ];
 
-  const [amount, setAmount] = useState<number | ''>(100);
+  const [amount, setAmount] = useState<number | ''>(20);
   const [channel, setChannel] = useState<DonationChannel>('promptpay');
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
@@ -235,7 +235,7 @@ function SupportPageInner() {
                 <NumericInput
                   value={amount}
                   onValueChange={(v) => setAmount(v === 0 ? '' : Math.min(150000, v))}
-                  placeholder="100"
+                  placeholder="20"
                   className="w-full rounded-base border border-border bg-surface pl-7 pr-3 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-[var(--focus)]"
                 />
               </div>

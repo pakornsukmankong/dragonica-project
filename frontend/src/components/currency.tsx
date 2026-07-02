@@ -52,6 +52,11 @@ export function Currency({
 const clamp = (n: number | string, max: number) =>
   Math.min(max, Math.max(0, Math.floor(Number(n) || 0)));
 
+// Show an empty field (not "0") for a zero part, so a cleared/empty input reads
+// as blank instead of a stray 0. Keep only digits from what the user types.
+const partDisplay = (n: number) => (n === 0 ? '' : String(n));
+const digitsOnly = (s: string) => s.replace(/[^0-9]/g, '');
+
 export function CurrencyInput({
   value,
   onChange,
@@ -73,12 +78,13 @@ export function CurrencyInput({
   return (
     <div className={`flex items-center gap-1 ${className}`}>
       <input
-        type="number"
-        min={0}
-        max={maxGold}
-        value={gold}
+        type="text"
+        inputMode="numeric"
+        value={partDisplay(gold)}
         onChange={(e) =>
-          onChange(toCopper(clamp(e.target.value, maxGold), silver, copper))
+          onChange(
+            toCopper(clamp(digitsOnly(e.target.value), maxGold), silver, copper),
+          )
         }
         className={goldField}
         aria-label="Gold"
@@ -87,12 +93,11 @@ export function CurrencyInput({
         g
       </span>
       <input
-        type="number"
-        min={0}
-        max={99}
-        value={silver}
+        type="text"
+        inputMode="numeric"
+        value={partDisplay(silver)}
         onChange={(e) =>
-          onChange(toCopper(gold, clamp(e.target.value, 99), copper))
+          onChange(toCopper(gold, clamp(digitsOnly(e.target.value), 99), copper))
         }
         className={subField}
         aria-label="Silver"
@@ -101,12 +106,11 @@ export function CurrencyInput({
         s
       </span>
       <input
-        type="number"
-        min={0}
-        max={99}
-        value={copper}
+        type="text"
+        inputMode="numeric"
+        value={partDisplay(copper)}
         onChange={(e) =>
-          onChange(toCopper(gold, silver, clamp(e.target.value, 99)))
+          onChange(toCopper(gold, silver, clamp(digitsOnly(e.target.value), 99)))
         }
         className={subField}
         aria-label="Copper"
