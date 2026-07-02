@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/toast';
 import { Select } from '@/components/select';
+import { NumericInput } from '@/components/numeric-input';
 import type { Character, GameClass } from '@/types';
 
 export default function CharactersPage() {
@@ -197,7 +198,7 @@ function CharacterForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !classId) return;
-    saveMutation.mutate({ name, classId, level });
+    saveMutation.mutate({ name, classId, level: level || 1 });
   };
 
   return (
@@ -242,13 +243,12 @@ function CharacterForm({
             <label htmlFor="char-level" className="text-xs font-medium text-foreground">
               {t('level')}
             </label>
-            <input
+            <NumericInput
               id="char-level"
-              type="number"
-              min={1}
               value={level}
-              onChange={(e) => setLevel(Number(e.target.value))}
-              className="w-full rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
+              onValueChange={setLevel}
+              placeholder="1"
+              className="w-full rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
             />
           </div>
         </div>
