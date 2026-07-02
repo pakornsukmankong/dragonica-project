@@ -12,12 +12,21 @@ import {
   OmiseChargeStatus,
   OmiseService,
 } from '../omise/omise.service';
-import { CreateDonationDto } from './dto/create-donation.dto';
+import { CreateDonationDto, DonationChannel } from './dto/create-donation.dto';
 
-// Per-channel maximums (in Baht) enforced by Omise.
-const MAX_BAHT: Record<CreateDonationDto['channel'], number> = {
+// Per-channel maximums (in Baht) enforced before hitting Omise. The DTO already
+// caps every amount at ฿150,000; TrueMoney is tightened further here.
+const MAX_BAHT: Record<DonationChannel, number> = {
   promptpay: 150000,
   truemoney: 100000,
+  mobile_banking_scb: 150000,
+  mobile_banking_kbank: 150000,
+  mobile_banking_bay: 150000,
+  mobile_banking_bbl: 150000,
+  mobile_banking_ktb: 150000,
+  rabbit_linepay: 150000,
+  shopeepay: 150000,
+  grabpay: 150000,
 };
 // How long a PromptPay QR stays valid.
 const PROMPTPAY_TTL_MS = 15 * 60 * 1000;

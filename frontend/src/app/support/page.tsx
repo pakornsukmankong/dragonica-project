@@ -30,6 +30,21 @@ const baht = (satang: number) => `฿${(satang / 100).toLocaleString('en-US')}`;
 
 const PRESETS = [20, 50, 100, 300, 500];
 
+// Channel value → i18n label key (under the `support` namespace). Order here is
+// the order shown in the dropdown.
+const CHANNEL_LABEL_KEYS: { value: DonationChannel; labelKey: string }[] = [
+  { value: 'promptpay', labelKey: 'promptpay' },
+  { value: 'truemoney', labelKey: 'truemoney' },
+  { value: 'rabbit_linepay', labelKey: 'rabbitLinepay' },
+  { value: 'shopeepay', labelKey: 'shopeepay' },
+  { value: 'grabpay', labelKey: 'grabpay' },
+  { value: 'mobile_banking_scb', labelKey: 'mbScb' },
+  { value: 'mobile_banking_kbank', labelKey: 'mbKbank' },
+  { value: 'mobile_banking_bay', labelKey: 'mbBay' },
+  { value: 'mobile_banking_bbl', labelKey: 'mbBbl' },
+  { value: 'mobile_banking_ktb', labelKey: 'mbKtb' },
+];
+
 function SupportPageInner() {
   const t = useTranslations('support');
   const router = useRouter();
@@ -37,10 +52,10 @@ function SupportPageInner() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const channelOptions = [
-    { value: 'promptpay', label: t('promptpay') },
-    { value: 'truemoney', label: t('truemoney') },
-  ];
+  const channelOptions = CHANNEL_LABEL_KEYS.map(({ value, labelKey }) => ({
+    value,
+    label: t(labelKey),
+  }));
 
   const [amount, setAmount] = useState<number | ''>(20);
   const [channel, setChannel] = useState<DonationChannel>('promptpay');
@@ -145,8 +160,9 @@ function SupportPageInner() {
         phoneNumber: channel === 'truemoney' ? phone.trim() : undefined,
       }),
     onSuccess: (c) => {
-      // TrueMoney: bounce to Omise's OTP page. PromptPay: show the QR modal.
-      if (c.channel === 'truemoney' && c.authorizeUri) {
+      // Redirect channels (TrueMoney, mobile banking, e-wallets) hand back an
+      // authorize_uri — bounce there. PromptPay has none and shows a QR modal.
+      if (c.authorizeUri) {
         window.location.href = c.authorizeUri;
         return;
       }

@@ -5,8 +5,13 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
+import type { DonationChannel } from '../donation/dto/create-donation.dto';
 
 const OMISE_API = 'https://api.omise.co';
+
+// Our channel values are 1:1 with Omise source `type` strings, so the channel
+// doubles as the source type when creating a source.
+type OmiseSourceType = DonationChannel;
 
 export type OmiseChargeStatus =
   'pending' | 'successful' | 'failed' | 'expired' | 'reversed';
@@ -95,10 +100,11 @@ export class OmiseService {
 
   /**
    * Create a payment source. `amount` is in satang. For TrueMoney Wallet a
-   * `phoneNumber` (10 digits) is required; PromptPay needs none.
+   * `phoneNumber` (10 digits) is required; the other channels (PromptPay,
+   * mobile banking, e-wallets) need none.
    */
   private createSource(
-    type: 'promptpay' | 'truemoney',
+    type: OmiseSourceType,
     amount: number,
     phoneNumber?: string,
   ): Promise<{ id: string }> {
@@ -116,7 +122,7 @@ export class OmiseService {
    * or the TrueMoney `authorize_uri`.
    */
   async createCharge(opts: {
-    type: 'promptpay' | 'truemoney';
+    type: OmiseSourceType;
     amount: number; // satang
     phoneNumber?: string;
     returnUri?: string; // where TrueMoney redirects back after OTP
