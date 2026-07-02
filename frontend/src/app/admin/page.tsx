@@ -561,6 +561,14 @@ const STATUS_STYLE: Record<Donation['status'], string> = {
 const CHANNEL_LABEL: Record<Donation['channel'], string> = {
   promptpay: 'PromptPay',
   truemoney: 'TrueMoney',
+  rabbit_linepay: 'Rabbit LINE Pay',
+  shopeepay: 'ShopeePay',
+  grabpay: 'GrabPay',
+  mobile_banking_scb: 'SCB',
+  mobile_banking_kbank: 'KBank',
+  mobile_banking_bay: 'Krungsri',
+  mobile_banking_bbl: 'Bangkok Bank',
+  mobile_banking_ktb: 'Krung Thai',
 };
 
 function DonationsTab() {

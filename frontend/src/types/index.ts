@@ -62,7 +62,20 @@ export interface DashboardSummary {
   favoriteDungeon: string | null;
 }
 
-export type DonationChannel = 'promptpay' | 'truemoney';
+// Each value is also the Omise source `type`. PromptPay is QR; every other
+// channel is an off-site redirect (authorize_uri). Keep in sync with the
+// backend DONATION_CHANNELS list.
+export type DonationChannel =
+  | 'promptpay'
+  | 'truemoney'
+  | 'mobile_banking_scb'
+  | 'mobile_banking_kbank'
+  | 'mobile_banking_bay'
+  | 'mobile_banking_bbl'
+  | 'mobile_banking_ktb'
+  | 'rabbit_linepay'
+  | 'shopeepay'
+  | 'grabpay';
 export type DonationStatus = 'pending' | 'successful' | 'failed' | 'expired';
 
 // Returned by POST /donations — everything the client needs to collect payment.
@@ -74,7 +87,7 @@ export interface DonationCharge {
   amount: number;
   displayName: string;
   qrImageUri: string | null; // PromptPay QR
-  authorizeUri: string | null; // TrueMoney redirect
+  authorizeUri: string | null; // redirect target (TrueMoney, mobile banking, e-wallets)
   expiresAt: string | null;
 }
 

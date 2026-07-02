@@ -10,6 +10,25 @@ import {
   ValidateIf,
 } from 'class-validator';
 
+// Every payment channel we accept. Each value is also the exact Omise source
+// `type` string, so it doubles as the source type when creating a charge.
+// PromptPay is QR (poll); everything else is an off-site redirect
+// (authorize_uri). TrueMoney additionally needs a phone number.
+export const DONATION_CHANNELS = [
+  'promptpay',
+  'truemoney',
+  'mobile_banking_scb',
+  'mobile_banking_kbank',
+  'mobile_banking_bay',
+  'mobile_banking_bbl',
+  'mobile_banking_ktb',
+  'rabbit_linepay',
+  'shopeepay',
+  'grabpay',
+] as const;
+
+export type DonationChannel = (typeof DONATION_CHANNELS)[number];
+
 export class CreateDonationDto {
   // Amount in whole Baht. Omise minimum is ฿20; PromptPay max is ฿150,000.
   // Per-channel caps are enforced in the service.
@@ -18,8 +37,8 @@ export class CreateDonationDto {
   @Max(150000)
   amount: number;
 
-  @IsIn(['promptpay', 'truemoney'])
-  channel: 'promptpay' | 'truemoney';
+  @IsIn(DONATION_CHANNELS)
+  channel: DonationChannel;
 
   @IsString()
   @MaxLength(60)
