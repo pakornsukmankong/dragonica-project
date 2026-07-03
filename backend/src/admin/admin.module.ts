@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
 import { AuthModule } from '../auth/auth.module';
+import { SessionModule } from '../session/session.module';
+import { CharacterModule } from '../character/character.module';
 import { AdminController } from './admin.controller';
 import { PublicDataController } from './public.controller';
 import { UploadController } from './upload.controller';
@@ -10,6 +12,8 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 @Module({
   imports: [
     AuthModule,
+    SessionModule,
+    CharacterModule,
     MulterModule.register({ limits: { fileSize: 5 * 1024 * 1024 } }),
   ],
   controllers: [AdminController, PublicDataController, UploadController],
