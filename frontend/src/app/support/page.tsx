@@ -160,8 +160,16 @@ function SupportPageInner() {
         phoneNumber: channel === 'truemoney' ? phone.trim() : undefined,
       }),
     onSuccess: (c) => {
-      // Redirect channels (TrueMoney, mobile banking, e-wallets) hand back an
-      // authorize_uri — bounce there. PromptPay has none and shows a QR modal.
+      // PromptPay is confirmed in-app via a QR modal. Omise returns a QR *and*
+      // an authorize_uri for PromptPay, so key off the QR first: if there's a
+      // QR, always show it in-app rather than bouncing off-site. Every other
+      // channel (TrueMoney, mobile banking, e-wallets) has only an
+      // authorize_uri — redirect there.
+      if (c.qrImageUri) {
+        notified.current = false;
+        setCharge(c);
+        return;
+      }
       if (c.authorizeUri) {
         window.location.href = c.authorizeUri;
         return;
