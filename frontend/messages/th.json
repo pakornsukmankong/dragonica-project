@@ -107,7 +107,9 @@
     "noAccount": "ยังไม่มีบัญชี?",
     "haveAccount": "มีบัญชีอยู่แล้ว?",
     "signUpLink": "สมัครสมาชิก",
-    "signInLink": "เข้าสู่ระบบ"
+    "signInLink": "เข้าสู่ระบบ",
+    "confirmPassword": "ยืนยันรหัสผ่าน",
+    "passwordMismatch": "รหัสผ่านไม่ตรงกัน"
   },
   "dashboard": {
     "title": "แดชบอร์ด",

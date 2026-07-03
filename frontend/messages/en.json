@@ -107,7 +107,9 @@
     "noAccount": "Don't have an account?",
     "haveAccount": "Already have an account?",
     "signUpLink": "Sign up",
-    "signInLink": "Sign in"
+    "signInLink": "Sign in",
+    "confirmPassword": "Confirm password",
+    "passwordMismatch": "Passwords do not match."
   },
   "dashboard": {
     "title": "Dashboard",
