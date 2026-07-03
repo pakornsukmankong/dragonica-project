@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Swords } from 'lucide-react';
 
 export default function LoginPage() {
   const t = useTranslations('login');
@@ -12,6 +11,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isDiscordLoading, setIsDiscordLoading] = useState(false);
@@ -24,6 +24,12 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
     setMessage(null);
+
+    if (mode === 'signup' && password !== confirmPassword) {
+      setError(t('passwordMismatch'));
+      setIsLoading(false);
+      return;
+    }
 
     const supabase = createClient();
 
@@ -96,13 +102,13 @@ export default function LoginPage() {
       <div className="w-full max-w-[400px]">
         {/* Brand */}
         <div className="mb-6 flex flex-col items-center text-center">
-          <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-base bg-gold-soft text-gold shadow-gold">
-            <Swords className="h-6 w-6" />
-          </span>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
-            {tn('brand')} <span className="text-gold">{tn('brandSubtitle')}</span>
-          </h1>
-          <p className="mt-1 text-xs uppercase tracking-[0.2em] text-gold-dim">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt={`${tn('brand')} ${tn('brandSubtitle')}`}
+            className="mb-3 w-full max-w-[260px]"
+          />
+          <p className="text-xs uppercase tracking-[0.2em] text-gold-dim">
             {t('brandSubtitle')}
           </p>
         </div>
@@ -214,6 +220,35 @@ export default function LoginPage() {
               )}
             </div>
 
+            {mode === 'signup' && (
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="confirmPassword"
+                  className="text-xs font-medium text-foreground"
+                >
+                  {t('confirmPassword')}
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  aria-invalid={
+                    confirmPassword.length > 0 && confirmPassword !== password
+                  }
+                  className="w-full rounded-base border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted outline-none transition-colors focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20 aria-[invalid=true]:border-[var(--border-danger)]"
+                  placeholder="••••••••"
+                />
+                {confirmPassword.length > 0 && confirmPassword !== password && (
+                  <span className="text-[11px] text-[var(--fg-danger)]">
+                    {t('passwordMismatch')}
+                  </span>
+                )}
+              </div>
+            )}
+
             {error && (
               <div className="rounded-base bg-[var(--danger-soft)] border border-[var(--border-danger)] px-3 py-2 text-xs text-[var(--fg-danger)]">
                 {error}
@@ -222,7 +257,11 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={
+                isLoading ||
+                (mode === 'signup' &&
+                  (!confirmPassword || confirmPassword !== password))
+              }
               className="w-full rounded-base px-4 py-2.5 text-sm font-medium text-[#1b1407] bg-[var(--blue)] shadow-button transition-colors duration-150 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading
@@ -244,6 +283,7 @@ export default function LoginPage() {
                 setMode(mode === 'signin' ? 'signup' : 'signin');
                 setError(null);
                 setMessage(null);
+                setConfirmPassword('');
               }}
               className="font-semibold text-gold hover:underline"
             >
