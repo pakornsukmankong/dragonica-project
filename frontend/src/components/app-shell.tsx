@@ -82,19 +82,14 @@ function Brand() {
   return (
     <Link
       href="/dashboard"
-      className="flex items-center gap-2.5 px-4 h-16 border-b border-border group"
+      className="flex items-center justify-center px-4 h-16 border-b border-border group"
     >
-      <span className="flex h-8 w-8 items-center justify-center rounded-base bg-gold-soft text-gold shadow-gold">
-        <Swords className="h-4 w-4" />
-      </span>
-      <span className="flex flex-col leading-none">
-        <span className="text-sm font-bold tracking-tight text-foreground">
-          {t('brand')}
-        </span>
-        <span className="text-[10px] uppercase tracking-[0.18em] text-gold-dim">
-          {t('brandSubtitle')}
-        </span>
-      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/logo.png"
+        alt={t('brand')}
+        className="h-9 w-auto object-contain transition-transform duration-150 group-hover:scale-[1.03]"
+      />
     </Link>
   );
 }
@@ -223,11 +218,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile top bar */}
       <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 backdrop-blur-sm lg:hidden">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-base bg-gold-soft text-gold">
-            <Swords className="h-4 w-4" />
-          </span>
-          <span className="text-sm font-bold text-foreground">{t('brand')}</span>
+        <Link href="/dashboard" className="flex items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt={t('brand')}
+            className="h-8 w-auto object-contain"
+          />
         </Link>
         {user && (
           <button

@@ -22,17 +22,13 @@ export default function HomePage() {
           {t('badge')}
         </span>
 
-        {/* Brand mark */}
-        <span className="mb-6 flex h-16 w-16 items-center justify-center rounded-base bg-gold-soft text-gold shadow-gold">
-          <Swords className="h-8 w-8" />
-        </span>
-
-        <h1 className="bg-gradient-to-b from-white to-[#9a9ca6] bg-clip-text text-3xl font-extrabold tracking-tight text-transparent laptop:text-4xl">
-          {t('title')}{' '}
-          <span className="bg-gradient-to-b from-gold-strong to-gold-dim bg-clip-text text-transparent">
-            {t('titleAccent')}
-          </span>
-        </h1>
+        {/* Logo */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.png"
+          alt={`${t('title')} ${t('titleAccent')}`}
+          className="mb-2 w-full max-w-[560px]"
+        />
 
         <p className="mt-4 max-w-[640px] text-base text-muted">
           {t('subtitle')}
