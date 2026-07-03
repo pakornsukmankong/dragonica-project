@@ -103,6 +103,65 @@ export class SessionService {
     return { deleted: true };
   }
 
+  // ===== ADMIN =====
+  // These operate on a session by id alone (no user-ownership filter). They are
+  // only reachable through AdminController, which is behind AdminGuard.
+
+  async findOneAsAdmin(id: string) {
+    const { data, error } = await this.supabase
+      .from('sessions')
+      .select(
+        '*, characters(*, classes(*)), dungeons(*), session_drops(*, items(*))',
+      )
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      throw new NotFoundException(this.i18n.t('errors.session.not_found'));
+    }
+    return data;
+  }
+
+  async updateAsAdmin(id: string, dto: UpdateSessionDto) {
+    await this.findOneAsAdmin(id);
+
+    const updateData: Record<string, unknown> = {};
+    if (dto.characterId) updateData['character_id'] = dto.characterId;
+    if (dto.dungeonId) updateData['dungeon_id'] = dto.dungeonId;
+    if (dto.startedAt) updateData['started_at'] = dto.startedAt;
+    if (dto.endedAt) updateData['ended_at'] = dto.endedAt;
+    if (dto.durationMinutes !== undefined)
+      updateData['duration_minutes'] = dto.durationMinutes;
+    if (dto.goldEarned !== undefined)
+      updateData['gold_earned'] = dto.goldEarned;
+    if (dto.goldDropped !== undefined)
+      updateData['gold_dropped'] = dto.goldDropped;
+
+    const { data, error } = await this.supabase
+      .from('sessions')
+      .update(updateData)
+      .eq('id', id)
+      .select('*, characters(*, classes(*)), dungeons(*)')
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async removeAsAdmin(id: string) {
+    await this.findOneAsAdmin(id);
+
+    await this.supabase.from('session_drops').delete().eq('session_id', id);
+
+    const { error } = await this.supabase
+      .from('sessions')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return { deleted: true };
+  }
+
   async removeAllByUser(userId: string) {
     // Collect the user's session ids so we can clear their drops first
     // (FK), then delete the sessions. Scoped to the user — RLS is bypassed.

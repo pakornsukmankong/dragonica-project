@@ -55,6 +55,18 @@ export interface Session {
   session_drops?: SessionDrop[];
 }
 
+// Returned by GET /admin/users — a user row with aggregated grind stats.
+export interface AdminUser {
+  id: string;
+  username: string | null;
+  email: string | null;
+  avatarUrl: string | null;
+  role: string;
+  createdAt: string;
+  sessionCount: number;
+  totalGold: number; // copper
+}
+
 export interface DashboardSummary {
   totalGold: number;
   totalHours: number;
