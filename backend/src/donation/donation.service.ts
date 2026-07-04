@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -8,14 +9,13 @@ import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { SupabaseService } from '../supabase/supabase.service';
 import {
-  OmiseCharge,
-  OmiseChargeStatus,
-  OmiseService,
-} from '../omise/omise.service';
+  PAYMENT_PROVIDER,
+  PaymentProvider,
+} from '../payment/payment-provider.interface';
 import { CreateDonationDto, DonationChannel } from './dto/create-donation.dto';
 
-// Per-channel maximums (in Baht) enforced before hitting Omise. The DTO already
-// caps every amount at ฿150,000; TrueMoney is tightened further here.
+// Per-channel maximums (in Baht) enforced before hitting the gateway. The DTO
+// already caps every amount at ฿150,000; TrueMoney is tightened further here.
 const MAX_BAHT: Record<DonationChannel, number> = {
   promptpay: 150000,
   truemoney: 100000,
@@ -28,8 +28,6 @@ const MAX_BAHT: Record<DonationChannel, number> = {
   shopeepay: 150000,
   grabpay: 150000,
 };
-// How long a PromptPay QR stays valid.
-const PROMPTPAY_TTL_MS = 15 * 60 * 1000;
 
 type DonationStatus = 'pending' | 'successful' | 'failed' | 'expired';
 
@@ -41,7 +39,10 @@ export interface DonationRow {
   amount: number; // satang
   currency: string;
   channel: CreateDonationDto['channel'];
+  // Gateway charge id (column is named omise_charge_id for historical reasons;
+  // it now holds whichever provider's charge id created the donation).
   omise_charge_id: string | null;
+  provider: string | null;
   status: DonationStatus;
   created_at: string;
   paid_at: string | null;
@@ -53,12 +54,12 @@ export class DonationService {
 
   constructor(
     private readonly supabase: SupabaseService,
-    private readonly omise: OmiseService,
+    @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
     private readonly config: ConfigService,
     private readonly i18n: I18nService,
   ) {}
 
-  /** Start a donation: record it, create the Omise charge, return payment info. */
+  /** Start a donation: record it, create the gateway charge, return payment info. */
   async create(userId: string, dto: CreateDonationDto) {
     if (dto.amount > MAX_BAHT[dto.channel]) {
       throw new BadRequestException(
@@ -85,6 +86,7 @@ export class DonationService {
         amount: amountSatang,
         currency: 'THB',
         channel: dto.channel,
+        provider: this.provider.name,
         status: 'pending',
       })
       .select('*')
@@ -93,22 +95,18 @@ export class DonationService {
     if (insertError) throw insertError;
     const donation = inserted as DonationRow;
 
-    // 2. Create the Omise charge.
-    let charge: OmiseCharge;
+    // 2. Create the gateway charge via the active provider.
+    let charge;
     try {
-      charge = await this.omise.createCharge({
-        type: dto.channel,
+      charge = await this.provider.createCharge({
+        channel: dto.channel,
         amount: amountSatang,
         phoneNumber: dto.phoneNumber,
-        returnUri: `${this.config.get('FRONTEND_URL') || 'http://localhost:3000'}/support?donation=${donation.id}`,
-        expiresAt:
-          dto.channel === 'promptpay'
-            ? new Date(Date.now() + PROMPTPAY_TTL_MS).toISOString()
-            : undefined,
-        metadata: { donationId: donation.id, userId },
+        referenceId: donation.id,
+        returnUrl: `${this.config.get('FRONTEND_URL') || 'http://localhost:3000'}/support?donation=${donation.id}`,
       });
     } catch (err) {
-      // Leave the row as pending/failed; surface the provider error.
+      // Leave the row as failed; surface the provider error.
       await this.supabase
         .from('donations')
         .update({ status: 'failed' })
@@ -119,18 +117,18 @@ export class DonationService {
     // 3. Link the charge id so the webhook/poll can reconcile later.
     await this.supabase
       .from('donations')
-      .update({ omise_charge_id: charge.id })
+      .update({ omise_charge_id: charge.providerChargeId })
       .eq('id', donation.id);
 
     return {
       id: donation.id,
-      status: this.mapStatus(charge.status),
+      status: charge.status,
       channel: donation.channel,
       amount: donation.amount,
       displayName: donation.display_name,
-      qrImageUri: charge.source?.scannable_code?.image?.download_uri ?? null,
-      authorizeUri: charge.authorize_uri ?? null,
-      expiresAt: charge.expires_at ?? null,
+      qrImageUri: charge.qrImageUri,
+      authorizeUri: charge.authorizeUri,
+      expiresAt: charge.expiresAt,
     };
   }
 
@@ -179,9 +177,9 @@ export class DonationService {
   }
 
   /**
-   * Fetch one of the user's donations. If it is still pending, re-check with
-   * Omise so polling drives the status forward even when the webhook hasn't
-   * arrived yet (e.g. local dev where Omise can't reach localhost).
+   * Fetch one of the user's donations. If it is still pending, re-check with the
+   * gateway so polling drives the status forward even when the webhook hasn't
+   * arrived yet (e.g. local dev where the gateway can't reach localhost).
    */
   async findOneByUser(id: string, userId: string) {
     const { data, error } = await this.supabase
@@ -196,7 +194,10 @@ export class DonationService {
 
     let donation = data as DonationRow;
     if (donation.status === 'pending' && donation.omise_charge_id) {
-      donation = await this.syncFromOmise(donation.omise_charge_id, donation);
+      donation = await this.syncFromProvider(
+        donation.omise_charge_id,
+        donation,
+      );
     }
     return donation;
   }
@@ -215,12 +216,12 @@ export class DonationService {
   }
 
   /**
-   * Handle an Omise webhook. We never trust the payload's status — we take only
-   * the charge id from it and re-fetch the real charge from Omise with our
+   * Handle a gateway webhook. We never trust the payload's status — we take only
+   * the charge id from it and re-fetch the real charge from the gateway with our
    * secret key, so a forged webhook cannot mark a donation as paid.
    */
   async handleWebhook(event: unknown): Promise<{ received: boolean }> {
-    const chargeId = this.extractChargeId(event);
+    const chargeId = this.provider.extractChargeId(event);
     if (!chargeId) return { received: true };
 
     const { data } = await this.supabase
@@ -234,18 +235,18 @@ export class DonationService {
       return { received: true };
     }
 
-    await this.syncFromOmise(chargeId, data as DonationRow);
+    await this.syncFromProvider(chargeId, data as DonationRow);
     return { received: true };
   }
 
-  /** Re-fetch a charge from Omise and persist any status change. */
-  private async syncFromOmise(
+  /** Re-fetch a charge from the gateway and persist any status change. */
+  private async syncFromProvider(
     chargeId: string,
     current: DonationRow,
   ): Promise<DonationRow> {
-    let charge: OmiseCharge;
+    let status: DonationStatus;
     try {
-      charge = await this.omise.getCharge(chargeId);
+      status = (await this.provider.getCharge(chargeId)).status;
     } catch (err) {
       this.logger.warn(
         `Could not sync charge ${chargeId}: ${(err as Error).message}`,
@@ -253,7 +254,6 @@ export class DonationService {
       return current;
     }
 
-    const status = this.mapStatus(charge.status);
     if (status === current.status) return current;
 
     const update: Partial<DonationRow> = { status };
@@ -270,27 +270,5 @@ export class DonationService {
 
     if (error) throw error;
     return data as DonationRow;
-  }
-
-  private mapStatus(status: OmiseChargeStatus): DonationStatus {
-    switch (status) {
-      case 'successful':
-        return 'successful';
-      case 'expired':
-        return 'expired';
-      case 'failed':
-      case 'reversed':
-        return 'failed';
-      default:
-        return 'pending';
-    }
-  }
-
-  private extractChargeId(event: unknown): string | null {
-    if (!event || typeof event !== 'object') return null;
-    const data = (event as { data?: unknown }).data;
-    if (!data || typeof data !== 'object') return null;
-    const id = (data as { id?: unknown }).id;
-    return typeof id === 'string' && id.startsWith('chrg_') ? id : null;
   }
 }

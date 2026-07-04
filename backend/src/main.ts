@@ -7,6 +7,9 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    // Keep the raw request body available (req.rawBody) so the Beam webhook can
+    // verify its X-Beam-Signature over the exact bytes received.
+    rawBody: true,
   });
 
   app.use(helmet());
