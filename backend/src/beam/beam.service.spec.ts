@@ -34,7 +34,9 @@ describe('BeamService.verifyWebhookSignature', () => {
 
   it('rejects when no secret is configured', () => {
     const svc = makeService(undefined);
-    expect(svc.verifyWebhookSignature(body, sign(body, SECRET_B64))).toBe(false);
+    expect(svc.verifyWebhookSignature(body, sign(body, SECRET_B64))).toBe(
+      false,
+    );
   });
 
   it('rejects when the signature header is missing', () => {
