@@ -4,6 +4,8 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -35,24 +37,49 @@ const VARIANT = {
   error: { color: 'var(--fg-danger)', Icon: AlertCircle },
 } as const;
 
+// Auto-dismiss after this long. Managed with our own timers rather than
+// Radix's `duration`, because Radix pauses its dismiss timer whenever the
+// window loses focus (e.g. DevTools open, another tab) — which left toasts
+// stuck open indefinitely.
+const TOAST_DURATION = 4000;
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
   const dismiss = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
+    const timer = timers.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      timers.current.delete(id);
+    }
   }, []);
 
   const toast = useCallback<ToastContextValue['toast']>(
     ({ title, description, variant = 'default' }) => {
       const id = Date.now() + Math.random();
       setToasts((prev) => [...prev, { id, title, description, variant }]);
+      timers.current.set(
+        id,
+        setTimeout(() => dismiss(id), TOAST_DURATION),
+      );
     },
-    [],
+    [dismiss],
   );
+
+  // Clear any pending timers on unmount.
+  useEffect(() => {
+    const map = timers.current;
+    return () => {
+      map.forEach(clearTimeout);
+      map.clear();
+    };
+  }, []);
 
   return (
     <ToastContext.Provider value={{ toast }}>
-      <ToastPrimitive.Provider swipeDirection="right" duration={4000}>
+      <ToastPrimitive.Provider swipeDirection="right" duration={Infinity}>
         {children}
 
         {toasts.map((t) => {
