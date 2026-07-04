@@ -1,7 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DonationService } from './donation.service';
-import { OmiseService } from '../omise/omise.service';
+import { PaymentProvider } from '../payment/payment-provider.interface';
 import { createSupabaseMock } from '../test/supabase.mock';
 
 const USER = 'user-1';
@@ -16,12 +16,21 @@ const i18n = {
   t: (key: string) => key,
 } as unknown as import('nestjs-i18n').I18nService;
 
-function omiseMock(overrides: Partial<jest.Mocked<OmiseService>> = {}) {
+// A stand-in for the active payment provider. extractChargeId mirrors the real
+// adapters by pulling `data.id` out of the webhook payload.
+function providerMock(
+  overrides: Partial<PaymentProvider> = {},
+): PaymentProvider {
   return {
-    getCharge: jest.fn(),
+    name: 'omise',
     createCharge: jest.fn(),
+    getCharge: jest.fn(),
+    extractChargeId: jest.fn((event: unknown) => {
+      const id = (event as { data?: { id?: unknown } })?.data?.id;
+      return typeof id === 'string' ? id : null;
+    }),
     ...overrides,
-  } as unknown as OmiseService;
+  } as unknown as PaymentProvider;
 }
 
 describe('DonationService (ownership & payment integrity)', () => {
@@ -30,15 +39,15 @@ describe('DonationService (ownership & payment integrity)', () => {
       const { service: supabase } = createSupabaseMock([
         { data: null, error: { code: 'PGRST116' } },
       ]);
-      const svc = new DonationService(supabase, omiseMock(), config, i18n);
+      const svc = new DonationService(supabase, providerMock(), config, i18n);
 
       await expect(svc.findOneByUser('d1', OTHER)).rejects.toBeInstanceOf(
         NotFoundException,
       );
     });
 
-    it('does not re-hit Omise for an already-settled donation', async () => {
-      const omise = omiseMock();
+    it('does not re-hit the gateway for an already-settled donation', async () => {
+      const provider = providerMock();
       const { service: supabase } = createSupabaseMock([
         {
           data: {
@@ -50,21 +59,25 @@ describe('DonationService (ownership & payment integrity)', () => {
           error: null,
         },
       ]);
-      const svc = new DonationService(supabase, omise, config, i18n);
+      const svc = new DonationService(supabase, provider, config, i18n);
 
       const result = await svc.findOneByUser('d1', USER);
       expect(result.status).toBe('successful');
-      expect(omise.getCharge).not.toHaveBeenCalled();
+      expect(provider.getCharge).not.toHaveBeenCalled();
     });
   });
 
   describe('handleWebhook', () => {
-    it('never trusts the payload status — verifies against Omise', async () => {
-      // Payload lies that the charge succeeded; Omise says it actually failed.
-      const omise = omiseMock({
-        getCharge: jest
-          .fn()
-          .mockResolvedValue({ id: 'chrg_1', status: 'failed' }),
+    it('never trusts the payload status — verifies against the gateway', async () => {
+      // Payload lies that the charge succeeded; the gateway says it failed.
+      const provider = providerMock({
+        getCharge: jest.fn().mockResolvedValue({
+          providerChargeId: 'chrg_1',
+          status: 'failed',
+          qrImageUri: null,
+          authorizeUri: null,
+          expiresAt: null,
+        }),
       });
       const { service: supabase, fromTables } = createSupabaseMock([
         // lookup by omise_charge_id
@@ -78,10 +91,10 @@ describe('DonationService (ownership & payment integrity)', () => {
           },
           error: null,
         },
-        // update reflecting Omise's real (failed) status
+        // update reflecting the gateway's real (failed) status
         { data: { id: 'd1', status: 'failed' }, error: null },
       ]);
-      const svc = new DonationService(supabase, omise, config, i18n);
+      const svc = new DonationService(supabase, provider, config, i18n);
 
       await expect(
         svc.handleWebhook({
@@ -90,21 +103,21 @@ describe('DonationService (ownership & payment integrity)', () => {
         }),
       ).resolves.toEqual({ received: true });
 
-      expect(omise.getCharge).toHaveBeenCalledWith('chrg_1');
+      expect(provider.getCharge).toHaveBeenCalledWith('chrg_1');
       expect(fromTables).toEqual(['donations', 'donations']);
     });
 
     it('ignores webhooks for charges it does not know', async () => {
-      const omise = omiseMock();
+      const provider = providerMock();
       const { service: supabase } = createSupabaseMock([
         { data: null, error: null }, // no matching donation
       ]);
-      const svc = new DonationService(supabase, omise, config, i18n);
+      const svc = new DonationService(supabase, provider, config, i18n);
 
       await expect(
         svc.handleWebhook({ data: { id: 'chrg_unknown' } }),
       ).resolves.toEqual({ received: true });
-      expect(omise.getCharge).not.toHaveBeenCalled();
+      expect(provider.getCharge).not.toHaveBeenCalled();
     });
   });
 });
