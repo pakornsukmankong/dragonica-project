@@ -76,6 +76,11 @@ export class DonationService {
     const amountSatang = dto.amount * 100;
     const displayName = dto.displayName.trim() || 'Anonymous';
 
+    // Temporary (Phase 2) debug: which provider is actually handling this.
+    this.logger.log(
+      `create: provider=${this.provider.name} channel=${dto.channel} amountSatang=${amountSatang}`,
+    );
+
     // 1. Record the pending donation first so we always have a row to reconcile
     //    against, even if the charge call fails midway.
     const { data: inserted, error: insertError } = await this.supabase
@@ -109,12 +114,19 @@ export class DonationService {
       });
     } catch (err) {
       // Leave the row as failed; surface the provider error.
+      this.logger.error(
+        `create: provider.createCharge failed: ${(err as Error).message}`,
+      );
       await this.supabase
         .from('donations')
         .update({ status: 'failed' })
         .eq('id', donation.id);
       throw err;
     }
+
+    this.logger.log(
+      `create: charge ok id=${charge.providerChargeId} status=${charge.status} qr=${!!charge.qrImageUri} redirect=${!!charge.authorizeUri}`,
+    );
 
     // 3. Link the charge id so the webhook/poll can reconcile later.
     await this.supabase

@@ -59,6 +59,13 @@ export class BeamService {
     path: string,
     body?: Record<string, unknown>,
   ): Promise<T> {
+    // Temporary (Phase 2) debug: trace the outgoing request (no auth header).
+    this.logger.log(
+      `Beam → ${method} ${this.apiUrl}${path}${
+        body ? ` body=${JSON.stringify(body)}` : ''
+      }`,
+    );
+
     const res = await fetch(`${this.apiUrl}${path}`, {
       method,
       headers: {
@@ -72,6 +79,13 @@ export class BeamService {
       string,
       unknown
     >;
+
+    // Temporary (Phase 2) debug: trace the response status + body.
+    this.logger.log(
+      `Beam ← ${method} ${path} status=${res.status} body=${JSON.stringify(
+        json,
+      )}`,
+    );
 
     if (!res.ok) {
       const message =
