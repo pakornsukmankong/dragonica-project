@@ -20,6 +20,7 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { BeamService } from '../beam/beam.service';
+import { StripeService } from '../stripe/stripe.service';
 import { DonationService } from './donation.service';
 import { CreateDonationDto } from './dto/create-donation.dto';
 import { UpdateVisibilityDto } from './dto/update-visibility.dto';
@@ -31,6 +32,7 @@ export class DonationController {
   constructor(
     private readonly donationService: DonationService,
     private readonly beam: BeamService,
+    private readonly stripe: StripeService,
   ) {}
 
   @Post()
@@ -71,6 +73,27 @@ export class DonationController {
       throw new UnauthorizedException('Invalid Beam webhook signature');
     }
     return this.donationService.handleWebhook(JSON.parse(raw.toString('utf8')));
+  }
+
+  // Public: Stripe calls this on PaymentIntent events. Verifies the
+  // Stripe-Signature over the *raw* body (SDK), then reconciles by re-fetching
+  // the intent from Stripe (never trusts the payload). No JWT.
+  @Post('stripe/webhook')
+  @HttpCode(200)
+  stripeWebhook(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('stripe-signature') signature?: string,
+  ) {
+    const raw = req.rawBody;
+    let event: unknown;
+    try {
+      if (!raw) throw new Error('missing raw body');
+      event = this.stripe.constructWebhookEvent(raw, signature);
+    } catch {
+      this.logger.warn('Stripe webhook: invalid signature — rejected');
+      throw new UnauthorizedException('Invalid Stripe webhook signature');
+    }
+    return this.donationService.handleWebhook(event);
   }
 
   // Which payment provider is active, so the frontend can render the matching
