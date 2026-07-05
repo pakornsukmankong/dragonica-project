@@ -76,11 +76,6 @@ export class DonationService {
     const amountSatang = dto.amount * 100;
     const displayName = dto.displayName.trim() || 'Anonymous';
 
-    // Temporary (Phase 2) debug: which provider is actually handling this.
-    this.logger.log(
-      `create: provider=${this.provider.name} channel=${dto.channel} amountSatang=${amountSatang}`,
-    );
-
     // 1. Record the pending donation first so we always have a row to reconcile
     //    against, even if the charge call fails midway.
     const { data: inserted, error: insertError } = await this.supabase
@@ -114,19 +109,12 @@ export class DonationService {
       });
     } catch (err) {
       // Leave the row as failed; surface the provider error.
-      this.logger.error(
-        `create: provider.createCharge failed: ${(err as Error).message}`,
-      );
       await this.supabase
         .from('donations')
         .update({ status: 'failed' })
         .eq('id', donation.id);
       throw err;
     }
-
-    this.logger.log(
-      `create: charge ok id=${charge.providerChargeId} status=${charge.status} qr=${!!charge.qrImageUri} redirect=${!!charge.authorizeUri}`,
-    );
 
     // 3. Link the charge id so the webhook/poll can reconcile later.
     await this.supabase
@@ -149,7 +137,10 @@ export class DonationService {
 
   /** Which payment provider is active — lets the frontend pick the right flow. */
   getConfig() {
-    return { provider: this.provider.name };
+    return {
+      provider: this.provider.name,
+      channels: this.provider.supportedChannels,
+    };
   }
 
   /** Admin: every donation, most recent first (guarded by AdminGuard). */
@@ -351,10 +342,6 @@ export class DonationService {
    */
   async handleWebhook(event: unknown): Promise<{ received: boolean }> {
     const chargeId = this.provider.extractChargeId(event);
-    // Temporary (Phase 2): confirm the id lands and matches a donation.
-    this.logger.log(
-      `Webhook (${this.provider.name}): extracted chargeId=${chargeId ?? 'null'}`,
-    );
     if (!chargeId) return { received: true };
 
     const { data } = await this.supabase
@@ -365,9 +352,6 @@ export class DonationService {
 
     if (!data) {
       // Not one of ours (or not linked yet) — acknowledge and move on.
-      this.logger.warn(
-        `Webhook (${this.provider.name}): no donation matches chargeId=${chargeId}`,
-      );
       return { received: true };
     }
 

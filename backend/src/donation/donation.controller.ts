@@ -64,16 +64,8 @@ export class DonationController {
   beamWebhook(
     @Req() req: RawBodyRequest<Request>,
     @Headers('x-beam-signature') signature?: string,
-    @Headers('x-beam-event') event?: string,
   ) {
     const raw = req.rawBody;
-    // Temporary (Phase 2): log the raw payload so we can confirm Beam's exact
-    // event shape / status strings and adjust the mapping if needed.
-    this.logger.log(
-      `Beam webhook: event=${event ?? '?'} sigPresent=${!!signature} body=${
-        raw ? raw.toString('utf8') : '<empty>'
-      }`,
-    );
     if (!raw || !this.beam.verifyWebhookSignature(raw, signature)) {
       this.logger.warn('Beam webhook: invalid signature — rejected');
       throw new UnauthorizedException('Invalid Beam webhook signature');

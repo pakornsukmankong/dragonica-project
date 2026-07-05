@@ -35,7 +35,7 @@ import { DonationService } from './donation.service';
         const flag = config.get<string>('PAYMENT_PROVIDER');
         const provider =
           flag === 'manual' ? manual : flag === 'beam' ? beam : omise;
-        // Temporary (Phase 2) debug: confirm the env flag took effect at boot.
+        // One-line startup signal of which gateway is live.
         new Logger('PaymentProvider').log(
           `active provider = ${provider.name} (PAYMENT_PROVIDER=${flag ?? 'unset'})`,
         );

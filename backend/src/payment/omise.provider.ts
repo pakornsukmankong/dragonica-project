@@ -4,6 +4,7 @@ import {
   OmiseChargeStatus,
   OmiseService,
 } from '../omise/omise.service';
+import { DONATION_CHANNELS } from '../donation/dto/create-donation.dto';
 import {
   CreateChargeInput,
   NormalizedCharge,
@@ -21,6 +22,7 @@ const PROMPTPAY_TTL_MS = 15 * 60 * 1000;
 @Injectable()
 export class OmiseProvider implements PaymentProvider {
   readonly name = 'omise' as const;
+  readonly supportedChannels = DONATION_CHANNELS;
 
   constructor(private readonly omise: OmiseService) {}
 
