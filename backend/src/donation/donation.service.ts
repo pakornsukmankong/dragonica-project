@@ -339,6 +339,10 @@ export class DonationService {
    */
   async handleWebhook(event: unknown): Promise<{ received: boolean }> {
     const chargeId = this.provider.extractChargeId(event);
+    // Temporary (Phase 2): confirm the id lands and matches a donation.
+    this.logger.log(
+      `Webhook (${this.provider.name}): extracted chargeId=${chargeId ?? 'null'}`,
+    );
     if (!chargeId) return { received: true };
 
     const { data } = await this.supabase
@@ -349,6 +353,9 @@ export class DonationService {
 
     if (!data) {
       // Not one of ours (or not linked yet) — acknowledge and move on.
+      this.logger.warn(
+        `Webhook (${this.provider.name}): no donation matches chargeId=${chargeId}`,
+      );
       return { received: true };
     }
 
