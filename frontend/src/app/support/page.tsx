@@ -57,6 +57,7 @@ function SupportPageInner() {
   // then waits for an admin to confirm.
   const { data: paymentConfig, isLoading: configLoading } = useQuery<{
     provider: string;
+    channels?: DonationChannel[];
   }>({
     queryKey: ['donations', 'config'],
     queryFn: () => api.get('/donations/config'),
@@ -64,8 +65,11 @@ function SupportPageInner() {
   });
   const isManual = paymentConfig?.provider === 'manual';
 
+  // Only offer channels the active provider can actually collect (the backend
+  // reports them). Falls back to all channels until the config resolves.
+  const supportedChannels = paymentConfig?.channels;
   const channelOptions = CHANNEL_LABEL_KEYS.filter(
-    ({ value }) => !isManual || value === 'promptpay',
+    ({ value }) => !supportedChannels || supportedChannels.includes(value),
   ).map(({ value, labelKey }) => ({
     value,
     label: t(labelKey),
@@ -95,10 +99,14 @@ function SupportPageInner() {
     }
   }, [me, nameTouched, displayName]);
 
-  // Manual mode only supports PromptPay — snap the selection back if needed.
+  // If the selected channel isn't supported by the active provider, snap to the
+  // first one that is (e.g. GrabPay/mobile-banking hidden under Beam, or
+  // everything but PromptPay under manual mode).
   useEffect(() => {
-    if (isManual && channel !== 'promptpay') setChannel('promptpay');
-  }, [isManual, channel]);
+    if (supportedChannels && !supportedChannels.includes(channel)) {
+      setChannel(supportedChannels[0] ?? 'promptpay');
+    }
+  }, [supportedChannels, channel]);
 
   // Thank-you wall.
   const { data: wall } = useQuery<DonationWallEntry[]>({

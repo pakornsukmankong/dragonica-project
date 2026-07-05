@@ -21,6 +21,7 @@ const PROMPTPAY_TTL_MS = 60 * 60 * 1000; // 1 hour
 @Injectable()
 export class ManualProvider implements PaymentProvider {
   readonly name = 'manual' as const;
+  readonly supportedChannels = ['promptpay'] as const;
 
   constructor(private readonly config: ConfigService) {}
 

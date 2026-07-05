@@ -31,6 +31,8 @@ export interface NormalizedCharge {
  */
 export interface PaymentProvider {
   readonly name: 'omise' | 'beam' | 'manual';
+  /** Channels this provider can actually collect — drives the donor's options. */
+  readonly supportedChannels: readonly DonationChannel[];
   createCharge(input: CreateChargeInput): Promise<NormalizedCharge>;
   getCharge(providerChargeId: string): Promise<NormalizedCharge>;
   /** Pull the provider charge id out of a webhook payload (for re-verify). */
