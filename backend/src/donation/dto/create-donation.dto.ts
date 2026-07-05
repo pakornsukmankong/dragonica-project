@@ -26,6 +26,7 @@ export const DONATION_CHANNELS = [
   'rabbit_linepay',
   'shopeepay',
   'grabpay',
+  'card',
 ] as const;
 
 export type DonationChannel = (typeof DONATION_CHANNELS)[number];

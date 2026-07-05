@@ -27,6 +27,7 @@ const MAX_BAHT: Record<DonationChannel, number> = {
   rabbit_linepay: 150000,
   shopeepay: 150000,
   grabpay: 150000,
+  card: 150000,
 };
 
 type DonationStatus = 'pending' | 'successful' | 'failed' | 'expired';

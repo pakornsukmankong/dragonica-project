@@ -8,6 +8,7 @@ import {
   Heart,
   QrCode,
   Wallet,
+  CreditCard,
   Loader2,
   CheckCircle2,
   XCircle,
@@ -34,6 +35,7 @@ const PRESETS = [20, 50, 100, 300, 500];
 // the order shown in the dropdown.
 const CHANNEL_LABEL_KEYS: { value: DonationChannel; labelKey: string }[] = [
   { value: 'promptpay', labelKey: 'promptpay' },
+  { value: 'card', labelKey: 'card' },
   { value: 'truemoney', labelKey: 'truemoney' },
   { value: 'rabbit_linepay', labelKey: 'rabbitLinepay' },
   { value: 'shopeepay', labelKey: 'shopeepay' },
@@ -428,6 +430,8 @@ function SupportPageInner() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : channel === 'promptpay' ? (
                   <QrCode className="h-4 w-4" />
+                ) : channel === 'card' ? (
+                  <CreditCard className="h-4 w-4" />
                 ) : (
                   <Wallet className="h-4 w-4" />
                 )}

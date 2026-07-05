@@ -22,7 +22,8 @@ const PROMPTPAY_TTL_MS = 15 * 60 * 1000;
 @Injectable()
 export class OmiseProvider implements PaymentProvider {
   readonly name = 'omise' as const;
-  readonly supportedChannels = DONATION_CHANNELS;
+  // Everything except `card` — the Omise card flow (tokenization) isn't built.
+  readonly supportedChannels = DONATION_CHANNELS.filter((c) => c !== 'card');
 
   constructor(private readonly omise: OmiseService) {}
 

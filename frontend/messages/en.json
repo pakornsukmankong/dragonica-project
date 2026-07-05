@@ -344,6 +344,7 @@
     "paymentMethod": "Payment method",
     "promptpay": "PromptPay (QR)",
     "truemoney": "TrueMoney Wallet",
+    "card": "Credit / Debit card",
     "rabbitLinepay": "Rabbit LINE Pay",
     "shopeepay": "ShopeePay",
     "grabpay": "GrabPay",

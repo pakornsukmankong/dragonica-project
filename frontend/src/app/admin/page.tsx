@@ -583,6 +583,7 @@ const CHANNEL_LABEL: Record<Donation['channel'], string> = {
   mobile_banking_bay: 'Krungsri',
   mobile_banking_bbl: 'Bangkok Bank',
   mobile_banking_ktb: 'Krung Thai',
+  card: 'Card',
 };
 
 function DonationsTab() {
