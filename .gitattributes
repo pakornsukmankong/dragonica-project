@@ -1,0 +1,18 @@
+# Normalize line endings across platforms: store as LF in the repo and check
+# out as LF everywhere. This stops Windows (core.autocrlf=true) from flagging
+# whole files as modified just because of CRLF/LF differences.
+* text=auto eol=lf
+
+# Binary assets — never touch their bytes / line endings.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
