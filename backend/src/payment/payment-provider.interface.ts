@@ -30,7 +30,7 @@ export interface NormalizedCharge {
  * gateway-agnostic. Switch the active one with the PAYMENT_PROVIDER env flag.
  */
 export interface PaymentProvider {
-  readonly name: 'omise' | 'beam' | 'manual';
+  readonly name: 'omise' | 'beam' | 'manual' | 'stripe';
   /** Channels this provider can actually collect — drives the donor's options. */
   readonly supportedChannels: readonly DonationChannel[];
   createCharge(input: CreateChargeInput): Promise<NormalizedCharge>;
