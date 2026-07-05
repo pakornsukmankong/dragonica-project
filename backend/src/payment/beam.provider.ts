@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { BeamCharge, BeamService } from '../beam/beam.service';
 import { DonationChannel } from '../donation/dto/create-donation.dto';
 import {
@@ -28,6 +28,7 @@ const PAYMENT_METHOD: Partial<
 @Injectable()
 export class BeamProvider implements PaymentProvider {
   readonly name = 'beam' as const;
+  private readonly logger = new Logger(BeamProvider.name);
 
   constructor(private readonly beam: BeamService) {}
 
@@ -39,10 +40,15 @@ export class BeamProvider implements PaymentProvider {
       );
     }
 
+    const paymentMethod = method();
+    this.logger.log(
+      `createCharge channel=${input.channel} methodType=${paymentMethod.paymentMethodType} amount=${input.amount} ref=${input.referenceId}`,
+    );
+
     const charge = await this.beam.createCharge({
       amount: input.amount,
       currency: 'THB',
-      paymentMethod: method(),
+      paymentMethod,
       referenceId: input.referenceId,
       returnUrl: input.returnUrl,
     });

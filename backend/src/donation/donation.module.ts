@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthModule } from '../auth/auth.module';
 import { OmiseModule } from '../omise/omise.module';
@@ -32,14 +32,14 @@ import { DonationService } from './donation.service';
         beam: BeamProvider,
         manual: ManualProvider,
       ) => {
-        switch (config.get<string>('PAYMENT_PROVIDER')) {
-          case 'manual':
-            return manual;
-          case 'beam':
-            return beam;
-          default:
-            return omise;
-        }
+        const flag = config.get<string>('PAYMENT_PROVIDER');
+        const provider =
+          flag === 'manual' ? manual : flag === 'beam' ? beam : omise;
+        // Temporary (Phase 2) debug: confirm the env flag took effect at boot.
+        new Logger('PaymentProvider').log(
+          `active provider = ${provider.name} (PAYMENT_PROVIDER=${flag ?? 'unset'})`,
+        );
+        return provider;
       },
       inject: [ConfigService, OmiseProvider, BeamProvider, ManualProvider],
     },
