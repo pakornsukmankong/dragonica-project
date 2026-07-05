@@ -18,6 +18,10 @@ import {
   ChevronDown,
   Send,
   Pencil,
+  Check,
+  X,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Currency, CurrencyInput } from '@/components/currency';
 import { Select } from '@/components/select';
@@ -588,6 +592,8 @@ function DonationsTab() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
   const [pendingDelete, setPendingDelete] = useState<Donation | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState<Donation | null>(null);
+  const [pendingReject, setPendingReject] = useState<Donation | null>(null);
   const formatDate = useDateFormatter();
   const statusText = (s: Donation['status']) =>
     t(`status${s.charAt(0).toUpperCase()}${s.slice(1)}`);
@@ -608,6 +614,47 @@ function DonationsTab() {
     onError: (e) =>
       toast({
         title: t('toastDonationDeleteError'),
+        description: (e as Error).message,
+        variant: 'error',
+      }),
+  });
+
+  // Show or hide a donation's amount on the public wall.
+  const visibilityMutation = useMutation({
+    mutationFn: ({ id, hideAmount }: { id: string; hideAmount: boolean }) =>
+      api.patch(`/donations/admin/${id}/visibility`, { hideAmount }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'donations'] });
+      queryClient.invalidateQueries({ queryKey: ['donations', 'wall'] });
+    },
+    onError: (e) =>
+      toast({
+        title: t('toastVisibilityError'),
+        description: (e as Error).message,
+        variant: 'error',
+      }),
+  });
+
+  // Settle a manual (gateway-free) donation after checking the bank transfer.
+  const settleMutation = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'confirm' | 'reject' }) =>
+      api.post(`/donations/admin/${id}/${action}`, {}),
+    onSuccess: (_data, { action }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'donations'] });
+      queryClient.invalidateQueries({ queryKey: ['donations', 'wall'] });
+      setPendingConfirm(null);
+      setPendingReject(null);
+      toast({
+        title:
+          action === 'confirm'
+            ? t('toastDonationConfirmed')
+            : t('toastDonationRejected'),
+        variant: 'success',
+      });
+    },
+    onError: (e) =>
+      toast({
+        title: t('toastDonationSettleError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -649,24 +696,24 @@ function DonationsTab() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="pb-3 pr-3 text-xs font-medium text-muted">{t('colDonor')}</th>
-                    <th className="pb-3 pr-3 text-xs font-medium text-muted">{t('colMethod')}</th>
-                    <th className="pb-3 pr-3 text-right text-xs font-medium text-muted">{t('colAmount')}</th>
-                    <th className="pb-3 pr-3 text-xs font-medium text-muted">{t('colStatus')}</th>
-                    <th className="pb-3 pr-3 text-xs font-medium text-muted">{t('colDate')}</th>
-                    <th className="pb-3 text-right text-xs font-medium text-muted"></th>
+                    <th className="pb-3 pr-6 text-[11px] font-medium uppercase tracking-wider text-muted">{t('colDonor')}</th>
+                    <th className="pb-3 pr-6 text-[11px] font-medium uppercase tracking-wider text-muted">{t('colMethod')}</th>
+                    <th className="pb-3 pr-6 text-right text-[11px] font-medium uppercase tracking-wider text-muted">{t('colAmount')}</th>
+                    <th className="pb-3 pr-6 text-[11px] font-medium uppercase tracking-wider text-muted">{t('colStatus')}</th>
+                    <th className="pb-3 pr-6 text-[11px] font-medium uppercase tracking-wider text-muted">{t('colDate')}</th>
+                    <th className="pb-3 text-right text-[11px] font-medium uppercase tracking-wider text-muted"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {paged.map((d) => (
                     <tr
                       key={d.id}
-                      className="border-b border-[rgba(255,255,255,0.05)] last:border-0 align-top"
+                      className="border-b border-[rgba(255,255,255,0.05)] align-middle transition-colors last:border-0 hover:bg-[rgba(255,255,255,0.02)]"
                     >
-                      <td className="py-3 pr-3">
+                      <td className="py-4 pr-6">
                         <p className="text-sm font-medium text-foreground">{d.display_name}</p>
                         {d.message && (
                           <p className="max-w-[240px] truncate text-xs text-muted" title={d.message}>
@@ -674,33 +721,91 @@ function DonationsTab() {
                           </p>
                         )}
                       </td>
-                      <td className="py-3 pr-3 text-xs text-muted">{CHANNEL_LABEL[d.channel]}</td>
-                      <td className="py-3 pr-3 text-right text-sm font-semibold text-foreground tabular-nums">
-                        {bahtFromSatang(d.amount)}
+                      <td className="py-4 pr-6 text-xs text-muted whitespace-nowrap">{CHANNEL_LABEL[d.channel]}</td>
+                      <td className="py-4 pr-6">
+                        <div className="flex items-center justify-end gap-2">
+                          <span
+                            className={`text-sm font-semibold tabular-nums ${
+                              d.hide_amount ? 'text-muted line-through' : 'text-foreground'
+                            }`}
+                          >
+                            {bahtFromSatang(d.amount)}
+                          </span>
+                          <button
+                            onClick={() =>
+                              visibilityMutation.mutate({
+                                id: d.id,
+                                hideAmount: !d.hide_amount,
+                              })
+                            }
+                            disabled={visibilityMutation.isPending}
+                            className="rounded-base p-1 text-muted transition-colors hover:text-foreground hover:bg-raised disabled:opacity-50"
+                            aria-label={
+                              d.hide_amount
+                                ? t('amountHiddenTitle')
+                                : t('amountShownTitle')
+                            }
+                            title={
+                              d.hide_amount
+                                ? t('amountHiddenTitle')
+                                : t('amountShownTitle')
+                            }
+                          >
+                            {d.hide_amount ? (
+                              <EyeOff className="h-3.5 w-3.5" />
+                            ) : (
+                              <Eye className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </div>
                       </td>
-                      <td className="py-3 pr-3">
+                      <td className="py-4 pr-6">
                         <span
                           className={`inline-block rounded-sm px-2 py-0.5 text-[11px] font-medium ${STATUS_STYLE[d.status]}`}
                         >
                           {statusText(d.status)}
                         </span>
                       </td>
-                      <td className="py-3 pr-3 text-xs text-muted">
+                      <td className="py-4 pr-6 text-xs text-muted whitespace-nowrap">
                         {formatDate(d.created_at, {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
                         })}
                       </td>
-                      <td className="py-3 text-right">
-                        <button
-                          onClick={() => setPendingDelete(d)}
-                          className="rounded-base p-1.5 text-muted transition-colors hover:text-[var(--fg-danger)] hover:bg-[var(--danger-soft)]"
-                          aria-label={`Delete donation from ${d.display_name}`}
-                          title="Delete donation"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                      <td className="py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {d.status === 'pending' && d.provider === 'manual' && (
+                            <>
+                              <button
+                                onClick={() => setPendingConfirm(d)}
+                                className="rounded-base p-1.5 text-muted transition-colors hover:text-[var(--fg-success)] hover:bg-[var(--success-soft,rgba(74,222,128,0.12))]"
+                                aria-label={`Confirm donation from ${d.display_name}`}
+                                title={t('confirmDonation')}
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => setPendingReject(d)}
+                                className="rounded-base p-1.5 text-muted transition-colors hover:text-[var(--fg-danger)] hover:bg-[var(--danger-soft)]"
+                                aria-label={`Reject donation from ${d.display_name}`}
+                                title={t('rejectDonation')}
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => setPendingDelete(d)}
+                            className="rounded-base p-1.5 text-muted transition-colors hover:text-[var(--fg-danger)] hover:bg-[var(--danger-soft)]"
+                            aria-label={`Delete donation from ${d.display_name}`}
+                            title="Delete donation"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -728,6 +833,47 @@ function DonationsTab() {
         danger
         loading={deleteMutation.isPending}
         onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+      />
+
+      <ConfirmDialog
+        open={!!pendingConfirm}
+        onOpenChange={(open) => !open && setPendingConfirm(null)}
+        title={t('confirmDonationTitle')}
+        description={
+          pendingConfirm
+            ? t('confirmDonationDesc', {
+                amount: bahtFromSatang(pendingConfirm.amount),
+                name: pendingConfirm.display_name,
+              })
+            : undefined
+        }
+        confirmLabel={t('confirmDonation')}
+        loading={settleMutation.isPending}
+        onConfirm={() =>
+          pendingConfirm &&
+          settleMutation.mutate({ id: pendingConfirm.id, action: 'confirm' })
+        }
+      />
+
+      <ConfirmDialog
+        open={!!pendingReject}
+        onOpenChange={(open) => !open && setPendingReject(null)}
+        title={t('rejectDonationTitle')}
+        description={
+          pendingReject
+            ? t('rejectDonationDesc', {
+                amount: bahtFromSatang(pendingReject.amount),
+                name: pendingReject.display_name,
+              })
+            : undefined
+        }
+        confirmLabel={t('rejectDonation')}
+        danger
+        loading={settleMutation.isPending}
+        onConfirm={() =>
+          pendingReject &&
+          settleMutation.mutate({ id: pendingReject.id, action: 'reject' })
+        }
       />
     </div>
   );

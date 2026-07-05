@@ -30,7 +30,7 @@ export interface NormalizedCharge {
  * gateway-agnostic. Switch the active one with the PAYMENT_PROVIDER env flag.
  */
 export interface PaymentProvider {
-  readonly name: 'omise' | 'beam';
+  readonly name: 'omise' | 'beam' | 'manual';
   createCharge(input: CreateChargeInput): Promise<NormalizedCharge>;
   getCharge(providerChargeId: string): Promise<NormalizedCharge>;
   /** Pull the provider charge id out of a webhook payload (for re-verify). */

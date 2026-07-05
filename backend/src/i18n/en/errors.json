@@ -1,7 +1,10 @@
 {
   "donation": {
     "max_exceeded": "Maximum for {channel} is ฿{max}.",
-    "not_found": "Donation not found"
+    "not_found": "Donation not found",
+    "not_manual": "Only manual (gateway-free) donations can be settled by hand.",
+    "not_pending": "This donation is not pending and cannot be changed.",
+    "preview_unavailable": "QR preview is only available in manual payment mode."
   },
   "character": {
     "not_found": "Character not found",

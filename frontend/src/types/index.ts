@@ -98,6 +98,7 @@ export interface DonationCharge {
   channel: DonationChannel;
   amount: number;
   displayName: string;
+  provider: string; // 'omise' | 'beam' | 'manual' — drives the client flow
   qrImageUri: string | null; // PromptPay QR
   authorizeUri: string | null; // redirect target (TrueMoney, mobile banking, e-wallets)
   expiresAt: string | null;
@@ -112,7 +113,9 @@ export interface Donation {
   amount: number; // satang
   currency: string;
   channel: DonationChannel;
+  provider?: string; // which provider created it ('manual' rows are settled by an admin)
   status: DonationStatus;
+  hide_amount?: boolean; // amount withheld from the public wall
   created_at: string;
   paid_at: string | null;
 }
@@ -120,7 +123,7 @@ export interface Donation {
 // Thank-you wall entry (GET /donations/wall).
 export interface DonationWallEntry {
   display_name: string;
-  amount: number; // satang
+  amount: number | null; // satang; null when the donor hid their amount
   message: string | null;
   paid_at: string | null;
 }

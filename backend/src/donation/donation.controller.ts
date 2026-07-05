@@ -6,6 +6,7 @@ import {
   Headers,
   HttpCode,
   Param,
+  Patch,
   Post,
   RawBodyRequest,
   Req,
@@ -20,6 +21,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { BeamService } from '../beam/beam.service';
 import { DonationService } from './donation.service';
 import { CreateDonationDto } from './dto/create-donation.dto';
+import { UpdateVisibilityDto } from './dto/update-visibility.dto';
 
 @Controller('donations')
 export class DonationController {
@@ -32,6 +34,15 @@ export class DonationController {
   @UseGuards(JwtAuthGuard)
   create(@Body() dto: CreateDonationDto, @CurrentUser() user: JwtPayload) {
     return this.donationService.create(user.sub, dto);
+  }
+
+  // Manual mode only: render the PromptPay QR without recording anything. The
+  // pending donation row is created only once the donor confirms the transfer
+  // (a normal POST /donations), so unpaid QRs never clutter the ledger.
+  @Post('preview')
+  @UseGuards(JwtAuthGuard)
+  preview(@Body() dto: CreateDonationDto) {
+    return this.donationService.preview(dto);
   }
 
   // Public: Omise calls this after a charge changes state. No JWT — the
@@ -58,11 +69,40 @@ export class DonationController {
     return this.donationService.handleWebhook(JSON.parse(raw.toString('utf8')));
   }
 
+  // Which payment provider is active, so the frontend can render the matching
+  // flow (e.g. manual PromptPay + admin confirmation vs. a live gateway).
+  @Get('config')
+  @UseGuards(JwtAuthGuard)
+  config() {
+    return this.donationService.getConfig();
+  }
+
   // Admin-only: full donation ledger.
   @Get('admin/all')
   @UseGuards(JwtAuthGuard, AdminGuard)
   findAllAdmin() {
     return this.donationService.findAll();
+  }
+
+  // Admin-only: settle a manual (gateway-free) donation after checking the bank
+  // statement — confirm marks it paid (→ wall), reject clears it.
+  @Post('admin/:id/confirm')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  confirmManual(@Param('id') id: string) {
+    return this.donationService.settleManual(id, 'successful');
+  }
+
+  @Post('admin/:id/reject')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  rejectManual(@Param('id') id: string) {
+    return this.donationService.settleManual(id, 'failed');
+  }
+
+  // Admin-only: show or hide this donation's amount on the public wall.
+  @Patch('admin/:id/visibility')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  setVisibility(@Param('id') id: string, @Body() dto: UpdateVisibilityDto) {
+    return this.donationService.setHideAmount(id, dto.hideAmount);
   }
 
   @Delete('admin/:id')

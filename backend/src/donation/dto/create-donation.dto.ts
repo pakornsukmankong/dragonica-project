@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsIn,
   IsInt,
   IsOptional,
@@ -55,4 +56,10 @@ export class CreateDonationDto {
     message: 'phoneNumber must be a 10-digit number starting with 0',
   })
   phoneNumber?: string;
+
+  // When true, keep the amount off the public thank-you wall (name + message
+  // still show). Applies to every payment provider.
+  @IsOptional()
+  @IsBoolean()
+  hideAmount?: boolean;
 }

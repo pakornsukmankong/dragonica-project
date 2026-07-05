@@ -52,7 +52,21 @@ function SupportPageInner() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const channelOptions = CHANNEL_LABEL_KEYS.map(({ value, labelKey }) => ({
+  // Which payment provider the backend is using. In "manual" mode there is no
+  // gateway: only PromptPay is offered, and the donor self-declares the transfer
+  // then waits for an admin to confirm.
+  const { data: paymentConfig, isLoading: configLoading } = useQuery<{
+    provider: string;
+  }>({
+    queryKey: ['donations', 'config'],
+    queryFn: () => api.get('/donations/config'),
+    staleTime: Infinity,
+  });
+  const isManual = paymentConfig?.provider === 'manual';
+
+  const channelOptions = CHANNEL_LABEL_KEYS.filter(
+    ({ value }) => !isManual || value === 'promptpay',
+  ).map(({ value, labelKey }) => ({
     value,
     label: t(labelKey),
   }));
@@ -62,6 +76,7 @@ function SupportPageInner() {
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
+  const [hideAmount, setHideAmount] = useState(false);
   const [nameTouched, setNameTouched] = useState(false);
 
   // The active charge drives the payment modal (QR for PromptPay, or a
@@ -79,6 +94,11 @@ function SupportPageInner() {
       setDisplayName(me.username?.trim() || me.email?.split('@')[0] || '');
     }
   }, [me, nameTouched, displayName]);
+
+  // Manual mode only supports PromptPay — snap the selection back if needed.
+  useEffect(() => {
+    if (isManual && channel !== 'promptpay') setChannel('promptpay');
+  }, [isManual, channel]);
 
   // Thank-you wall.
   const { data: wall } = useQuery<DonationWallEntry[]>({
@@ -111,6 +131,7 @@ function SupportPageInner() {
         channel: 'truemoney',
         amount: 0,
         displayName: '',
+        provider: 'omise',
         qrImageUri: null,
         authorizeUri: null,
         expiresAt: null,
@@ -121,10 +142,14 @@ function SupportPageInner() {
   }, [searchParams]);
 
   // Poll the donation while it is pending; the backend re-checks Omise on read.
+  // In manual mode there is nothing to poll — the donor closes the modal after
+  // declaring the transfer and an admin settles it later, so skip polling. Key
+  // this off the charge itself (authoritative) rather than the config query,
+  // which may not have resolved yet when the donor clicks donate.
   const { data: polled } = useQuery<Donation>({
     queryKey: ['donation', charge?.id],
     queryFn: () => api.get(`/donations/${charge!.id}`),
-    enabled: !!charge,
+    enabled: !!charge && charge.provider !== 'manual',
     refetchInterval: (query) => {
       const s = query.state.data?.status;
       return !s || s === 'pending' ? 3000 : false;
@@ -150,15 +175,20 @@ function SupportPageInner() {
     }
   }, [status, charge, toast, queryClient]);
 
+  const donationPayload = () => ({
+    amount: Number(amount),
+    channel,
+    displayName: displayName.trim() || 'Anonymous',
+    message: message.trim() || undefined,
+    phoneNumber: channel === 'truemoney' ? phone.trim() : undefined,
+    hideAmount,
+  });
+
+  // Gateway mode: create the pending donation immediately and collect payment
+  // (QR in-app for PromptPay, off-site redirect for the rest).
   const createMut = useMutation({
     mutationFn: (): Promise<DonationCharge> =>
-      api.post('/donations', {
-        amount: Number(amount),
-        channel,
-        displayName: displayName.trim() || 'Anonymous',
-        message: message.trim() || undefined,
-        phoneNumber: channel === 'truemoney' ? phone.trim() : undefined,
-      }),
+      api.post('/donations', donationPayload()),
     onSuccess: (c) => {
       // PromptPay is confirmed in-app via a QR modal. Omise returns a QR *and*
       // an authorize_uri for PromptPay, so key off the QR first: if there's a
@@ -185,11 +215,54 @@ function SupportPageInner() {
       }),
   });
 
+  // Manual mode: just render the QR — nothing is recorded until the donor
+  // confirms the transfer.
+  const previewMut = useMutation({
+    mutationFn: (): Promise<DonationCharge> =>
+      api.post('/donations/preview', donationPayload()),
+    onSuccess: (c) => {
+      notified.current = false;
+      setCharge(c);
+    },
+    onError: (e) =>
+      toast({
+        title: t('toastStartErrorTitle'),
+        description: (e as Error).message,
+        variant: 'error',
+      }),
+  });
+
+  // Manual mode: the donor confirms they've transferred — only now do we record
+  // the pending donation for an admin to verify.
+  const confirmMut = useMutation({
+    mutationFn: (): Promise<DonationCharge> =>
+      api.post('/donations', donationPayload()),
+    onSuccess: () => {
+      setCharge(null);
+      notified.current = false;
+      toast({ title: t('toastAwaitingReview'), variant: 'success' });
+    },
+    onError: (e) =>
+      toast({
+        title: t('toastStartErrorTitle'),
+        description: (e as Error).message,
+        variant: 'error',
+      }),
+  });
+
+  const starting = isManual ? previewMut.isPending : createMut.isPending;
+  const startDonation = () =>
+    isManual ? previewMut.mutate() : createMut.mutate();
+
   const phoneValid = /^0\d{9}$/.test(phone.trim());
   const canSubmit =
     Number(amount) >= 20 &&
     (channel !== 'truemoney' || phoneValid) &&
-    !createMut.isPending;
+    // Wait for the provider to be known so we pick the right flow. This only
+    // gates the initial load; if the config request fails, `configLoading`
+    // still clears and we fall back to the gateway path (createMut) unchanged.
+    !configLoading &&
+    !starting;
 
   const closeModal = () => {
     setCharge(null);
@@ -324,29 +397,40 @@ function SupportPageInner() {
                 maxLength={200}
                 rows={3}
                 placeholder={t('messagePlaceholder')}
-                className="w-full resize-none rounded-base border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-[var(--focus)] mb-6"
+                className="w-full resize-none rounded-base border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-[var(--focus)] mb-4"
               />
 
+              {/* Privacy: keep the amount off the public wall (all providers). */}
+              <label className="mb-6 flex cursor-pointer items-center gap-2.5 text-sm text-muted select-none">
+                <input
+                  type="checkbox"
+                  checked={hideAmount}
+                  onChange={(e) => setHideAmount(e.target.checked)}
+                  className="h-4 w-4 shrink-0 cursor-pointer accent-[var(--blue)]"
+                />
+                {t('hideAmountLabel')}
+              </label>
+
               <button
-                onClick={() => createMut.mutate()}
+                onClick={startDonation}
                 disabled={!canSubmit}
                 className="flex w-full items-center justify-center gap-2 rounded-base bg-[var(--blue)] px-5 py-3 text-sm font-semibold text-[#1b1407] shadow-button transition-colors duration-150 hover:opacity-90 disabled:opacity-50"
               >
-                {createMut.isPending ? (
+                {starting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : channel === 'promptpay' ? (
                   <QrCode className="h-4 w-4" />
                 ) : (
                   <Wallet className="h-4 w-4" />
                 )}
-                {createMut.isPending
+                {starting
                   ? t('starting')
                   : amount
                     ? t('donate', { amount: baht(Number(amount) * 100) })
                     : t('donateBlank')}
               </button>
               <p className="mt-3 text-center text-[11px] text-muted">
-                {t('secureNote')}
+                {isManual ? t('secureNoteManual') : t('secureNote')}
               </p>
             </div>
 
@@ -363,7 +447,7 @@ function SupportPageInner() {
                 {!wall || wall.length === 0 ? (
                   <p className="text-xs text-muted">{t('noSupporters')}</p>
                 ) : (
-                  <ul className="space-y-2 max-h-[240px] overflow-y-auto pr-1">
+                  <ul className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
                     {wall.map((d, i) => (
                       <li
                         key={i}
@@ -379,9 +463,11 @@ function SupportPageInner() {
                             </p>
                           )}
                         </div>
-                        <span className="shrink-0 text-sm font-semibold text-gold tabular-nums">
-                          {baht(d.amount)}
-                        </span>
+                        {d.amount != null && (
+                          <span className="shrink-0 text-sm font-semibold text-gold tabular-nums">
+                            {baht(d.amount)}
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -433,7 +519,10 @@ function SupportPageInner() {
           charge={charge}
           status={status}
           amount={modalAmount}
+          isManual={charge.provider === 'manual'}
           onClose={closeModal}
+          onPaid={() => confirmMut.mutate()}
+          confirming={confirmMut.isPending}
         />
       )}
     </main>
@@ -444,21 +533,27 @@ function PaymentModal({
   charge,
   status,
   amount,
+  isManual,
   onClose,
+  onPaid,
+  confirming,
 }: {
   charge: DonationCharge;
   status: Donation['status'];
   amount: number;
+  isManual: boolean;
   onClose: () => void;
+  onPaid: () => void;
+  confirming: boolean;
 }) {
   const t = useTranslations('support');
-  // Live countdown for the PromptPay QR.
+  // Live countdown for the PromptPay QR (gateway mode only; manual has no poll).
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    if (status !== 'pending') return;
+    if (status !== 'pending' || isManual) return;
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, [status]);
+  }, [status, isManual]);
 
   const remaining = useMemo(() => {
     if (!charge.expiresAt) return null;
@@ -533,11 +628,36 @@ function PaymentModal({
                 className="h-full w-full"
               />
             </div>
-            <div className="flex items-center justify-center gap-2 text-xs text-muted">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-gold" />
-              {t('modalWaiting')}
-              {mmss && <span className="tabular-nums">{t('modalExpiresIn', { time: mmss })}</span>}
-            </div>
+            {isManual ? (
+              // No gateway: the donor confirms they've transferred, then waits
+              // for an admin to verify and publish the donation.
+              <div>
+                <button
+                  onClick={onPaid}
+                  disabled={confirming}
+                  className="flex w-full items-center justify-center gap-2 rounded-base bg-[var(--blue)] px-4 py-2.5 text-sm font-semibold text-[#1b1407] shadow-button hover:opacity-90 disabled:opacity-50"
+                >
+                  {confirming && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  {t('modalPaidButton')}
+                </button>
+                <button
+                  onClick={onClose}
+                  disabled={confirming}
+                  className="mt-2 w-full rounded-base border border-border px-4 py-2.5 text-sm font-medium text-muted hover:bg-raised hover:text-foreground disabled:opacity-50"
+                >
+                  {t('modalCancelButton')}
+                </button>
+                <p className="mt-2 text-[11px] text-muted">
+                  {t('modalManualHint')}
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2 text-xs text-muted">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-gold" />
+                {t('modalWaiting')}
+                {mmss && <span className="tabular-nums">{t('modalExpiresIn', { time: mmss })}</span>}
+              </div>
+            )}
           </div>
         ) : (
           // TrueMoney return / linking: just confirming.

@@ -44,6 +44,7 @@ export interface DonationRow {
   omise_charge_id: string | null;
   provider: string | null;
   status: DonationStatus;
+  hide_amount: boolean;
   created_at: string;
   paid_at: string | null;
 }
@@ -87,6 +88,7 @@ export class DonationService {
         currency: 'THB',
         channel: dto.channel,
         provider: this.provider.name,
+        hide_amount: dto.hideAmount ?? false,
         status: 'pending',
       })
       .select('*')
@@ -126,10 +128,16 @@ export class DonationService {
       channel: donation.channel,
       amount: donation.amount,
       displayName: donation.display_name,
+      provider: this.provider.name,
       qrImageUri: charge.qrImageUri,
       authorizeUri: charge.authorizeUri,
       expiresAt: charge.expiresAt,
     };
+  }
+
+  /** Which payment provider is active — lets the frontend pick the right flow. */
+  getConfig() {
+    return { provider: this.provider.name };
   }
 
   /** Admin: every donation, most recent first (guarded by AdminGuard). */
@@ -162,6 +170,109 @@ export class DonationService {
 
     if (deleteError) throw deleteError;
     return { deleted: true };
+  }
+
+  /**
+   * Admin: manually settle a `manual`-provider donation after verifying the
+   * transfer in the bank statement. `successful` publishes it to the wall;
+   * `failed` clears an abandoned/incomplete one. Only pending manual rows are
+   * eligible — a gateway charge is never settled by hand.
+   */
+  async settleManual(id: string, status: 'successful' | 'failed') {
+    const { data } = await this.supabase
+      .from('donations')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!data)
+      throw new NotFoundException(this.i18n.t('errors.donation.not_found'));
+
+    const row = data as DonationRow;
+    if (row.provider !== 'manual')
+      throw new BadRequestException(this.i18n.t('errors.donation.not_manual'));
+    if (row.status !== 'pending')
+      throw new BadRequestException(this.i18n.t('errors.donation.not_pending'));
+
+    const update: Partial<DonationRow> = { status };
+    if (status === 'successful') update.paid_at = new Date().toISOString();
+
+    const { data: updated, error } = await this.supabase
+      .from('donations')
+      .update(update)
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return updated as DonationRow;
+  }
+
+  /**
+   * Manual mode: build the PromptPay QR for an amount without persisting
+   * anything. The donor sees the QR, transfers, and only then confirms — at
+   * which point a normal `create()` records the pending row. This keeps the
+   * ledger free of QRs that were opened but never paid.
+   */
+  async preview(dto: CreateDonationDto) {
+    if (this.provider.name !== 'manual')
+      throw new BadRequestException(
+        this.i18n.t('errors.donation.preview_unavailable'),
+      );
+
+    if (dto.amount > MAX_BAHT[dto.channel]) {
+      throw new BadRequestException(
+        this.i18n.t('errors.donation.max_exceeded', {
+          args: {
+            channel: dto.channel,
+            max: MAX_BAHT[dto.channel].toLocaleString(),
+          },
+        }),
+      );
+    }
+
+    const amountSatang = dto.amount * 100;
+    const charge = await this.provider.createCharge({
+      channel: dto.channel,
+      amount: amountSatang,
+      phoneNumber: dto.phoneNumber,
+      referenceId: 'preview',
+      returnUrl: '',
+    });
+
+    return {
+      id: '', // no row yet — created on confirm
+      status: charge.status,
+      channel: dto.channel,
+      amount: amountSatang,
+      displayName: dto.displayName.trim() || 'Anonymous',
+      provider: this.provider.name,
+      qrImageUri: charge.qrImageUri,
+      authorizeUri: charge.authorizeUri,
+      expiresAt: charge.expiresAt,
+    };
+  }
+
+  /** Admin: show or hide a donation's amount on the public thank-you wall. */
+  async setHideAmount(id: string, hide: boolean) {
+    const { data } = await this.supabase
+      .from('donations')
+      .select('id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!data)
+      throw new NotFoundException(this.i18n.t('errors.donation.not_found'));
+
+    const { data: updated, error } = await this.supabase
+      .from('donations')
+      .update({ hide_amount: hide })
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return updated as DonationRow;
   }
 
   /** A user's own donation history (most recent first). */
@@ -206,13 +317,19 @@ export class DonationService {
   async wall(limit = 50) {
     const { data, error } = await this.supabase
       .from('donations')
-      .select('display_name, amount, message, paid_at')
+      .select('display_name, amount, message, paid_at, hide_amount')
       .eq('status', 'successful')
       .order('paid_at', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
-    return data;
+
+    // Withhold the amount server-side for donors who opted out, so a hidden
+    // amount never reaches the client at all.
+    return (data ?? []).map(({ hide_amount, amount, ...rest }) => ({
+      ...rest,
+      amount: hide_amount ? null : amount,
+    }));
   }
 
   /**
