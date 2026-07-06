@@ -376,6 +376,9 @@ export class DonationService {
       return current;
     }
 
+    // Temporary diagnostic.
+    this.logger.log(`sync ${chargeId}: ${current.status} → ${status}`);
+
     if (status === current.status) return current;
 
     const update: Partial<DonationRow> = { status };

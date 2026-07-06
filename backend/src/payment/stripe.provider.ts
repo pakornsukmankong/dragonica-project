@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import Stripe from 'stripe';
 import { StripeService } from '../stripe/stripe.service';
 import {
@@ -17,6 +17,7 @@ import {
 export class StripeProvider implements PaymentProvider {
   readonly name = 'stripe' as const;
   readonly supportedChannels = ['promptpay', 'card'] as const;
+  private readonly logger = new Logger(StripeProvider.name);
 
   constructor(private readonly stripe: StripeService) {}
 
@@ -51,9 +52,13 @@ export class StripeProvider implements PaymentProvider {
     // Card donations are keyed by the Checkout Session (cs_…); PromptPay by the
     // PaymentIntent (pi_…).
     if (providerChargeId.startsWith('cs_')) {
-      return this.normalizeSession(
-        await this.stripe.retrieveCheckoutSession(providerChargeId),
+      const session =
+        await this.stripe.retrieveCheckoutSession(providerChargeId);
+      // Temporary diagnostic: confirm the session state we reconcile from.
+      this.logger.log(
+        `getCharge session ${session.id}: status=${session.status} payment_status=${session.payment_status}`,
       );
+      return this.normalizeSession(session);
     }
     return this.normalize(await this.stripe.retrieveIntent(providerChargeId));
   }
