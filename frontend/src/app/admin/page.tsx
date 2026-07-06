@@ -128,7 +128,6 @@ function DungeonsTab() {
   const { toast } = useToast();
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [dragonCoreCost, setDragonCoreCost] = useState<number | ''>('');
 
   const { data: dungeons, isLoading } = useQuery<Dungeon[]>({
     queryKey: ['admin', 'dungeons'],
@@ -136,16 +135,12 @@ function DungeonsTab() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (body: {
-      name: string;
-      imageUrl?: string;
-      dragonCoreCost?: number;
-    }) => api.post('/admin/dungeons', body),
+    mutationFn: (body: { name: string; imageUrl?: string }) =>
+      api.post('/admin/dungeons', body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'dungeons'] });
       setName('');
       setImageUrl('');
-      setDragonCoreCost('');
       toast({ title: t('toastDungeonAdded'), variant: 'success' });
     },
     onError: (e) =>
@@ -181,7 +176,6 @@ function DungeonsTab() {
             createMutation.mutate({
               name,
               imageUrl: imageUrl || undefined,
-              dragonCoreCost: dragonCoreCost || undefined,
             });
           }}
           className="flex flex-col gap-4"
@@ -195,17 +189,6 @@ function DungeonsTab() {
                 required
                 className="rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
                 placeholder={t('dungeonNamePlaceholder')}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5 w-32">
-              <label className="text-xs font-medium text-muted">{t('coreCost')}</label>
-              <input
-                type="number"
-                min={0}
-                value={dragonCoreCost}
-                onChange={(e) => setDragonCoreCost(e.target.value ? Number(e.target.value) : '')}
-                placeholder="e.g. 5"
-                className="rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
               />
             </div>
           </div>
@@ -238,11 +221,6 @@ function DungeonsTab() {
                   )}
                   <div>
                     <span className="text-sm text-foreground font-medium">{d.name}</span>
-                    <div className="flex gap-3 text-[11px] text-muted mt-0.5">
-                      {d.dragon_core_cost != null && (
-                        <span className="text-gold">◆ {t('cores', { count: d.dragon_core_cost })}</span>
-                      )}
-                    </div>
                   </div>
                 </div>
                 <button

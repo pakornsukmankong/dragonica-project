@@ -79,7 +79,6 @@ export class AdminService {
       .from('dungeons')
       .insert({
         name: dto.name,
-        dragon_core_cost: dto.dragonCoreCost,
         image_url: dto.imageUrl,
       })
       .select('*')

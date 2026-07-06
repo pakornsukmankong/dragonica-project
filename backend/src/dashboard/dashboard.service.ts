@@ -39,10 +39,6 @@ export interface DungeonStats {
   totalGold: number;
   totalMinutes: number;
   goldPerHour: number;
-  /** Cost in dragon cores per single run (from the dungeon catalog). */
-  dragonCoreCost: number | null;
-  /** totalGold divided by total cores spent; null when cost is unknown. */
-  goldPerCore: number | null;
 }
 
 interface SessionWithDungeonRow {
@@ -51,7 +47,6 @@ interface SessionWithDungeonRow {
   duration_minutes: number | null;
   dungeons: {
     name: string;
-    dragon_core_cost: number | null;
   } | null;
 }
 
@@ -164,19 +159,14 @@ export class DashboardService {
   async getDungeonStats(userId: string): Promise<DungeonStats[]> {
     const { data, error } = await this.supabase
       .from('sessions')
-      .select(
-        'dungeon_id, gold_earned, duration_minutes, dungeons(name, dragon_core_cost)',
-      )
+      .select('dungeon_id, gold_earned, duration_minutes, dungeons(name)')
       .eq('user_id', userId);
 
     if (error) throw error;
 
     const sessions = (data ?? []) as unknown as SessionWithDungeonRow[];
 
-    const map = new Map<
-      string,
-      DungeonStats & { coreCostPerRun: number | null }
-    >();
+    const map = new Map<string, DungeonStats>();
 
     for (const session of sessions) {
       // Sessions not tied to a dungeon can't be ranked by dungeon.
@@ -197,9 +187,6 @@ export class DashboardService {
           totalGold: session.gold_earned ?? 0,
           totalMinutes: session.duration_minutes ?? 0,
           goldPerHour: 0,
-          dragonCoreCost: session.dungeons.dragon_core_cost ?? null,
-          goldPerCore: null,
-          coreCostPerRun: session.dungeons.dragon_core_cost ?? null,
         });
       }
     }
@@ -210,11 +197,6 @@ export class DashboardService {
           ? Math.round((d.totalGold / d.totalMinutes) * 60)
           : 0;
 
-      const totalCores =
-        d.coreCostPerRun != null ? d.coreCostPerRun * d.totalSessions : 0;
-      const goldPerCore =
-        totalCores > 0 ? Math.round(d.totalGold / totalCores) : null;
-
       return {
         dungeonId: d.dungeonId,
         dungeonName: d.dungeonName,
@@ -222,8 +204,6 @@ export class DashboardService {
         totalGold: d.totalGold,
         totalMinutes: d.totalMinutes,
         goldPerHour,
-        dragonCoreCost: d.dragonCoreCost,
-        goldPerCore,
       };
     });
 
