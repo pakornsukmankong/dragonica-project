@@ -17,6 +17,11 @@ export class SupabaseService {
     return this.client.from(table);
   }
 
+  /** Call a Postgres function (e.g. atomic counter increment). */
+  rpc(fn: string, args?: Record<string, unknown>) {
+    return this.client.rpc(fn, args);
+  }
+
   get storage() {
     return this.client.storage;
   }

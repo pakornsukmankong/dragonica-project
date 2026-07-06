@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { VisitorCounter } from '@/components/visitor-counter';
 import {
   Coins,
   TrendingUp,
@@ -206,6 +207,7 @@ export default function HomePage() {
         <p className="mt-2 text-center text-[11px] text-muted/80">
           {t('privacyNote')}
         </p>
+        <VisitorCounter />
       </section>
     </main>
   );
