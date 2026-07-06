@@ -32,6 +32,10 @@ export default function SessionsPage() {
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
 
+  // Local-timezone YYYY-MM-DD (en-CA yields ISO format), used to block picking
+  // future dates in the date filter.
+  const maxDate = new Date().toLocaleDateString('en-CA');
+
   // Inline drop editing
   const [editingDropId, setEditingDropId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState(0);
@@ -280,6 +284,7 @@ export default function SessionsPage() {
                 <input
                   type="date"
                   value={filterDateFrom}
+                  max={filterDateTo || maxDate}
                   onChange={(e) => setFilterDateFrom(e.target.value)}
                   className="w-full rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
                 />
@@ -289,6 +294,8 @@ export default function SessionsPage() {
                 <input
                   type="date"
                   value={filterDateTo}
+                  min={filterDateFrom || undefined}
+                  max={maxDate}
                   onChange={(e) => setFilterDateTo(e.target.value)}
                   className="w-full rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
                 />

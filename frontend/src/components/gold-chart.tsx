@@ -16,17 +16,32 @@ interface GoldChartProps {
 type ChartMode = 'daily' | 'weekly' | 'perSession';
 type ChartType = 'bar' | 'line' | 'pie';
 
+// Gold contributed by a single character within one bucket (day/week/session).
+interface CharacterGold {
+  name: string;
+  gold: number;
+}
+
+// One bar/point/slice: its label, total gold, and the per-character breakdown
+// that makes up that total (shown on hover).
+interface ChartDatum {
+  label: string;
+  value: number;
+  breakdown: CharacterGold[];
+}
+
 export function GoldChart({ sessions }: GoldChartProps) {
   const t = useTranslations('goldChart');
   const locale = useLocale();
   const [mode, setMode] = useState<ChartMode>('daily');
   const [chartType, setChartType] = useState<ChartType>('bar');
 
+  const unknownLabel = t('unknownCharacter');
   const chartData = useMemo(() => {
-    if (mode === 'daily') return getDailyData(sessions, locale);
-    if (mode === 'weekly') return getWeeklyData(sessions, locale);
-    return getPerSessionData(sessions);
-  }, [sessions, mode, locale]);
+    if (mode === 'daily') return getDailyData(sessions, locale, unknownLabel);
+    if (mode === 'weekly') return getWeeklyData(sessions, locale, unknownLabel);
+    return getPerSessionData(sessions, unknownLabel);
+  }, [sessions, mode, locale, unknownLabel]);
 
   const maxValue = Math.max(...chartData.map((d) => d.value), 1);
   const total = chartData.reduce((sum, d) => sum + d.value, 0);
@@ -108,14 +123,55 @@ export function GoldChart({ sessions }: GoldChartProps) {
   );
 }
 
+// Hover card: per-character gold breakdown plus the bucket total. Shown via the
+// parent column's `group-hover` (pointer-events off so it never blocks hovering).
+function ChartTooltip({ datum }: { datum: ChartDatum }) {
+  const t = useTranslations('goldChart');
+  return (
+    <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 group-hover:block">
+      <div className="w-max min-w-[140px] max-w-[220px] rounded-base border border-border bg-surface px-3 py-2 shadow-card">
+        <p className="mb-1.5 whitespace-nowrap text-[11px] font-medium text-foreground">
+          {datum.label}
+        </p>
+        {datum.breakdown.length > 0 ? (
+          <div className="space-y-1">
+            {datum.breakdown.map((b) => (
+              <div
+                key={b.name}
+                className="flex items-center justify-between gap-3 text-[11px]"
+              >
+                <span className="truncate text-muted">{b.name}</span>
+                <span className="whitespace-nowrap tabular-nums text-foreground">
+                  {formatCoins(b.gold)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted">{t('noData')}</p>
+        )}
+        <div className="mt-1.5 flex items-center justify-between gap-3 border-t border-[rgba(255,255,255,0.08)] pt-1.5 text-[11px]">
+          <span className="text-muted">{t('total')}</span>
+          <span className="whitespace-nowrap font-semibold tabular-nums text-gold">
+            {formatCoins(datum.value)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ===== BAR CHART =====
-function BarChart({ data, maxValue }: { data: { label: string; value: number }[]; maxValue: number }) {
+function BarChart({ data, maxValue }: { data: ChartDatum[]; maxValue: number }) {
   return (
     <div className="flex items-end gap-1 h-[180px]">
       {data.map((bar, i) => {
         const height = (bar.value / maxValue) * 100;
         return (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+          <div
+            key={i}
+            className="group relative flex-1 flex flex-col items-center gap-1.5 min-w-0"
+          >
             <div className="w-full flex flex-col items-center justify-end h-[140px]">
               {bar.value > 0 && data.length <= 14 && (
                 <span className="text-[9px] text-muted mb-0.5 truncate max-w-full">
@@ -123,12 +179,12 @@ function BarChart({ data, maxValue }: { data: { label: string; value: number }[]
                 </span>
               )}
               <div
-                className="w-full max-w-[32px] rounded-t-sm bg-[var(--blue)] transition-all duration-300"
+                className="w-full max-w-[32px] rounded-t-sm bg-[var(--blue)] transition-all duration-200 group-hover:brightness-125"
                 style={{ height: `${Math.max(height, 2)}%`, opacity: bar.value > 0 ? 1 : 0.15 }}
-                title={`${bar.label}: ${formatCoins(bar.value)}`}
               />
             </div>
             <span className="text-[9px] text-muted truncate max-w-full">{bar.label}</span>
+            {bar.value > 0 && <ChartTooltip datum={bar} />}
           </div>
         );
       })}
@@ -137,7 +193,8 @@ function BarChart({ data, maxValue }: { data: { label: string; value: number }[]
 }
 
 // ===== LINE CHART =====
-function LineChart({ data, maxValue }: { data: { label: string; value: number }[]; maxValue: number }) {
+function LineChart({ data, maxValue }: { data: ChartDatum[]; maxValue: number }) {
+  const t = useTranslations('goldChart');
   const width = 600;
   const height = 160;
   const padding = 20;
@@ -145,8 +202,7 @@ function LineChart({ data, maxValue }: { data: { label: string; value: number }[
   const points = data.map((d, i) => ({
     x: padding + (i / (data.length - 1 || 1)) * (width - padding * 2),
     y: height - padding - (d.value / maxValue) * (height - padding * 2),
-    value: d.value,
-    label: d.label,
+    datum: d,
   }));
 
   const linePath = points
@@ -162,11 +218,20 @@ function LineChart({ data, maxValue }: { data: { label: string; value: number }[
         <path d={areaPath} fill="var(--blue)" opacity="0.1" />
         {/* Line */}
         <path d={linePath} fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        {/* Dots */}
+        {/* Dots (larger transparent hit area so the tooltip is easy to trigger) */}
         {points.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r="3" fill="var(--blue)" opacity={p.value > 0 ? 1 : 0.3}>
-            <title>{`${p.label}: ${formatCoins(p.value)}`}</title>
-          </circle>
+          <g key={i}>
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r="3"
+              fill="var(--blue)"
+              opacity={p.datum.value > 0 ? 1 : 0.3}
+            />
+            <circle cx={p.x} cy={p.y} r="10" fill="transparent">
+              <title>{tooltipText(p.datum, t('total'))}</title>
+            </circle>
+          </g>
         ))}
       </svg>
       {/* X-axis labels */}
@@ -188,7 +253,7 @@ function LineChart({ data, maxValue }: { data: { label: string; value: number }[
 }
 
 // ===== PIE CHART =====
-function PieChart({ data, total }: { data: { label: string; value: number }[]; total: number }) {
+function PieChart({ data, total }: { data: ChartDatum[]; total: number }) {
   const t = useTranslations('goldChart');
   const filtered = data.filter((d) => d.value > 0).sort((a, b) => b.value - a.value);
   // Group small slices
@@ -268,7 +333,17 @@ function PieChart({ data, total }: { data: { label: string; value: number }[]; t
 
 // ===== Data generators =====
 
-function getDailyData(sessions: Session[], locale: string) {
+// Build a datum from a character→gold map: breakdown sorted high→low, total summed.
+function makeDatum(label: string, charGold: Map<string, number>): ChartDatum {
+  const breakdown = [...charGold.entries()]
+    .map(([name, gold]) => ({ name, gold }))
+    .filter((b) => b.gold > 0)
+    .sort((a, b) => b.gold - a.gold);
+  const value = breakdown.reduce((sum, b) => sum + b.gold, 0);
+  return { label, value, breakdown };
+}
+
+function getDailyData(sessions: Session[], locale: string, unknownLabel: string): ChartDatum[] {
   const days: { key: string; label: string }[] = [];
   const now = new Date();
 
@@ -281,21 +356,22 @@ function getDailyData(sessions: Session[], locale: string) {
     });
   }
 
-  const dailyGold = new Map<string, number>();
-  for (const day of days) dailyGold.set(day.key, 0);
+  const byDay = new Map<string, Map<string, number>>();
+  for (const day of days) byDay.set(day.key, new Map());
 
   for (const session of sessions) {
     if (!session.started_at) continue;
     const dateKey = new Date(session.started_at).toISOString().split('T')[0];
-    if (dailyGold.has(dateKey)) {
-      dailyGold.set(dateKey, (dailyGold.get(dateKey) ?? 0) + Number(session.gold_earned));
-    }
+    const charGold = byDay.get(dateKey);
+    if (!charGold) continue;
+    const name = session.characters?.name ?? unknownLabel;
+    charGold.set(name, (charGold.get(name) ?? 0) + Number(session.gold_earned));
   }
 
-  return days.map((d) => ({ label: d.label, value: dailyGold.get(d.key) ?? 0 }));
+  return days.map((d) => makeDatum(d.label, byDay.get(d.key)!));
 }
 
-function getWeeklyData(sessions: Session[], locale: string) {
+function getWeeklyData(sessions: Session[], locale: string, unknownLabel: string): ChartDatum[] {
   const weeks: { start: Date; label: string }[] = [];
   const now = new Date();
 
@@ -310,28 +386,42 @@ function getWeeklyData(sessions: Session[], locale: string) {
 
   return weeks.map((week, idx) => {
     const end = idx < weeks.length - 1 ? weeks[idx + 1].start : new Date();
-    const gold = sessions
-      .filter((s) => {
-        if (!s.started_at) return false;
-        const d = new Date(s.started_at);
-        return d >= week.start && d < end;
-      })
-      .reduce((sum, s) => sum + Number(s.gold_earned), 0);
-
-    return { label: week.label, value: gold };
+    const charGold = new Map<string, number>();
+    for (const s of sessions) {
+      if (!s.started_at) continue;
+      const d = new Date(s.started_at);
+      if (d >= week.start && d < end) {
+        const name = s.characters?.name ?? unknownLabel;
+        charGold.set(name, (charGold.get(name) ?? 0) + Number(s.gold_earned));
+      }
+    }
+    return makeDatum(week.label, charGold);
   });
 }
 
-function getPerSessionData(sessions: Session[]) {
+function getPerSessionData(sessions: Session[], unknownLabel: string): ChartDatum[] {
   const recent = sessions
     .filter((s) => s.started_at)
     .sort((a, b) => new Date(a.started_at!).getTime() - new Date(b.started_at!).getTime())
     .slice(-20);
 
-  return recent.map((s, i) => ({
-    label: `#${i + 1}`,
-    value: Number(s.gold_earned),
-  }));
+  return recent.map((s, i) => {
+    const name = s.characters?.name ?? unknownLabel;
+    const gold = Number(s.gold_earned);
+    return {
+      label: `#${i + 1}`,
+      value: gold,
+      breakdown: gold > 0 ? [{ name, gold }] : [],
+    };
+  });
+}
+
+// Multi-line text for the native SVG tooltip (line chart): each character's
+// gold, then the total.
+function tooltipText(d: ChartDatum, totalLabel: string): string {
+  const lines = d.breakdown.map((b) => `${b.name}: ${formatCoins(b.gold)}`);
+  lines.push(`${totalLabel}: ${formatCoins(d.value)}`);
+  return `${d.label}\n${lines.join('\n')}`;
 }
 
 // Bar/pie labels show gold-major (e.g. "12g", "1.2Kg") since values are copper.

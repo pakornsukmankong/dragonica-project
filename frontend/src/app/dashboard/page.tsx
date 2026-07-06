@@ -62,6 +62,10 @@ export default function DashboardPage() {
     );
   }, [sessions, dateRange, customFrom, customTo]);
 
+  // Local-timezone YYYY-MM-DD (en-CA yields ISO format), used to block picking
+  // future dates in the range filter.
+  const maxDate = new Date().toLocaleDateString('en-CA');
+
   if (isSummaryLoading) {
     return (
       <div className="min-h-screen bg-root flex items-center justify-center">
@@ -148,6 +152,7 @@ export default function DashboardPage() {
                   <input
                     type="date"
                     value={customFrom}
+                    max={customTo || maxDate}
                     onChange={(e) => setCustomFrom(e.target.value)}
                     className="rounded-base border border-border bg-surface px-2 py-1.5 text-xs text-foreground outline-none focus:border-[var(--focus)]"
                   />
@@ -155,6 +160,8 @@ export default function DashboardPage() {
                   <input
                     type="date"
                     value={customTo}
+                    min={customFrom || undefined}
+                    max={maxDate}
                     onChange={(e) => setCustomTo(e.target.value)}
                     className="rounded-base border border-border bg-surface px-2 py-1.5 text-xs text-foreground outline-none focus:border-[var(--focus)]"
                   />
