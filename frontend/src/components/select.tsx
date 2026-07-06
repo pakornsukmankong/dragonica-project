@@ -50,7 +50,11 @@ export function Select({
         id={id}
         className={`flex w-full items-center justify-between gap-2 rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors hover:border-[var(--border-dark)] focus:border-[var(--focus)] data-[state=open]:border-[var(--focus)] data-[placeholder]:text-muted disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
       >
-        <RS.Value placeholder={placeholder} />
+        {/* min-w-0 + truncate so a long label ellipsizes instead of wrapping
+            the trigger onto two lines. */}
+        <span className="min-w-0 flex-1 truncate text-left">
+          <RS.Value placeholder={placeholder} />
+        </span>
         <RS.Icon>
           <ChevronDown className="h-4 w-4 shrink-0 text-muted transition-transform duration-150 data-[state=open]:rotate-180" />
         </RS.Icon>

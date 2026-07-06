@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { X, Pencil, Check } from 'lucide-react';
+import { X, Pencil, Check, Plus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/toast';
 import { useDateFormatter } from '@/lib/i18n';
@@ -12,7 +12,7 @@ import { Currency, CurrencyInput } from '@/components/currency';
 import { Select } from '@/components/select';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { formatGoldShort, toParts } from '@/lib/currency';
-import type { Session, Character, Dungeon } from '@/types';
+import type { Session, Character, Dungeon, Item } from '@/types';
 
 const PAGE_SIZE = 10;
 
@@ -41,6 +41,14 @@ export default function SessionsPage() {
   const [editQty, setEditQty] = useState(0);
   const [editPrice, setEditPrice] = useState(0);
 
+  // Inline "add drop" — which session is currently adding, plus the draft fields.
+  const [addingDropSessionId, setAddingDropSessionId] = useState<string | null>(
+    null,
+  );
+  const [newItemId, setNewItemId] = useState('');
+  const [newQty, setNewQty] = useState(1);
+  const [newPrice, setNewPrice] = useState(0);
+
   const { data: sessions, isLoading } = useQuery<Session[]>({
     queryKey: ['sessions'],
     queryFn: () => api.get('/sessions'),
@@ -49,6 +57,12 @@ export default function SessionsPage() {
   const { data: characters } = useQuery<Character[]>({
     queryKey: ['characters'],
     queryFn: () => api.get('/characters'),
+  });
+
+  // Item catalog for the "add drop" picker.
+  const { data: items } = useQuery<Item[]>({
+    queryKey: ['game-data', 'items'],
+    queryFn: () => api.get('/game-data/items'),
   });
 
   const deleteMutation = useMutation({
@@ -122,9 +136,50 @@ export default function SessionsPage() {
   });
 
   const startEditDrop = (dropId: string, quantity: number, priceEach: number) => {
+    setAddingDropSessionId(null);
     setEditingDropId(dropId);
     setEditQty(quantity);
     setEditPrice(priceEach);
+  };
+
+  const addDropMutation = useMutation({
+    mutationFn: (vars: {
+      sessionId: string;
+      itemId: string;
+      quantity: number;
+      priceEach: number;
+    }) => api.post('/sessions/drops', vars),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      setAddingDropSessionId(null);
+      setNewItemId('');
+      setNewQty(1);
+      setNewPrice(0);
+      toast({ title: t('toastDropAdded'), variant: 'success' });
+    },
+    onError: (e) =>
+      toast({
+        title: t('toastDropAddError'),
+        description: (e as Error).message,
+        variant: 'error',
+      }),
+  });
+
+  // Open the add-drop row for a session (closing any open inline edit first).
+  const startAddDrop = (sessionId: string) => {
+    setEditingDropId(null);
+    setAddingDropSessionId(sessionId);
+    setNewItemId('');
+    setNewQty(1);
+    setNewPrice(0);
+  };
+
+  // Picking an item prefills its catalog price so the user rarely has to type it.
+  const selectNewItem = (itemId: string) => {
+    setNewItemId(itemId);
+    const item = items?.find((i) => i.id === itemId);
+    if (item) setNewPrice(item.default_price ?? 0);
   };
 
   // Filter & sort logic
@@ -422,11 +477,21 @@ export default function SessionsPage() {
                   </div>
 
                   {/* Item Drops */}
-                  {session.session_drops && session.session_drops.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.05)]">
-                      <p className="text-xs text-muted mb-2">{t('drops')}</p>
+                  <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.05)]">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-xs text-muted">{t('drops')}</p>
+                      {addingDropSessionId !== session.id && (
+                        <button
+                          onClick={() => startAddDrop(session.id)}
+                          className="flex items-center gap-1 text-xs text-muted transition-colors hover:text-gold"
+                        >
+                          <Plus className="h-3 w-3" />
+                          {t('addDrop')}
+                        </button>
+                      )}
+                    </div>
                       <div className="flex flex-wrap gap-2">
-                        {session.session_drops.map((drop: { id: string; quantity: number; price_each: number; items?: { name: string; icon_url?: string | null } }) =>
+                        {session.session_drops?.map((drop: { id: string; quantity: number; price_each: number; items?: { name: string; icon_url?: string | null } }) =>
                           editingDropId === drop.id ? (
                             <div
                               key={drop.id}
@@ -512,9 +577,70 @@ export default function SessionsPage() {
                             </div>
                           ),
                         )}
+                        {addingDropSessionId === session.id && (
+                          <div className="flex flex-wrap items-center gap-1.5 rounded-sm bg-raised px-2 py-1.5 outline outline-1 outline-[rgba(224,165,60,0.4)]">
+                            <div className="w-40">
+                              <Select
+                                value={newItemId}
+                                onChange={selectNewItem}
+                                placeholder={t('selectItem')}
+                                options={(items ?? []).map((it) => ({
+                                  value: it.id,
+                                  label: it.name,
+                                }))}
+                              />
+                            </div>
+                            <span className="text-[10px] text-muted">x</span>
+                            <input
+                              type="number"
+                              min={1}
+                              value={newQty}
+                              onChange={(e) => setNewQty(Number(e.target.value))}
+                              className="w-12 rounded-xs border border-border bg-surface px-1 py-0.5 text-xs text-foreground outline-none focus:border-[var(--focus)]"
+                              aria-label="Quantity"
+                            />
+                            <span className="text-[10px] text-muted">@</span>
+                            <input
+                              type="number"
+                              min={0}
+                              value={newPrice}
+                              onChange={(e) => setNewPrice(Number(e.target.value))}
+                              className="w-16 rounded-xs border border-border bg-surface px-1 py-0.5 text-xs text-foreground outline-none focus:border-[var(--focus)]"
+                              aria-label="Price each"
+                            />
+                            <button
+                              onClick={() =>
+                                addDropMutation.mutate({
+                                  sessionId: session.id,
+                                  itemId: newItemId,
+                                  quantity: newQty,
+                                  priceEach: newPrice,
+                                })
+                              }
+                              disabled={
+                                !newItemId || newQty < 1 || addDropMutation.isPending
+                              }
+                              className="text-[var(--fg-success)] hover:opacity-80 disabled:opacity-40"
+                              aria-label="Save drop"
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setAddingDropSessionId(null)}
+                              className="text-muted hover:text-foreground"
+                              aria-label="Cancel"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
+                      {(!session.session_drops ||
+                        session.session_drops.length === 0) &&
+                        addingDropSessionId !== session.id && (
+                          <p className="text-xs text-muted">{t('noDrops')}</p>
+                        )}
                     </div>
-                  )}
                 </div>
               ))}
               <Pagination page={page} pageCount={pageCount} onChange={setPage} />

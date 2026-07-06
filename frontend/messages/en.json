@@ -202,6 +202,11 @@
     "toastDropRemoveError": "Could not remove drop",
     "toastDropUpdated": "Drop updated",
     "toastDropUpdateError": "Could not update drop",
+    "toastDropAdded": "Drop added",
+    "toastDropAddError": "Could not add drop",
+    "addDrop": "Add item",
+    "selectItem": "Select item…",
+    "noDrops": "No item drops yet.",
     "toastUpdated": "Session updated",
     "toastUpdateError": "Could not update session"
   },
