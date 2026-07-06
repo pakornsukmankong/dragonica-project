@@ -204,6 +204,8 @@
     "toastDropUpdateError": "Could not update drop",
     "toastDropAdded": "Drop added",
     "toastDropAddError": "Could not add drop",
+    "toastDropsSaved": "Drops saved",
+    "toastDropsSaveError": "Could not save drops",
     "addDrop": "Add item",
     "selectItem": "Select item…",
     "noDrops": "No item drops yet.",

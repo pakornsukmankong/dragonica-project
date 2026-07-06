@@ -204,6 +204,8 @@
     "toastDropUpdateError": "อัปเดตไอเทมไม่สำเร็จ",
     "toastDropAdded": "เพิ่มไอเทมแล้ว",
     "toastDropAddError": "เพิ่มไอเทมไม่สำเร็จ",
+    "toastDropsSaved": "บันทึกไอเทมแล้ว",
+    "toastDropsSaveError": "บันทึกไอเทมไม่สำเร็จ",
     "addDrop": "เพิ่มไอเทม",
     "selectItem": "เลือกไอเทม…",
     "noDrops": "ยังไม่มีไอเทมที่ดรอป",
