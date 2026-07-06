@@ -18,7 +18,13 @@ interface PostgrestLikeError {
 
 function isPostgrestError(err: unknown): err is PostgrestLikeError {
   return (
-    typeof err === 'object' && err !== null && 'code' in err && 'message' in err
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    'message' in err &&
+    // Other SDK errors (e.g. Stripe) also carry code+message but tag a `type`;
+    // Postgrest errors don't — so don't misclassify them as a DB error.
+    !('type' in err)
   );
 }
 

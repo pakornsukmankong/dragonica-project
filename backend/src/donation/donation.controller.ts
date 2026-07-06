@@ -38,7 +38,7 @@ export class DonationController {
   @Post()
   @UseGuards(JwtAuthGuard)
   create(@Body() dto: CreateDonationDto, @CurrentUser() user: JwtPayload) {
-    return this.donationService.create(user.sub, dto);
+    return this.donationService.create(user.sub, user.email, dto);
   }
 
   // Manual mode only: render the PromptPay QR without recording anything. The

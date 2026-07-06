@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 
@@ -9,6 +13,7 @@ import Stripe from 'stripe';
  */
 @Injectable()
 export class StripeService {
+  private readonly logger = new Logger(StripeService.name);
   private readonly stripe: Stripe | null;
   private readonly webhookSecret?: string;
 
@@ -27,28 +32,51 @@ export class StripeService {
     return this.stripe;
   }
 
+  // Run a Stripe SDK call, converting a raw StripeError into a proper
+  // HttpException. Otherwise the error (which also carries `code`/`message`)
+  // gets mistaken for a Postgres error by the global filter and surfaces as a
+  // misleading "Database request failed".
+  private async call<T>(fn: () => Promise<T>): Promise<T> {
+    try {
+      return await fn();
+    } catch (err) {
+      if (err instanceof Stripe.errors.StripeError) {
+        this.logger.error(`Stripe ${err.type}: ${err.message}`);
+        throw new InternalServerErrorException(`Stripe error: ${err.message}`);
+      }
+      throw err;
+    }
+  }
+
   /**
    * Create + confirm a PromptPay PaymentIntent. The scannable QR is returned on
    * `next_action.promptpay_display_qr_code` (image url + expiry).
    */
   createPromptPayIntent(opts: {
     amount: number; // satang
+    email: string;
     referenceId: string;
     returnUrl: string;
   }): Promise<Stripe.PaymentIntent> {
-    return this.client().paymentIntents.create({
-      amount: opts.amount,
-      currency: 'thb',
-      payment_method_types: ['promptpay'],
-      payment_method_data: { type: 'promptpay' },
-      confirm: true,
-      return_url: opts.returnUrl,
-      metadata: { donationId: opts.referenceId },
-    });
+    return this.call(() =>
+      this.client().paymentIntents.create({
+        amount: opts.amount,
+        currency: 'thb',
+        payment_method_types: ['promptpay'],
+        // PromptPay requires a payer email on billing_details.
+        payment_method_data: {
+          type: 'promptpay',
+          billing_details: { email: opts.email },
+        },
+        confirm: true,
+        return_url: opts.returnUrl,
+        metadata: { donationId: opts.referenceId },
+      }),
+    );
   }
 
   retrieveIntent(id: string): Promise<Stripe.PaymentIntent> {
-    return this.client().paymentIntents.retrieve(id);
+    return this.call(() => this.client().paymentIntents.retrieve(id));
   }
 
   /**
@@ -62,24 +90,26 @@ export class StripeService {
     referenceId: string;
     returnUrl: string;
   }): Promise<Stripe.Checkout.Session> {
-    return this.client().checkout.sessions.create({
-      mode: 'payment',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: 'thb',
-            unit_amount: opts.amount,
-            product_data: { name: 'Donation' },
+    return this.call(() =>
+      this.client().checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: 'thb',
+              unit_amount: opts.amount,
+              product_data: { name: 'Donation' },
+            },
           },
-        },
-      ],
-      success_url: opts.returnUrl,
-      cancel_url: opts.returnUrl.split('?')[0],
-      metadata: { donationId: opts.referenceId },
-      payment_intent_data: { metadata: { donationId: opts.referenceId } },
-    });
+        ],
+        success_url: opts.returnUrl,
+        cancel_url: opts.returnUrl.split('?')[0],
+        metadata: { donationId: opts.referenceId },
+        payment_intent_data: { metadata: { donationId: opts.referenceId } },
+      }),
+    );
   }
 
   /**
