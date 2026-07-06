@@ -24,6 +24,5 @@ insert into items (name, rarity, default_price) values
   ('Phoenix Feather', 'legendary', 10000000),
   ('Ancient Coin', 'common', 30000),
   ('Soul Fragment', 'uncommon', 57000),
-  ('Mystic Ore', 'rare', 5600000),
-  ('Dragon Core', 'epic', 3833600)
+  ('Mystic Ore', 'rare', 5600000)
 on conflict do nothing;

@@ -240,10 +240,8 @@
     "tabTickets": "Tickets",
     "addDungeon": "Add Dungeon",
     "name": "Name",
-    "coreCost": "Core Cost",
     "image": "Image",
     "add": "Add",
-    "cores": "{count, plural, one {# core} other {# cores}}",
     "noDungeons": "No dungeons yet.",
     "noItems": "No items yet.",
     "noClasses": "No classes yet.",
@@ -435,7 +433,6 @@
     "colRank": "#",
     "colDungeon": "Dungeon",
     "colValuePerHr": "Value / hr",
-    "colValuePerCore": "Value / core",
     "colRuns": "Runs"
   },
   "goldChart": {

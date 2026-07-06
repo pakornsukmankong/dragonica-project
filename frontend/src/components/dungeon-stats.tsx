@@ -37,7 +37,6 @@ export function DungeonStats() {
                 <th className="pb-3 pr-3 text-xs font-medium text-muted">{t('colRank')}</th>
                 <th className="pb-3 text-xs font-medium text-muted">{t('colDungeon')}</th>
                 <th className="pb-3 text-right text-xs font-medium text-muted">{t('colValuePerHr')}</th>
-                <th className="pb-3 text-right text-xs font-medium text-muted">{t('colValuePerCore')}</th>
                 <th className="pb-3 text-right text-xs font-medium text-muted">{t('colRuns')}</th>
               </tr>
             </thead>
@@ -63,13 +62,6 @@ export function DungeonStats() {
                   </td>
                   <td className="py-3 text-right text-sm">
                     <Currency copper={d.goldPerHour} className="justify-end text-sm" />
-                  </td>
-                  <td className="py-3 text-right text-sm">
-                    {d.goldPerCore != null ? (
-                      <Currency copper={d.goldPerCore} className="justify-end text-sm" />
-                    ) : (
-                      <span className="text-muted">—</span>
-                    )}
                   </td>
                   <td className="py-3 text-right text-xs text-muted tabular-nums">
                     {d.totalSessions}

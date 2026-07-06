@@ -240,10 +240,8 @@
     "tabTickets": "แจ้งปัญหา",
     "addDungeon": "เพิ่มดันเจี้ยน",
     "name": "ชื่อ",
-    "coreCost": "ค่า Core",
     "image": "รูปภาพ",
     "add": "เพิ่ม",
-    "cores": "{count} core",
     "noDungeons": "ยังไม่มีดันเจี้ยน",
     "noItems": "ยังไม่มีไอเทม",
     "noClasses": "ยังไม่มีอาชีพ",
@@ -435,7 +433,6 @@
     "colRank": "#",
     "colDungeon": "ดันเจี้ยน",
     "colValuePerHr": "มูลค่า / ชม.",
-    "colValuePerCore": "มูลค่า / core",
     "colRuns": "รอบ"
   },
   "goldChart": {

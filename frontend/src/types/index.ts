@@ -18,7 +18,6 @@ export interface Character {
 export interface Dungeon {
   id: string;
   name: string;
-  dragon_core_cost: number | null;
   image_url: string | null;
 }
 
@@ -161,6 +160,4 @@ export interface DungeonStats {
   totalGold: number;
   totalMinutes: number;
   goldPerHour: number;
-  dragonCoreCost: number | null;
-  goldPerCore: number | null;
 }
