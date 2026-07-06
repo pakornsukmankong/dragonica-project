@@ -485,7 +485,7 @@ function ClassesTab() {
               placeholder={t('classNamePlaceholder')}
             />
           </div>
-          <div className="flex flex-col gap-1.5 w-44">
+          <div className="flex flex-col gap-1.5 w-56">
             <label className="text-xs font-medium text-muted">{t('parentClass')}</label>
             <Select
               value={parentClass}

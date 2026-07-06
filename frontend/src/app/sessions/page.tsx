@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { X, Pencil, Check } from 'lucide-react';
+import { Pencil, Check, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/toast';
 import { useDateFormatter } from '@/lib/i18n';
@@ -12,7 +12,7 @@ import { Currency, CurrencyInput } from '@/components/currency';
 import { Select } from '@/components/select';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { formatGoldShort, toParts } from '@/lib/currency';
-import type { Session, Character, Dungeon } from '@/types';
+import type { Session, Character, Dungeon, Item } from '@/types';
 
 const PAGE_SIZE = 10;
 
@@ -36,10 +36,19 @@ export default function SessionsPage() {
   // future dates in the date filter.
   const maxDate = new Date().toLocaleDateString('en-CA');
 
-  // Inline drop editing
-  const [editingDropId, setEditingDropId] = useState<string | null>(null);
-  const [editQty, setEditQty] = useState(0);
-  const [editPrice, setEditPrice] = useState(0);
+  // Per-session drop edit mode: pressing Edit makes every drop in that session
+  // editable at once (qty/price), with a row to add a new one; Save commits all.
+  const [editingDropsSessionId, setEditingDropsSessionId] = useState<
+    string | null
+  >(null);
+  // Draft qty/price per drop id, live while in edit mode.
+  const [dropDrafts, setDropDrafts] = useState<
+    Record<string, { quantity: number; priceEach: number }>
+  >({});
+  // Draft for a new drop added within edit mode (committed on Save).
+  const [newItemId, setNewItemId] = useState('');
+  const [newQty, setNewQty] = useState(1);
+  const [newPrice, setNewPrice] = useState(0);
 
   const { data: sessions, isLoading } = useQuery<Session[]>({
     queryKey: ['sessions'],
@@ -49,6 +58,12 @@ export default function SessionsPage() {
   const { data: characters } = useQuery<Character[]>({
     queryKey: ['characters'],
     queryFn: () => api.get('/characters'),
+  });
+
+  // Item catalog for the "add drop" picker.
+  const { data: items } = useQuery<Item[]>({
+    queryKey: ['game-data', 'items'],
+    queryFn: () => api.get('/game-data/items'),
   });
 
   const deleteMutation = useMutation({
@@ -101,31 +116,86 @@ export default function SessionsPage() {
       }),
   });
 
-  const updateDropMutation = useMutation({
-    mutationFn: (vars: { dropId: string; quantity: number; priceEach: number }) =>
-      api.patch(`/sessions/drops/${vars.dropId}`, {
-        quantity: vars.quantity,
-        priceEach: vars.priceEach,
-      }),
+  // Enter edit mode for a session: seed drafts from its current drops.
+  const startEditDrops = (session: Session) => {
+    const drafts: Record<string, { quantity: number; priceEach: number }> = {};
+    for (const d of session.session_drops ?? []) {
+      drafts[d.id] = { quantity: d.quantity, priceEach: d.price_each };
+    }
+    setDropDrafts(drafts);
+    setNewItemId('');
+    setNewQty(1);
+    setNewPrice(0);
+    setEditingDropsSessionId(session.id);
+  };
+
+  const cancelEditDrops = () => {
+    setEditingDropsSessionId(null);
+    setDropDrafts({});
+    setNewItemId('');
+  };
+
+  const setDraftField = (
+    dropId: string,
+    field: 'quantity' | 'priceEach',
+    value: number,
+  ) =>
+    setDropDrafts((prev) => ({
+      ...prev,
+      [dropId]: { ...prev[dropId], [field]: value },
+    }));
+
+  // Picking an item prefills its catalog price so the user rarely has to type it.
+  const selectNewItem = (itemId: string) => {
+    setNewItemId(itemId);
+    const item = items?.find((i) => i.id === itemId);
+    if (item) setNewPrice(item.default_price ?? 0);
+  };
+
+  // Save all drop edits for a session at once: PATCH each changed drop and POST
+  // the new-item row if one was filled in.
+  const saveDropsMutation = useMutation({
+    mutationFn: async (session: Session) => {
+      const ops: Promise<unknown>[] = [];
+      for (const d of session.session_drops ?? []) {
+        const draft = dropDrafts[d.id];
+        if (
+          draft &&
+          (draft.quantity !== d.quantity || draft.priceEach !== d.price_each)
+        ) {
+          ops.push(
+            api.patch(`/sessions/drops/${d.id}`, {
+              quantity: draft.quantity,
+              priceEach: draft.priceEach,
+            }),
+          );
+        }
+      }
+      if (newItemId && newQty >= 1) {
+        ops.push(
+          api.post('/sessions/drops', {
+            sessionId: session.id,
+            itemId: newItemId,
+            quantity: newQty,
+            priceEach: newPrice,
+          }),
+        );
+      }
+      await Promise.all(ops);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      setEditingDropId(null);
-      toast({ title: t('toastDropUpdated'), variant: 'success' });
+      cancelEditDrops();
+      toast({ title: t('toastDropsSaved'), variant: 'success' });
     },
     onError: (e) =>
       toast({
-        title: t('toastDropUpdateError'),
+        title: t('toastDropsSaveError'),
         description: (e as Error).message,
         variant: 'error',
       }),
   });
-
-  const startEditDrop = (dropId: string, quantity: number, priceEach: number) => {
-    setEditingDropId(dropId);
-    setEditQty(quantity);
-    setEditPrice(priceEach);
-  };
 
   // Filter & sort logic
   const filteredSessions = useMemo(() => {
@@ -422,99 +492,133 @@ export default function SessionsPage() {
                   </div>
 
                   {/* Item Drops */}
-                  {session.session_drops && session.session_drops.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.05)]">
-                      <p className="text-xs text-muted mb-2">{t('drops')}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {session.session_drops.map((drop: { id: string; quantity: number; price_each: number; items?: { name: string; icon_url?: string | null } }) =>
-                          editingDropId === drop.id ? (
+                  <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.05)]">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-xs text-muted">{t('drops')}</p>
+                      {editingDropsSessionId === session.id ? (
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => saveDropsMutation.mutate(session)}
+                            disabled={saveDropsMutation.isPending}
+                            className="flex items-center gap-1 text-xs font-medium text-gold hover:opacity-80 disabled:opacity-40"
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                            {tc('save')}
+                          </button>
+                          <button
+                            onClick={cancelEditDrops}
+                            className="text-xs text-muted hover:text-foreground"
+                          >
+                            {tc('cancel')}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => startEditDrops(session)}
+                          className="flex items-center gap-1 text-xs text-muted transition-colors hover:text-gold"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          {tc('edit')}
+                        </button>
+                      )}
+                    </div>
+
+                    {editingDropsSessionId === session.id ? (
+                      // Edit mode: every drop editable at once + a row to add one.
+                      <div className="flex flex-col gap-1.5">
+                        {session.session_drops?.map((drop: { id: string; quantity: number; price_each: number; items?: { name: string; icon_url?: string | null } }) => {
+                          const draft = dropDrafts[drop.id] ?? {
+                            quantity: drop.quantity,
+                            priceEach: drop.price_each,
+                          };
+                          return (
                             <div
                               key={drop.id}
-                              className="flex items-center gap-1.5 rounded-sm bg-raised px-2 py-1 outline outline-1 outline-[rgba(224,165,60,0.4)]"
+                              className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-sm bg-raised px-2 py-1.5"
                             >
-                              <span className="text-xs text-foreground">
+                              <span className="min-w-0 flex-1 truncate text-xs text-foreground">
                                 {drop.items?.name ?? t('unknownItem')}
                               </span>
                               <span className="text-[10px] text-muted">x</span>
                               <input
                                 type="number"
                                 min={1}
-                                value={editQty}
-                                onChange={(e) => setEditQty(Number(e.target.value))}
-                                className="w-12 rounded-xs border border-border bg-surface px-1 py-0.5 text-xs text-foreground outline-none focus:border-[var(--focus)]"
+                                value={draft.quantity}
+                                onChange={(e) =>
+                                  setDraftField(drop.id, 'quantity', Number(e.target.value))
+                                }
+                                className="w-12 rounded-xs border border-border bg-surface px-1 py-1 text-xs text-foreground outline-none focus:border-[var(--focus)]"
                                 aria-label="Quantity"
                               />
-                              <span className="text-[10px] text-muted">@</span>
-                              <input
-                                type="number"
-                                min={0}
-                                value={editPrice}
-                                onChange={(e) => setEditPrice(Number(e.target.value))}
-                                className="w-16 rounded-xs border border-border bg-surface px-1 py-0.5 text-xs text-foreground outline-none focus:border-[var(--focus)]"
-                                aria-label="Price each"
+                              <CurrencyInput
+                                value={draft.priceEach}
+                                onChange={(c) => setDraftField(drop.id, 'priceEach', c)}
                               />
-                              <button
-                                onClick={() =>
-                                  updateDropMutation.mutate({
-                                    dropId: drop.id,
-                                    quantity: editQty,
-                                    priceEach: editPrice,
-                                  })
-                                }
-                                disabled={updateDropMutation.isPending || editQty < 1}
-                                className="text-[var(--fg-success)] hover:opacity-80 disabled:opacity-40"
-                                aria-label="Save drop"
-                              >
-                                <Check className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => setEditingDropId(null)}
-                                className="text-muted hover:text-foreground"
-                                aria-label="Cancel"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          ) : (
-                            <div
-                              key={drop.id}
-                              className="group/drop flex items-center gap-1.5 bg-raised rounded-sm px-2 py-1"
-                            >
-                              {drop.items?.icon_url && (
-                                <img src={drop.items.icon_url} alt="" className="w-4 h-4 rounded-xs object-cover" />
-                              )}
-                              <span className="text-xs text-foreground">
-                                {drop.items?.name ?? t('unknownItem')}
-                              </span>
-                              <span className="text-xs text-muted">
-                                x{drop.quantity}
-                              </span>
-                              {drop.price_each > 0 && (
-                                <span className="text-xs text-muted">
-                                  ({formatGoldShort(drop.quantity * drop.price_each)})
-                                </span>
-                              )}
-                              <button
-                                onClick={() => startEditDrop(drop.id, drop.quantity, drop.price_each)}
-                                className="ml-0.5 text-muted opacity-0 transition-opacity group-hover/drop:opacity-100 hover:text-gold"
-                                aria-label="Edit drop"
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </button>
                               <button
                                 onClick={() => deleteDropMutation.mutate(drop.id)}
                                 disabled={deleteDropMutation.isPending}
-                                className="text-muted opacity-0 transition-opacity group-hover/drop:opacity-100 hover:text-[var(--fg-danger)] disabled:opacity-50"
+                                className="text-muted hover:text-[var(--fg-danger)] disabled:opacity-50"
                                 aria-label="Remove drop"
                               >
-                                <X className="h-3 w-3" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             </div>
-                          ),
-                        )}
+                          );
+                        })}
+
+                        {/* Add a new drop (committed on Save) */}
+                        <div className="flex flex-wrap items-center gap-1.5 rounded-sm bg-raised px-2 py-1.5 outline outline-1 outline-[rgba(224,165,60,0.25)]">
+                          <div className="w-40">
+                            <Select
+                              value={newItemId}
+                              onChange={selectNewItem}
+                              placeholder={t('selectItem')}
+                              options={(items ?? []).map((it) => ({
+                                value: it.id,
+                                label: it.name,
+                                icon: it.icon_url,
+                              }))}
+                            />
+                          </div>
+                          <span className="text-[10px] text-muted">x</span>
+                          <input
+                            type="number"
+                            min={1}
+                            value={newQty}
+                            onChange={(e) => setNewQty(Number(e.target.value))}
+                            className="w-12 rounded-xs border border-border bg-surface px-1 py-1 text-xs text-foreground outline-none focus:border-[var(--focus)]"
+                            aria-label="Quantity"
+                          />
+                          <CurrencyInput value={newPrice} onChange={setNewPrice} />
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    ) : session.session_drops && session.session_drops.length > 0 ? (
+                      // Read-only chips.
+                      <div className="flex flex-wrap gap-2">
+                        {session.session_drops.map((drop: { id: string; quantity: number; price_each: number; items?: { name: string; icon_url?: string | null } }) => (
+                          <div
+                            key={drop.id}
+                            className="flex items-center gap-1.5 bg-raised rounded-sm px-2 py-1"
+                          >
+                            {drop.items?.icon_url && (
+                              <img src={drop.items.icon_url} alt="" className="w-4 h-4 rounded-xs object-cover" />
+                            )}
+                            <span className="text-xs text-foreground">
+                              {drop.items?.name ?? t('unknownItem')}
+                            </span>
+                            <span className="text-xs text-muted">x{drop.quantity}</span>
+                            {drop.price_each > 0 && (
+                              <span className="text-xs text-muted">
+                                ({formatGoldShort(drop.quantity * drop.price_each)})
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted">{t('noDrops')}</p>
+                    )}
+                  </div>
                 </div>
               ))}
               <Pagination page={page} pageCount={pageCount} onChange={setPage} />
