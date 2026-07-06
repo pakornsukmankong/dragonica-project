@@ -5,6 +5,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { AppShell } from '@/components/app-shell';
+import { Clarity } from '@/components/clarity';
 
 // Latin text. Varela Round ships a single weight (400); bolder text is
 // synthesized by the browser.
@@ -41,6 +42,7 @@ export default async function RootLayout({
       className={`${varelaRound.variable} ${notoSansThai.variable}`}
     >
       <body>
+        <Clarity />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <AppShell>{children}</AppShell>

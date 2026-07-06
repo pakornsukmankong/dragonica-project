@@ -203,6 +203,9 @@ export default function HomePage() {
         <p className="mt-8 text-center text-xs text-muted">
           {t('footerNote', { year: new Date().getFullYear() })}
         </p>
+        <p className="mt-2 text-center text-[11px] text-muted/80">
+          {t('privacyNote')}
+        </p>
       </section>
     </main>
   );
