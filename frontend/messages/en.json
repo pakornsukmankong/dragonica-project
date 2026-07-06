@@ -446,7 +446,9 @@
     "total": "Total",
     "average": "Average",
     "peak": "Peak",
-    "other": "Other"
+    "other": "Other",
+    "unknownCharacter": "Unknown",
+    "noData": "No sessions"
   },
   "imageUpload": {
     "uploading": "Uploading...",

@@ -469,11 +469,7 @@ function SupportPageInner() {
                           <p className="truncate text-sm font-medium text-foreground">
                             {d.display_name}
                           </p>
-                          {d.message && (
-                            <p className="truncate text-xs text-muted">
-                              {d.message}
-                            </p>
-                          )}
+                          {d.message && <SupporterMessage text={d.message} />}
                         </div>
                         {d.amount != null && (
                           <span className="shrink-0 text-sm font-semibold text-gold tabular-nums">
@@ -683,6 +679,33 @@ function PaymentModal({
         )}
       </div>
     </div>
+  );
+}
+
+// A supporter's message on the thank-you wall. Long messages are clamped to one
+// line with an ellipsis; clicking expands to the full (multi-line) text. The
+// row is only interactive when the text actually overflows.
+function SupporterMessage({ text }: { text: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflow, setOverflow] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (el) setOverflow(el.scrollWidth > el.clientWidth);
+  }, [text]);
+
+  return (
+    <p
+      ref={ref}
+      onClick={overflow ? () => setExpanded((v) => !v) : undefined}
+      title={overflow && !expanded ? text : undefined}
+      className={`text-xs text-muted ${
+        expanded ? 'whitespace-pre-wrap break-words' : 'truncate'
+      } ${overflow ? 'cursor-pointer hover:text-foreground' : ''}`}
+    >
+      {text}
+    </p>
   );
 }
 

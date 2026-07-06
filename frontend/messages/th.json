@@ -446,7 +446,9 @@
     "total": "รวม",
     "average": "เฉลี่ย",
     "peak": "สูงสุด",
-    "other": "อื่นๆ"
+    "other": "อื่นๆ",
+    "unknownCharacter": "ไม่ทราบตัวละคร",
+    "noData": "ไม่มีรอบฟาร์ม"
   },
   "imageUpload": {
     "uploading": "กำลังอัปโหลด...",
