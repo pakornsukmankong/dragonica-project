@@ -2,32 +2,8 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { VisitorCounter } from '@/components/visitor-counter';
-import {
-  Coins,
-  TrendingUp,
-  Package,
-  LayoutDashboard,
-  Users,
-  Languages,
-  ArrowRight,
-  ArrowDown,
-  Heart,
-  PlaySquare,
-  MessageCircle,
-  ChevronDown,
-  Check,
-} from 'lucide-react';
-
-const FEATURES = [
-  { icon: Coins, title: 'featGoldTitle', desc: 'featGoldDesc' },
-  { icon: TrendingUp, title: 'featEffTitle', desc: 'featEffDesc' },
-  { icon: Package, title: 'featDropTitle', desc: 'featDropDesc' },
-  { icon: LayoutDashboard, title: 'featDashTitle', desc: 'featDashDesc' },
-  { icon: Users, title: 'featMultiTitle', desc: 'featMultiDesc' },
-  { icon: Languages, title: 'featLangTitle', desc: 'featLangDesc' },
-] as const;
-
-const STEPS = ['step1', 'step2', 'step3'] as const;
+import { Reveal } from '@/components/reveal';
+import { ArrowRight, Package, ChevronDown, Check } from 'lucide-react';
 
 // Demo bar heights (%) for the dashboard-preview chart. Index 4 is the peak.
 const CHART = [42, 58, 71, 49, 88, 63, 77];
@@ -80,153 +56,37 @@ export default function HomePage() {
             {t('ctaPrimary')}
             <ArrowRight className="h-4 w-4" />
           </Link>
-          <a
-            href="#how-it-works"
-            className="inline-flex items-center justify-center gap-2 rounded-base border border-border px-6 py-3 text-sm font-medium text-foreground transition-colors duration-150 hover:border-gold hover:text-gold focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2"
-          >
-            {t('ctaSecondary')}
-            <ArrowDown className="h-4 w-4" />
-          </a>
         </div>
 
         <p className="mt-5 text-xs text-muted">{t('trustLine')}</p>
 
         {/* Product previews */}
         <div className="mt-14 space-y-6 laptop:mt-16">
-          <DashboardPreview />
-          <GrindPreview />
-          <SessionsPreview />
+          <Reveal>
+            <DashboardPreview />
+          </Reveal>
+          <Reveal delay={120}>
+            <GrindPreview />
+          </Reveal>
+          <Reveal delay={240}>
+            <SessionsPreview />
+          </Reveal>
         </div>
       </section>
 
-      {/* ===== FEATURES ===== */}
-      <section className="relative z-10 mx-auto max-w-container px-4 py-16 sm:px-7 laptop:py-24">
-        <SectionHeading title={t('featuresTitle')} subtitle={t('featuresSubtitle')} />
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 laptop:grid-cols-3">
-          {FEATURES.map(({ icon: Icon, title, desc }) => (
-            <div
-              key={title}
-              className="group rounded-base border border-border bg-surface p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(224,165,60,0.35)] hover:shadow-gold"
-            >
-              <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-base bg-gold-soft text-gold">
-                <Icon className="h-5 w-5" />
-              </span>
-              <h3 className="text-sm font-semibold text-foreground">{t(title)}</h3>
-              <p className="mt-1.5 text-sm text-muted">{t(desc)}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ===== HOW IT WORKS ===== */}
-      <section
-        id="how-it-works"
-        className="relative z-10 mx-auto max-w-container scroll-mt-20 px-4 py-16 sm:px-7 laptop:py-24"
-      >
-        <SectionHeading title={t('howTitle')} subtitle={t('howSubtitle')} />
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {STEPS.map((key, i) => (
-            <div
-              key={key}
-              className="relative rounded-base border border-border bg-surface p-6"
-            >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gold-soft text-sm font-bold text-gold shadow-gold">
-                {i + 1}
-              </span>
-              <h3 className="mt-4 text-sm font-semibold text-foreground">
-                {t(`${key}Title`)}
-              </h3>
-              <p className="mt-1.5 text-sm text-muted">{t(`${key}Desc`)}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ===== COMMUNITY ===== */}
-      <section className="relative z-10 mx-auto max-w-container px-4 py-16 sm:px-7 laptop:py-24">
-        <SectionHeading
-          title={t('communityTitle')}
-          subtitle={t('communitySubtitle')}
-        />
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Link
-            href="/support"
-            className="group flex items-start gap-4 rounded-base border border-border bg-surface p-6 transition-all duration-200 hover:border-[rgba(224,165,60,0.35)] hover:shadow-gold"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-base bg-gold-soft text-gold">
-              <Heart className="h-5 w-5" />
-            </span>
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                {t('supportersTitle')}
-              </h3>
-              <p className="mt-1.5 text-sm text-muted">{t('supportersDesc')}</p>
-            </div>
-          </Link>
-          <Link
-            href="/support"
-            className="group flex items-start gap-4 rounded-base border border-border bg-surface p-6 transition-all duration-200 hover:border-[rgba(224,165,60,0.35)] hover:shadow-gold"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center gap-1 rounded-base bg-gold-soft text-gold">
-              <PlaySquare className="h-5 w-5" />
-            </span>
-            <div>
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                {t('communityYtTitle')}
-                <MessageCircle className="h-4 w-4 text-gold-dim" />
-              </h3>
-              <p className="mt-1.5 text-sm text-muted">{t('communityYtDesc')}</p>
-            </div>
-          </Link>
-        </div>
-      </section>
-
-      {/* ===== FINAL CTA ===== */}
-      <section className="relative z-10 mx-auto max-w-container px-4 pb-20 sm:px-7">
-        <div className="relative overflow-hidden rounded-lg border border-[rgba(224,165,60,0.25)] bg-gold-soft px-6 py-12 text-center">
-          <div className="pointer-events-none absolute -bottom-24 left-1/2 h-[300px] w-[600px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(224,165,60,0.18),transparent_70%)] blur-3xl" />
-          <div className="relative">
-            <h2 className="text-xl font-bold tracking-tight text-foreground laptop:text-2xl">
-              {t('finalCtaTitle')}
-            </h2>
-            <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted">
-              {t('finalCtaSubtitle')}
-            </p>
-            <Link
-              href="/login"
-              className="mt-7 inline-flex items-center justify-center gap-2 rounded-base bg-[var(--blue)] px-7 py-3 text-sm font-semibold text-[#1b1407] shadow-button transition-transform duration-150 hover:scale-[1.03] hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2"
-            >
-              {t('ctaPrimary')}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-        <p className="mt-8 text-center text-xs text-muted">
-          {t('footerNote', { year: new Date().getFullYear() })}
-        </p>
-        <p className="mt-2 text-center text-[11px] text-muted/80">
-          {t('privacyNote')}
-        </p>
-        <VisitorCounter />
+      {/* ===== FOOTER ===== */}
+      <section className="relative z-10 mx-auto max-w-container px-4 pb-16 pt-6 sm:px-7">
+        <Reveal>
+          <p className="text-center text-xs text-muted">
+            {t('footerNote', { year: new Date().getFullYear() })}
+          </p>
+          <p className="mt-2 text-center text-[11px] text-muted/80">
+            {t('privacyNote')}
+          </p>
+          <VisitorCounter />
+        </Reveal>
       </section>
     </main>
-  );
-}
-
-function SectionHeading({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="text-center">
-      <h2 className="text-xl font-bold tracking-tight text-foreground laptop:text-2xl">
-        {title}
-      </h2>
-      <p className="mx-auto mt-3 max-w-[520px] text-sm text-muted">{subtitle}</p>
-    </div>
   );
 }
 
