@@ -344,6 +344,7 @@
     "paymentMethod": "ช่องทางชำระเงิน",
     "promptpay": "พร้อมเพย์ (QR)",
     "truemoney": "ทรูมันนี่ วอลเล็ท",
+    "card": "บัตรเครดิต / เดบิต",
     "rabbitLinepay": "Rabbit LINE Pay",
     "shopeepay": "ShopeePay",
     "grabpay": "GrabPay",

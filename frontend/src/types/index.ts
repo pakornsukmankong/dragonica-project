@@ -87,7 +87,8 @@ export type DonationChannel =
   | 'mobile_banking_ktb'
   | 'rabbit_linepay'
   | 'shopeepay'
-  | 'grabpay';
+  | 'grabpay'
+  | 'card';
 export type DonationStatus = 'pending' | 'successful' | 'failed' | 'expired';
 
 // Returned by POST /donations — everything the client needs to collect payment.

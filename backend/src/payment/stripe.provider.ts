@@ -16,11 +16,32 @@ import {
 @Injectable()
 export class StripeProvider implements PaymentProvider {
   readonly name = 'stripe' as const;
-  readonly supportedChannels = ['promptpay'] as const;
+  readonly supportedChannels = ['promptpay', 'card'] as const;
 
   constructor(private readonly stripe: StripeService) {}
 
   async createCharge(input: CreateChargeInput): Promise<NormalizedCharge> {
+    // Cards go through hosted Stripe Checkout (Stripe hosts the form + 3DS);
+    // the donor is redirected to the session URL and back.
+    if (input.channel === 'card') {
+      const session = await this.stripe.createCardCheckoutSession({
+        amount: input.amount,
+        referenceId: input.referenceId,
+        returnUrl: input.returnUrl,
+      });
+      return {
+        // Reconcile against the PaymentIntent, same as PromptPay.
+        providerChargeId:
+          typeof session.payment_intent === 'string'
+            ? session.payment_intent
+            : (session.payment_intent?.id ?? ''),
+        status: 'pending',
+        qrImageUri: null,
+        authorizeUri: session.url,
+        expiresAt: null,
+      };
+    }
+
     if (input.channel !== 'promptpay') {
       throw new BadRequestException(
         `Payment channel "${input.channel}" is not supported by Stripe`,

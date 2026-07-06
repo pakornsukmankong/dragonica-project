@@ -52,6 +52,37 @@ export class StripeService {
   }
 
   /**
+   * Create a hosted Checkout Session for a card payment. Stripe hosts the card
+   * form + 3DS; the donor is redirected to `session.url` and back to
+   * `returnUrl` afterwards. The underlying PaymentIntent id is what we reconcile
+   * against (same as the PromptPay flow).
+   */
+  createCardCheckoutSession(opts: {
+    amount: number; // satang
+    referenceId: string;
+    returnUrl: string;
+  }): Promise<Stripe.Checkout.Session> {
+    return this.client().checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'thb',
+            unit_amount: opts.amount,
+            product_data: { name: 'Donation' },
+          },
+        },
+      ],
+      success_url: opts.returnUrl,
+      cancel_url: opts.returnUrl.split('?')[0],
+      metadata: { donationId: opts.referenceId },
+      payment_intent_data: { metadata: { donationId: opts.referenceId } },
+    });
+  }
+
+  /**
    * Verify + parse a Stripe webhook from the raw body and the Stripe-Signature
    * header. Throws if the signature does not match.
    */

@@ -5,6 +5,7 @@ import { StripeService } from '../stripe/stripe.service';
 function stripeMock(overrides: Partial<jest.Mocked<StripeService>> = {}) {
   return {
     createPromptPayIntent: jest.fn(),
+    createCardCheckoutSession: jest.fn(),
     retrieveIntent: jest.fn(),
     constructWebhookEvent: jest.fn(),
     ...overrides,
@@ -43,7 +44,33 @@ describe('StripeProvider', () => {
     expect(charge.expiresAt).toBeNull();
   });
 
-  it('rejects a non-PromptPay channel without calling Stripe', async () => {
+  it('creates a hosted Checkout session for a card and redirects', async () => {
+    const stripe = stripeMock({
+      createCardCheckoutSession: jest.fn().mockResolvedValue({
+        id: 'cs_1',
+        url: 'https://checkout.stripe.com/c/pay/cs_1',
+        payment_intent: 'pi_card',
+      }),
+    });
+    const provider = new StripeProvider(stripe);
+
+    const charge = await provider.createCharge({
+      channel: 'card',
+      amount: 5000,
+      referenceId: 'd2',
+      returnUrl: 'https://app/support?donation=d2',
+    });
+
+    expect(stripe.createCardCheckoutSession).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 5000, referenceId: 'd2' }),
+    );
+    expect(charge.providerChargeId).toBe('pi_card');
+    expect(charge.authorizeUri).toBe('https://checkout.stripe.com/c/pay/cs_1');
+    expect(charge.qrImageUri).toBeNull();
+    expect(charge.status).toBe('pending');
+  });
+
+  it('rejects an unsupported channel without calling Stripe', async () => {
     const stripe = stripeMock();
     const provider = new StripeProvider(stripe);
 
