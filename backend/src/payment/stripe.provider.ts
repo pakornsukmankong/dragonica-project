@@ -22,24 +22,15 @@ export class StripeProvider implements PaymentProvider {
 
   async createCharge(input: CreateChargeInput): Promise<NormalizedCharge> {
     // Cards go through hosted Stripe Checkout (Stripe hosts the form + 3DS);
-    // the donor is redirected to the session URL and back.
+    // the donor is redirected to the session URL and back. Reconcile against
+    // the Checkout Session id — its PaymentIntent isn't populated at creation.
     if (input.channel === 'card') {
       const session = await this.stripe.createCardCheckoutSession({
         amount: input.amount,
         referenceId: input.referenceId,
         returnUrl: input.returnUrl,
       });
-      return {
-        // Reconcile against the PaymentIntent, same as PromptPay.
-        providerChargeId:
-          typeof session.payment_intent === 'string'
-            ? session.payment_intent
-            : (session.payment_intent?.id ?? ''),
-        status: 'pending',
-        qrImageUri: null,
-        authorizeUri: session.url,
-        expiresAt: null,
-      };
+      return this.normalizeSession(session);
     }
 
     if (input.channel !== 'promptpay') {
@@ -57,14 +48,41 @@ export class StripeProvider implements PaymentProvider {
   }
 
   async getCharge(providerChargeId: string): Promise<NormalizedCharge> {
+    // Card donations are keyed by the Checkout Session (cs_…); PromptPay by the
+    // PaymentIntent (pi_…).
+    if (providerChargeId.startsWith('cs_')) {
+      return this.normalizeSession(
+        await this.stripe.retrieveCheckoutSession(providerChargeId),
+      );
+    }
     return this.normalize(await this.stripe.retrieveIntent(providerChargeId));
   }
 
   extractChargeId(event: unknown): string | null {
     const id = (event as { data?: { object?: { id?: unknown } } })?.data?.object
       ?.id;
-    // Only PaymentIntent-shaped events are ours (pi_...).
-    return typeof id === 'string' && id.startsWith('pi_') ? id : null;
+    // PaymentIntent (PromptPay) or Checkout Session (card) events are ours.
+    return typeof id === 'string' &&
+      (id.startsWith('pi_') || id.startsWith('cs_'))
+      ? id
+      : null;
+  }
+
+  private normalizeSession(session: Stripe.Checkout.Session): NormalizedCharge {
+    return {
+      providerChargeId: session.id,
+      status:
+        session.status === 'expired'
+          ? 'expired'
+          : session.payment_status === 'paid'
+            ? 'successful'
+            : 'pending',
+      qrImageUri: null,
+      authorizeUri: session.url,
+      expiresAt: session.expires_at
+        ? new Date(session.expires_at * 1000).toISOString()
+        : null,
+    };
   }
 
   private normalize(pi: Stripe.PaymentIntent): NormalizedCharge {

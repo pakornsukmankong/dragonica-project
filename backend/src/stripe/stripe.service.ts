@@ -79,6 +79,10 @@ export class StripeService {
     return this.call(() => this.client().paymentIntents.retrieve(id));
   }
 
+  retrieveCheckoutSession(id: string): Promise<Stripe.Checkout.Session> {
+    return this.call(() => this.client().checkout.sessions.retrieve(id));
+  }
+
   /**
    * Create a hosted Checkout Session for a card payment. Stripe hosts the card
    * form + 3DS; the donor is redirected to `session.url` and back to
