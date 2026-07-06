@@ -49,6 +49,7 @@ export class StripeProvider implements PaymentProvider {
     }
     const pi = await this.stripe.createPromptPayIntent({
       amount: input.amount,
+      email: input.email ?? '',
       referenceId: input.referenceId,
       returnUrl: input.returnUrl,
     });

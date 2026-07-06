@@ -54,6 +54,7 @@ export class StripeService {
    */
   createPromptPayIntent(opts: {
     amount: number; // satang
+    email: string;
     referenceId: string;
     returnUrl: string;
   }): Promise<Stripe.PaymentIntent> {
@@ -62,7 +63,11 @@ export class StripeService {
         amount: opts.amount,
         currency: 'thb',
         payment_method_types: ['promptpay'],
-        payment_method_data: { type: 'promptpay' },
+        // PromptPay requires a payer email on billing_details.
+        payment_method_data: {
+          type: 'promptpay',
+          billing_details: { email: opts.email },
+        },
         confirm: true,
         return_url: opts.returnUrl,
         metadata: { donationId: opts.referenceId },

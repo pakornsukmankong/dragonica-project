@@ -10,6 +10,7 @@ export interface CreateChargeInput {
   channel: DonationChannel;
   amount: number; // satang
   phoneNumber?: string; // TrueMoney (Omise)
+  email?: string; // payer email — Stripe PromptPay requires billing_details.email
   referenceId: string; // our donation id
   returnUrl: string; // where the gateway redirects back
 }

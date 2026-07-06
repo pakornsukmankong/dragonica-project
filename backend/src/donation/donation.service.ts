@@ -62,7 +62,7 @@ export class DonationService {
   ) {}
 
   /** Start a donation: record it, create the gateway charge, return payment info. */
-  async create(userId: string, dto: CreateDonationDto) {
+  async create(userId: string, userEmail: string, dto: CreateDonationDto) {
     if (dto.amount > MAX_BAHT[dto.channel]) {
       throw new BadRequestException(
         this.i18n.t('errors.donation.max_exceeded', {
@@ -105,6 +105,7 @@ export class DonationService {
         channel: dto.channel,
         amount: amountSatang,
         phoneNumber: dto.phoneNumber,
+        email: userEmail,
         referenceId: donation.id,
         returnUrl: `${this.config.get('FRONTEND_URL') || 'http://localhost:3000'}/support?donation=${donation.id}`,
       });
