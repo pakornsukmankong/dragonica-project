@@ -18,6 +18,7 @@ import { AdminModule } from './admin/admin.module';
 import { DonationModule } from './donation/donation.module';
 import { TicketModule } from './ticket/ticket.module';
 import { YoutubeModule } from './youtube/youtube.module';
+import { StatsModule } from './stats/stats.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -48,6 +49,7 @@ import { HealthController } from './health/health.controller';
     DonationModule,
     TicketModule,
     YoutubeModule,
+    StatsModule,
   ],
   controllers: [HealthController],
   providers: [
