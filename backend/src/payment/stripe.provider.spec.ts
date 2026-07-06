@@ -7,6 +7,7 @@ function stripeMock(overrides: Partial<jest.Mocked<StripeService>> = {}) {
     createPromptPayIntent: jest.fn(),
     createCardCheckoutSession: jest.fn(),
     retrieveIntent: jest.fn(),
+    retrieveCheckoutSession: jest.fn(),
     constructWebhookEvent: jest.fn(),
     ...overrides,
   } as unknown as StripeService;
@@ -49,7 +50,8 @@ describe('StripeProvider', () => {
       createCardCheckoutSession: jest.fn().mockResolvedValue({
         id: 'cs_1',
         url: 'https://checkout.stripe.com/c/pay/cs_1',
-        payment_intent: 'pi_card',
+        status: 'open',
+        payment_status: 'unpaid',
       }),
     });
     const provider = new StripeProvider(stripe);
@@ -64,10 +66,26 @@ describe('StripeProvider', () => {
     expect(stripe.createCardCheckoutSession).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 5000, referenceId: 'd2' }),
     );
-    expect(charge.providerChargeId).toBe('pi_card');
+    // Card is reconciled by the Checkout Session id (its PI is null at creation).
+    expect(charge.providerChargeId).toBe('cs_1');
     expect(charge.authorizeUri).toBe('https://checkout.stripe.com/c/pay/cs_1');
     expect(charge.qrImageUri).toBeNull();
     expect(charge.status).toBe('pending');
+  });
+
+  it('reconciles a paid Checkout session to successful', async () => {
+    const stripe = stripeMock({
+      retrieveCheckoutSession: jest.fn().mockResolvedValue({
+        id: 'cs_1',
+        status: 'complete',
+        payment_status: 'paid',
+      }),
+    });
+    const provider = new StripeProvider(stripe);
+
+    const charge = await provider.getCharge('cs_1');
+    expect(stripe.retrieveCheckoutSession).toHaveBeenCalledWith('cs_1');
+    expect(charge.status).toBe('successful');
   });
 
   it('rejects an unsupported channel without calling Stripe', async () => {
