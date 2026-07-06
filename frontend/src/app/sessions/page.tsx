@@ -534,9 +534,9 @@ export default function SessionsPage() {
                           return (
                             <div
                               key={drop.id}
-                              className="flex items-center gap-1.5 rounded-sm bg-raised px-2 py-1"
+                              className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-sm bg-raised px-2 py-1.5"
                             >
-                              <span className="flex-1 truncate text-xs text-foreground">
+                              <span className="min-w-0 flex-1 truncate text-xs text-foreground">
                                 {drop.items?.name ?? t('unknownItem')}
                               </span>
                               <span className="text-[10px] text-muted">x</span>
@@ -547,19 +547,12 @@ export default function SessionsPage() {
                                 onChange={(e) =>
                                   setDraftField(drop.id, 'quantity', Number(e.target.value))
                                 }
-                                className="w-12 rounded-xs border border-border bg-surface px-1 py-0.5 text-xs text-foreground outline-none focus:border-[var(--focus)]"
+                                className="w-12 rounded-xs border border-border bg-surface px-1 py-1 text-xs text-foreground outline-none focus:border-[var(--focus)]"
                                 aria-label="Quantity"
                               />
-                              <span className="text-[10px] text-muted">@</span>
-                              <input
-                                type="number"
-                                min={0}
+                              <CurrencyInput
                                 value={draft.priceEach}
-                                onChange={(e) =>
-                                  setDraftField(drop.id, 'priceEach', Number(e.target.value))
-                                }
-                                className="w-16 rounded-xs border border-border bg-surface px-1 py-0.5 text-xs text-foreground outline-none focus:border-[var(--focus)]"
-                                aria-label="Price each"
+                                onChange={(c) => setDraftField(drop.id, 'priceEach', c)}
                               />
                               <button
                                 onClick={() => deleteDropMutation.mutate(drop.id)}
@@ -583,6 +576,7 @@ export default function SessionsPage() {
                               options={(items ?? []).map((it) => ({
                                 value: it.id,
                                 label: it.name,
+                                icon: it.icon_url,
                               }))}
                             />
                           </div>
@@ -592,19 +586,10 @@ export default function SessionsPage() {
                             min={1}
                             value={newQty}
                             onChange={(e) => setNewQty(Number(e.target.value))}
-                            className="w-12 rounded-xs border border-border bg-surface px-1 py-0.5 text-xs text-foreground outline-none focus:border-[var(--focus)]"
+                            className="w-12 rounded-xs border border-border bg-surface px-1 py-1 text-xs text-foreground outline-none focus:border-[var(--focus)]"
                             aria-label="Quantity"
                           />
-                          <span className="text-[10px] text-muted">@</span>
-                          <input
-                            type="number"
-                            min={0}
-                            value={newPrice}
-                            onChange={(e) => setNewPrice(Number(e.target.value))}
-                            className="w-16 rounded-xs border border-border bg-surface px-1 py-0.5 text-xs text-foreground outline-none focus:border-[var(--focus)]"
-                            aria-label="Price each"
-                          />
-                          <span className="text-[10px] text-muted">{t('addDrop')}</span>
+                          <CurrencyInput value={newPrice} onChange={setNewPrice} />
                         </div>
                       </div>
                     ) : session.session_drops && session.session_drops.length > 0 ? (
