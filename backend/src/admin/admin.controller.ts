@@ -14,6 +14,8 @@ import { AdminService } from './admin.service';
 import { SessionService } from '../session/session.service';
 import { CharacterService } from '../character/character.service';
 import { UpdateSessionDto } from '../session/dto/update-session.dto';
+import { CreateDropDto } from '../session/dto/create-drop.dto';
+import { UpdateDropDto } from '../session/dto/update-drop.dto';
 import { CreateDungeonDto } from './dto/create-dungeon.dto';
 import { CreateItemDto } from './dto/create-item.dto';
 import { CreateClassDto } from './dto/create-class.dto';
@@ -41,6 +43,23 @@ export class AdminController {
   @Get('users/:userId/characters')
   getUserCharacters(@Param('userId') userId: string) {
     return this.characterService.findAllByUser(userId);
+  }
+
+  // Any user's session drops (edit / add / delete). Declared before the
+  // `sessions/:id` routes so the literal `drops` segment is matched first.
+  @Post('sessions/drops')
+  addDrop(@Body() dto: CreateDropDto) {
+    return this.sessionService.addDropAsAdmin(dto);
+  }
+
+  @Patch('sessions/drops/:dropId')
+  updateDrop(@Param('dropId') dropId: string, @Body() dto: UpdateDropDto) {
+    return this.sessionService.updateDropAsAdmin(dropId, dto);
+  }
+
+  @Delete('sessions/drops/:dropId')
+  removeDrop(@Param('dropId') dropId: string) {
+    return this.sessionService.removeDropAsAdmin(dropId);
   }
 
   // Any user's sessions (edit / delete)
