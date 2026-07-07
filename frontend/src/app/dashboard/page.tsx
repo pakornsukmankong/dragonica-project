@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
+import { m } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { useDateFormatter } from '@/lib/i18n';
@@ -11,6 +12,8 @@ import { GoldChart } from '@/components/gold-chart';
 import { CharacterStats } from '@/components/character-stats';
 import { DungeonStats } from '@/components/dungeon-stats';
 import { Currency } from '@/components/currency';
+import { CountUp, CountUpCurrency } from '@/components/count-up';
+import { Skeleton } from '@/components/skeleton';
 import {
   computeCharacterStats,
   computeDungeonStats,
@@ -75,9 +78,27 @@ export default function DashboardPage() {
 
   if (isSessionsLoading) {
     return (
-      <div className="min-h-screen bg-root flex items-center justify-center">
-        <p className="text-sm text-muted">{t('loading')}</p>
-      </div>
+      <main className="min-h-screen bg-root">
+        <section className="py-[60px] laptop:py-[90px]">
+          <div className="mx-auto max-w-container px-4 sm:px-7">
+            <div className="mb-10 space-y-2">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 laptop:grid-cols-3 desktop:grid-cols-4 gap-6 mb-10">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-[104px]" />
+              ))}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-[88px]" />
+              ))}
+            </div>
+            <Skeleton className="h-[280px] w-full" />
+          </div>
+        </section>
+      </main>
     );
   }
 
@@ -180,9 +201,13 @@ export default function DashboardPage() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 laptop:grid-cols-3 desktop:grid-cols-4 gap-6 mb-10">
-            {stats.map((stat) => (
-              <div
+            {stats.map((stat, i) => (
+              <m.div
                 key={stat.label}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -3 }}
+                transition={{ duration: 0.3, delay: i * 0.06, ease: 'easeOut' }}
                 className="group bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-5 transition-all duration-200 hover:outline-[rgba(224,165,60,0.35)] hover:shadow-gold"
               >
                 <div className="flex items-center justify-between mb-3">
@@ -194,7 +219,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 {stat.currency ? (
-                  <Currency
+                  <CountUpCurrency
                     copper={stat.value as number}
                     className="!flex flex-wrap text-2xl"
                   />
@@ -206,7 +231,7 @@ export default function DashboardPage() {
                     {stat.value}
                   </p>
                 )}
-              </div>
+              </m.div>
             ))}
           </div>
 
@@ -214,15 +239,19 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
               <p className="text-xs text-muted mb-1">{t('characters')}</p>
-              <p className="text-lg font-medium text-foreground">{totalCharacters}</p>
+              <p className="text-lg font-medium text-foreground">
+                <CountUp value={totalCharacters} />
+              </p>
             </div>
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
               <p className="text-xs text-muted mb-1">{t('totalSessions')}</p>
-              <p className="text-lg font-medium text-foreground">{totalSessions}</p>
+              <p className="text-lg font-medium text-foreground">
+                <CountUp value={totalSessions} />
+              </p>
             </div>
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
               <p className="text-xs text-muted mb-1">{t('avgValuePerSession')}</p>
-              <Currency
+              <CountUpCurrency
                 copper={
                   totalSessions > 0
                     ? Math.round(summary.totalGold / totalSessions)

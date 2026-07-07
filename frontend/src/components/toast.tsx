@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as ToastPrimitive from '@radix-ui/react-toast';
+import { AnimatePresence, m } from 'motion/react';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 type ToastVariant = 'default' | 'success' | 'error';
@@ -82,37 +83,52 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <ToastPrimitive.Provider swipeDirection="right" duration={Infinity}>
         {children}
 
-        {toasts.map((t) => {
-          const { color, Icon } = VARIANT[t.variant];
-          return (
-            <ToastPrimitive.Root
-              key={t.id}
-              onOpenChange={(open) => {
-                if (!open) dismiss(t.id);
-              }}
-              className="flex items-start gap-3 rounded-base border border-border bg-surface px-4 py-3 shadow-sm data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[swipe=cancel]:translate-x-0 data-[swipe=cancel]:transition-[transform_200ms_ease-out]"
-              style={{ borderLeft: `3px solid ${color}` }}
-            >
-              <Icon className="mt-0.5 h-4 w-4 shrink-0" style={{ color }} />
-              <div className="min-w-0 flex-1">
-                <ToastPrimitive.Title className="text-sm font-medium text-foreground">
-                  {t.title}
-                </ToastPrimitive.Title>
-                {t.description && (
-                  <ToastPrimitive.Description className="mt-0.5 break-words text-xs text-muted">
-                    {t.description}
-                  </ToastPrimitive.Description>
-                )}
-              </div>
-              <ToastPrimitive.Close
-                className="shrink-0 text-muted hover:text-foreground"
-                aria-label="Dismiss"
+        {/* forceMount + asChild hand the element's lifecycle to
+            AnimatePresence so a dismissed toast plays its exit before leaving
+            the DOM (Radix would otherwise unmount it instantly). */}
+        <AnimatePresence>
+          {toasts.map((t) => {
+            const { color, Icon } = VARIANT[t.variant];
+            return (
+              <ToastPrimitive.Root
+                key={t.id}
+                asChild
+                forceMount
+                onOpenChange={(open) => {
+                  if (!open) dismiss(t.id);
+                }}
               >
-                <X className="h-3.5 w-3.5" />
-              </ToastPrimitive.Close>
-            </ToastPrimitive.Root>
-          );
-        })}
+                <m.li
+                  layout
+                  initial={{ opacity: 0, x: 40, scale: 0.95 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: 40, scale: 0.9 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                  className="flex items-start gap-3 rounded-base border border-border bg-surface px-4 py-3 shadow-sm data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[swipe=cancel]:translate-x-0 data-[swipe=cancel]:transition-[transform_200ms_ease-out]"
+                  style={{ borderLeft: `3px solid ${color}` }}
+                >
+                  <Icon className="mt-0.5 h-4 w-4 shrink-0" style={{ color }} />
+                  <div className="min-w-0 flex-1">
+                    <ToastPrimitive.Title className="text-sm font-medium text-foreground">
+                      {t.title}
+                    </ToastPrimitive.Title>
+                    {t.description && (
+                      <ToastPrimitive.Description className="mt-0.5 break-words text-xs text-muted">
+                        {t.description}
+                      </ToastPrimitive.Description>
+                    )}
+                  </div>
+                  <ToastPrimitive.Close
+                    className="shrink-0 text-muted hover:text-foreground"
+                    aria-label="Dismiss"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </ToastPrimitive.Close>
+                </m.li>
+              </ToastPrimitive.Root>
+            );
+          })}
+        </AnimatePresence>
 
         <ToastPrimitive.Viewport className="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-2 outline-none [&>*]:pointer-events-auto" />
       </ToastPrimitive.Provider>

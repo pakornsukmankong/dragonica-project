@@ -220,3 +220,35 @@ input[type='number'] {
     transition: none;
   }
 }
+
+/* Skeleton shimmer for loading placeholders. The sweep is a transform
+   (compositor-only) rather than an animated background-position, so it stays
+   cheap. Used via the <Skeleton> component. */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--raised);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.06),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+}

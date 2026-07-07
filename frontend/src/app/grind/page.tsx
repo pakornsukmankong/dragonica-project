@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
+import { m } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { NumericInput } from '@/components/numeric-input';
@@ -384,13 +385,14 @@ export default function GrindPage() {
                   </div>
                 </div>
 
-                <button
+                <m.button
                   onClick={handleSave}
+                  whileTap={{ scale: 0.98 }}
                   disabled={!selectedCharacterId || saveMutation.isPending}
                   className="w-full rounded-base px-4 py-3 text-sm font-medium text-white bg-[var(--success)] transition-colors duration-150 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saveMutation.isPending ? tc('saving') : t('saveSession')}
-                </button>
+                </m.button>
 
                 {saveMutation.isError && (
                   <p className="text-xs text-[var(--fg-danger)] mt-3 text-center">
