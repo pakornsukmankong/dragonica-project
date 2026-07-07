@@ -251,4 +251,53 @@ export class SessionService {
     if (error) throw error;
     return { deleted: true };
   }
+
+  // Admin drop mutations: RLS is bypassed and there is no ownership check —
+  // an admin may edit the drops of any user's session. We only verify the
+  // parent session exists before attaching a new drop.
+  async addDropAsAdmin(dto: CreateDropDto) {
+    await this.findOneAsAdmin(dto.sessionId);
+
+    const { data, error } = await this.supabase
+      .from('session_drops')
+      .insert({
+        session_id: dto.sessionId,
+        item_id: dto.itemId,
+        quantity: dto.quantity,
+        price_each: dto.priceEach ?? 0,
+      })
+      .select('*, items(*)')
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateDropAsAdmin(dropId: string, dto: UpdateDropDto) {
+    const updateData: Record<string, unknown> = {};
+    if (dto.quantity !== undefined) updateData['quantity'] = dto.quantity;
+    if (dto.priceEach !== undefined) updateData['price_each'] = dto.priceEach;
+
+    const { data, error } = await this.supabase
+      .from('session_drops')
+      .update(updateData)
+      .eq('id', dropId)
+      .select('*, items(*)')
+      .single();
+
+    if (error || !data) {
+      throw new NotFoundException(this.i18n.t('errors.session.drop_not_found'));
+    }
+    return data;
+  }
+
+  async removeDropAsAdmin(dropId: string) {
+    const { error } = await this.supabase
+      .from('session_drops')
+      .delete()
+      .eq('id', dropId);
+
+    if (error) throw error;
+    return { deleted: true };
+  }
 }

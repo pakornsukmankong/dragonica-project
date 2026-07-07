@@ -102,3 +102,77 @@ describe('SessionService (drop ownership)', () => {
     });
   });
 });
+
+describe('SessionService (admin drop mutations)', () => {
+  // Admin methods intentionally skip the per-user ownership check: an admin
+  // may edit the drops of any user's session.
+  describe('addDropAsAdmin', () => {
+    it("inserts a drop into another user's session once it is confirmed to exist", async () => {
+      const session = { id: 's1', user_id: OTHER };
+      const inserted = { id: 'd1', session_id: 's1', quantity: 2 };
+      const { service: supabase, fromTables } = createSupabaseMock([
+        { data: session, error: null }, // findOneAsAdmin(session)
+        { data: inserted, error: null }, // insert drop
+      ]);
+      const svc = new SessionService(supabase, i18n);
+
+      await expect(
+        svc.addDropAsAdmin({ sessionId: 's1', itemId: 'i1', quantity: 2 }),
+      ).resolves.toEqual(inserted);
+      expect(fromTables).toEqual(['sessions', 'session_drops']);
+    });
+
+    it('throws NotFound when the parent session does not exist', async () => {
+      const { service: supabase, fromTables } = createSupabaseMock([
+        { data: null, error: { code: 'PGRST116' } }, // session missing
+      ]);
+      const svc = new SessionService(supabase, i18n);
+
+      await expect(
+        svc.addDropAsAdmin({ sessionId: 'nope', itemId: 'i1', quantity: 1 }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      // Never reaches the insert.
+      expect(fromTables).toEqual(['sessions']);
+    });
+  });
+
+  describe('updateDropAsAdmin', () => {
+    it('updates the drop directly without an ownership check', async () => {
+      const updated = { id: 'd1', quantity: 99 };
+      const { service: supabase, fromTables } = createSupabaseMock([
+        { data: updated, error: null }, // update drop
+      ]);
+      const svc = new SessionService(supabase, i18n);
+
+      await expect(
+        svc.updateDropAsAdmin('d1', { quantity: 99 }),
+      ).resolves.toEqual(updated);
+      expect(fromTables).toEqual(['session_drops']);
+    });
+
+    it('throws NotFound when the drop does not exist', async () => {
+      const { service: supabase } = createSupabaseMock([
+        { data: null, error: { code: 'PGRST116' } }, // drop missing
+      ]);
+      const svc = new SessionService(supabase, i18n);
+
+      await expect(
+        svc.updateDropAsAdmin('missing', { quantity: 1 }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('removeDropAsAdmin', () => {
+    it('deletes the drop directly without an ownership check', async () => {
+      const { service: supabase, fromTables } = createSupabaseMock([
+        { data: null, error: null }, // delete
+      ]);
+      const svc = new SessionService(supabase, i18n);
+
+      await expect(svc.removeDropAsAdmin('d1')).resolves.toEqual({
+        deleted: true,
+      });
+      expect(fromTables).toEqual(['session_drops']);
+    });
+  });
+});

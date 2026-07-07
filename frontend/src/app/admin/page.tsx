@@ -1139,19 +1139,92 @@ function AdminSessionEditForm({
   const [goldDrop, setGoldDrop] = useState(Number(session.gold_dropped ?? 0));
   const [duration, setDuration] = useState(session.duration_minutes ?? 0);
 
+  // Drop edits are staged locally and committed atomically on Save alongside
+  // the session fields: qty/price drafts, drops flagged for deletion, and one
+  // optional new drop.
+  const [dropDrafts, setDropDrafts] = useState<
+    Record<string, { quantity: number; priceEach: number }>
+  >(() => {
+    const drafts: Record<string, { quantity: number; priceEach: number }> = {};
+    for (const d of session.session_drops ?? []) {
+      drafts[d.id] = { quantity: d.quantity, priceEach: d.price_each };
+    }
+    return drafts;
+  });
+  const [deletedDropIds, setDeletedDropIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [newItemId, setNewItemId] = useState('');
+  const [newQty, setNewQty] = useState(1);
+  const [newPrice, setNewPrice] = useState(0);
+
   const { data: dungeons } = useQuery<Dungeon[]>({
     queryKey: ['game-data', 'dungeons'],
     queryFn: () => api.get('/game-data/dungeons'),
   });
+  const { data: items } = useQuery<Item[]>({
+    queryKey: ['game-data', 'items'],
+    queryFn: () => api.get('/game-data/items'),
+  });
+
+  const setDraftField = (
+    dropId: string,
+    field: 'quantity' | 'priceEach',
+    value: number,
+  ) =>
+    setDropDrafts((prev) => ({
+      ...prev,
+      [dropId]: { ...prev[dropId], [field]: value },
+    }));
+
+  // Picking an item prefills its catalog price so it rarely has to be typed.
+  const selectNewItem = (itemId: string) => {
+    setNewItemId(itemId);
+    const item = items?.find((i) => i.id === itemId);
+    if (item) setNewPrice(item.default_price ?? 0);
+  };
 
   const updateMutation = useMutation({
-    mutationFn: (body: {
+    mutationFn: async (body: {
       characterId: string;
       dungeonId?: string;
       goldEarned: number;
       goldDropped: number;
       durationMinutes?: number;
-    }) => api.patch(`/admin/sessions/${session.id}`, body),
+    }) => {
+      const ops: Promise<unknown>[] = [
+        api.patch(`/admin/sessions/${session.id}`, body),
+      ];
+      for (const d of session.session_drops ?? []) {
+        if (deletedDropIds.has(d.id)) {
+          ops.push(api.delete(`/admin/sessions/drops/${d.id}`));
+          continue;
+        }
+        const draft = dropDrafts[d.id];
+        if (
+          draft &&
+          (draft.quantity !== d.quantity || draft.priceEach !== d.price_each)
+        ) {
+          ops.push(
+            api.patch(`/admin/sessions/drops/${d.id}`, {
+              quantity: draft.quantity,
+              priceEach: draft.priceEach,
+            }),
+          );
+        }
+      }
+      if (newItemId && newQty >= 1) {
+        ops.push(
+          api.post('/admin/sessions/drops', {
+            sessionId: session.id,
+            itemId: newItemId,
+            quantity: newQty,
+            priceEach: newPrice,
+          }),
+        );
+      }
+      await Promise.all(ops);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['admin', 'user-sessions', session.user_id],
@@ -1240,6 +1313,85 @@ function AdminSessionEditForm({
             />
           </div>
         </div>
+
+        {/* Item drops — staged locally, committed with the session on Save. */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-muted">{t('drops')}</label>
+          <div className="flex flex-col gap-1.5">
+            {(session.session_drops ?? [])
+              .filter((drop) => !deletedDropIds.has(drop.id))
+              .map((drop) => {
+                const draft = dropDrafts[drop.id] ?? {
+                  quantity: drop.quantity,
+                  priceEach: drop.price_each,
+                };
+                return (
+                  <div
+                    key={drop.id}
+                    className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-sm bg-raised px-2 py-1.5"
+                  >
+                    <span className="min-w-0 flex-1 truncate text-xs text-foreground">
+                      {drop.items?.name ?? t('unknownItem')}
+                    </span>
+                    <span className="text-[10px] text-muted">x</span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={draft.quantity}
+                      onChange={(e) =>
+                        setDraftField(drop.id, 'quantity', Number(e.target.value))
+                      }
+                      className="w-12 rounded-xs border border-border bg-surface px-1 py-1 text-xs text-foreground outline-none focus:border-[var(--focus)]"
+                      aria-label="Quantity"
+                    />
+                    <CurrencyInput
+                      value={draft.priceEach}
+                      onChange={(c) => setDraftField(drop.id, 'priceEach', c)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDeletedDropIds((prev) =>
+                          new Set(prev).add(drop.id),
+                        )
+                      }
+                      className="text-muted hover:text-[var(--fg-danger)]"
+                      aria-label={tc('delete')}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+
+            {/* Add a new drop (committed on Save). */}
+            <div className="flex flex-wrap items-center gap-1.5 rounded-sm bg-raised px-2 py-1.5 outline outline-1 outline-[rgba(224,165,60,0.25)]">
+              <div className="w-40">
+                <Select
+                  value={newItemId}
+                  onChange={selectNewItem}
+                  placeholder={t('selectItem')}
+                  options={(items ?? []).map((it) => ({
+                    value: it.id,
+                    label: it.name,
+                    icon: it.icon_url,
+                  }))}
+                />
+              </div>
+              <span className="text-[10px] text-muted">x</span>
+              <input
+                type="number"
+                min={1}
+                value={newQty}
+                onChange={(e) => setNewQty(Number(e.target.value))}
+                className="w-12 rounded-xs border border-border bg-surface px-1 py-1 text-xs text-foreground outline-none focus:border-[var(--focus)]"
+                aria-label="Quantity"
+              />
+              <CurrencyInput value={newPrice} onChange={setNewPrice} />
+            </div>
+          </div>
+        </div>
+
         <div className="flex gap-3">
           <button
             type="submit"
