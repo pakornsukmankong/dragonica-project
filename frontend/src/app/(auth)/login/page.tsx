@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { m } from 'motion/react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -258,8 +259,9 @@ export default function LoginPage() {
               </div>
             )}
 
-            <button
+            <m.button
               type="submit"
+              whileTap={{ scale: 0.97 }}
               disabled={
                 isLoading ||
                 (mode === 'signup' &&
@@ -274,7 +276,7 @@ export default function LoginPage() {
                 : mode === 'signin'
                   ? t('signIn')
                   : t('createAccount')}
-            </button>
+            </m.button>
           </form>
 
           {/* Mode toggle */}

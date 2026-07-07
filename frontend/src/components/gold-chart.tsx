@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { m } from 'motion/react';
 import { useTranslations, useLocale } from 'next-intl';
 import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon } from 'lucide-react';
 import { Currency } from '@/components/currency';
@@ -178,9 +179,20 @@ function BarChart({ data, maxValue }: { data: ChartDatum[]; maxValue: number }) 
                   {formatGold(bar.value)}
                 </span>
               )}
-              <div
-                className="w-full max-w-[32px] rounded-t-sm bg-[var(--blue)] transition-all duration-200 group-hover:brightness-125"
-                style={{ height: `${Math.max(height, 2)}%`, opacity: bar.value > 0 ? 1 : 0.15 }}
+              <m.div
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{
+                  duration: 0.4,
+                  delay: Math.min(i * 0.03, 0.4),
+                  ease: 'easeOut',
+                }}
+                className="w-full max-w-[32px] rounded-t-sm bg-[var(--blue)] transition-[filter] duration-200 group-hover:brightness-125"
+                style={{
+                  height: `${Math.max(height, 2)}%`,
+                  opacity: bar.value > 0 ? 1 : 0.15,
+                  transformOrigin: 'bottom',
+                }}
               />
             </div>
             <span className="text-[9px] text-muted truncate max-w-full">{bar.label}</span>
