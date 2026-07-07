@@ -1,38 +1,18 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { api } from '@/lib/api';
 import { Currency } from '@/components/currency';
 import { formatGoldShort } from '@/lib/currency';
+import type { CharacterStat } from '@/types';
 
-interface CharacterStat {
-  characterId: string;
-  characterName: string;
-  className: string;
-  level: number;
-  totalSessions: number;
-  totalGold: number;
-  totalMinutes: number;
-  goldPerHour: number;
+interface CharacterStatsProps {
+  stats: CharacterStat[];
 }
 
-export function CharacterStats() {
+export function CharacterStats({ stats }: CharacterStatsProps) {
   const t = useTranslations('charStats');
-  const { data: stats, isLoading } = useQuery<CharacterStat[]>({
-    queryKey: ['dashboard', 'character-stats'],
-    queryFn: () => api.get('/dashboard/character-stats'),
-  });
 
-  if (isLoading) {
-    return (
-      <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
-        <p className="text-xs text-muted">{t('loading')}</p>
-      </div>
-    );
-  }
-
-  if (!stats || stats.length === 0) {
+  if (stats.length === 0) {
     return (
       <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
         <h2 className="text-sm font-medium text-foreground mb-4">

@@ -1,19 +1,16 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Trophy } from 'lucide-react';
-import { api } from '@/lib/api';
 import { Currency } from '@/components/currency';
 import type { DungeonStats as DungeonStat } from '@/types';
 
-export function DungeonStats() {
+interface DungeonStatsProps {
+  stats: DungeonStat[];
+}
+
+export function DungeonStats({ stats }: DungeonStatsProps) {
   const t = useTranslations('dungeonStats');
-  const tc = useTranslations('common');
-  const { data: stats, isLoading } = useQuery<DungeonStat[]>({
-    queryKey: ['dashboard', 'dungeon-stats'],
-    queryFn: () => api.get('/dashboard/dungeon-stats'),
-  });
 
   return (
     <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
@@ -23,9 +20,7 @@ export function DungeonStats() {
         <span className="text-xs text-muted">{t('subtitle')}</span>
       </div>
 
-      {isLoading ? (
-        <p className="text-xs text-muted">{tc('loading')}</p>
-      ) : !stats || stats.length === 0 ? (
+      {stats.length === 0 ? (
         <p className="text-xs text-muted">
           {t('empty')}
         </p>
