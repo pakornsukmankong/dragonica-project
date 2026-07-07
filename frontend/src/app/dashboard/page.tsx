@@ -6,11 +6,16 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { useDateFormatter } from '@/lib/i18n';
 import { Coins, Clock, TrendingUp, MapPin } from 'lucide-react';
-import type { Session, Character, DashboardSummary } from '@/types';
+import type { Session } from '@/types';
 import { GoldChart } from '@/components/gold-chart';
 import { CharacterStats } from '@/components/character-stats';
 import { DungeonStats } from '@/components/dungeon-stats';
 import { Currency } from '@/components/currency';
+import {
+  computeCharacterStats,
+  computeDungeonStats,
+  computeSummary,
+} from '@/lib/dashboard-stats';
 
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
@@ -19,19 +24,9 @@ export default function DashboardPage() {
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
 
-  const { data: summary, isLoading: isSummaryLoading } = useQuery<DashboardSummary>({
-    queryKey: ['dashboard', 'summary'],
-    queryFn: () => api.get('/dashboard/summary'),
-  });
-
-  const { data: sessions } = useQuery<Session[]>({
+  const { data: sessions, isLoading: isSessionsLoading } = useQuery<Session[]>({
     queryKey: ['sessions'],
     queryFn: () => api.get('/sessions'),
-  });
-
-  const { data: characters } = useQuery<Character[]>({
-    queryKey: ['characters'],
-    queryFn: () => api.get('/characters'),
   });
 
   // Filter sessions by date range for the chart
@@ -62,11 +57,23 @@ export default function DashboardPage() {
     );
   }, [sessions, dateRange, customFrom, customTo]);
 
+  // Every stat block is derived from the same filtered session list so one
+  // date filter drives the whole page consistently.
+  const summary = useMemo(() => computeSummary(filteredSessions), [filteredSessions]);
+  const characterStats = useMemo(
+    () => computeCharacterStats(filteredSessions),
+    [filteredSessions],
+  );
+  const dungeonStats = useMemo(
+    () => computeDungeonStats(filteredSessions),
+    [filteredSessions],
+  );
+
   // Local-timezone YYYY-MM-DD (en-CA yields ISO format), used to block picking
   // future dates in the range filter.
   const maxDate = new Date().toLocaleDateString('en-CA');
 
-  if (isSummaryLoading) {
+  if (isSessionsLoading) {
     return (
       <div className="min-h-screen bg-root flex items-center justify-center">
         <p className="text-sm text-muted">{t('loading')}</p>
@@ -82,30 +89,31 @@ export default function DashboardPage() {
   }[] = [
     {
       label: t('statTotalValue'),
-      value: summary?.totalGold ?? 0,
+      value: summary.totalGold,
       icon: Coins,
       currency: true,
     },
     {
       label: t('statTotalHours'),
-      value: `${summary?.totalHours ?? 0}h`,
+      value: `${summary.totalHours}h`,
       icon: Clock,
     },
     {
       label: t('statValuePerHour'),
-      value: summary?.goldPerHour ?? 0,
+      value: summary.goldPerHour,
       icon: TrendingUp,
       currency: true,
     },
     {
       label: t('statFavoriteDungeon'),
-      value: summary?.favoriteDungeon ?? t('na'),
+      value: summary.favoriteDungeon ?? t('na'),
       icon: MapPin,
     },
   ];
 
   const recentSessions = filteredSessions.slice(0, 5);
-  const totalCharacters = characters?.length ?? 0;
+  // Characters that were actually active within the selected range.
+  const totalCharacters = characterStats.length;
   const totalSessions = filteredSessions.length;
 
   return (
@@ -217,7 +225,7 @@ export default function DashboardPage() {
               <Currency
                 copper={
                   totalSessions > 0
-                    ? Math.round((summary?.totalGold ?? 0) / totalSessions)
+                    ? Math.round(summary.totalGold / totalSessions)
                     : 0
                 }
                 className="!flex flex-wrap text-lg"
@@ -227,7 +235,7 @@ export default function DashboardPage() {
 
           {/* Dungeon efficiency ranking */}
           <div className="mb-10">
-            <DungeonStats />
+            <DungeonStats stats={dungeonStats} />
           </div>
 
           {/* Gold Chart */}
@@ -238,7 +246,7 @@ export default function DashboardPage() {
           {/* Recent Sessions */}
           <div className="grid grid-cols-1 laptop:grid-cols-2 gap-6">
             {/* Character Stats */}
-            <CharacterStats />
+            <CharacterStats stats={characterStats} />
 
             {/* Recent Sessions Table */}
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">

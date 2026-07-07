@@ -161,3 +161,14 @@ export interface DungeonStats {
   totalMinutes: number;
   goldPerHour: number;
 }
+
+export interface CharacterStat {
+  characterId: string;
+  characterName: string;
+  className: string;
+  level: number;
+  totalSessions: number;
+  totalGold: number;
+  totalMinutes: number;
+  goldPerHour: number;
+}

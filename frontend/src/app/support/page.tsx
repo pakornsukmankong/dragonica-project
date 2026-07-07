@@ -82,7 +82,7 @@ function SupportPageInner() {
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
-  const [hideAmount, setHideAmount] = useState(false);
+  const [hideAmount, setHideAmount] = useState(true);
   const [nameTouched, setNameTouched] = useState(false);
 
   // The active charge drives the payment modal (QR for PromptPay, or a
