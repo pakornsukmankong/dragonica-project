@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -29,11 +30,13 @@ export default function HomePage() {
         </span>
 
         <div className="flex justify-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src="/logo.png"
             alt={`${t('title')} ${t('titleAccent')}`}
-            className="mb-6 w-full max-w-[440px]"
+            width={866}
+            height={288}
+            priority
+            className="mb-6 h-auto w-full max-w-[440px]"
           />
         </div>
 

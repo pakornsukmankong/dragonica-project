@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -102,11 +103,13 @@ export default function LoginPage() {
       <div className="w-full max-w-[400px]">
         {/* Brand */}
         <div className="mb-6 flex flex-col items-center text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src="/logo.png"
             alt={`${tn('brand')} ${tn('brandSubtitle')}`}
-            className="mb-3 w-full max-w-[260px]"
+            width={866}
+            height={288}
+            priority
+            className="mb-3 h-auto w-full max-w-[260px]"
           />
           <p className="text-xs uppercase tracking-[0.2em] text-gold-dim">
             {t('brandSubtitle')}

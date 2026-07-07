@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -51,13 +52,19 @@ function useAuthNav() {
   useEffect(() => {
     const supabase = createClient();
 
-    supabase.auth.getUser().then(async ({ data }) => {
-      setUser(data.user);
-      if (data.user) {
+    // getSession() reads the token from local storage (no network round-trip),
+    // unlike getUser() which revalidates against the Supabase Auth server on
+    // every page load. The middleware already gate-keeps protected routes, so
+    // for nav display (name + admin toggle) the local session is enough and
+    // makes the sidebar appear without waiting on a network call.
+    supabase.auth.getSession().then(async ({ data }) => {
+      const currentUser = data.session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', data.user.id)
+          .eq('id', currentUser.id)
           .single();
         setIsAdmin(profile?.role === 'admin');
       }
@@ -77,6 +84,57 @@ function useAuthNav() {
   return { user, isAdmin, isLoading };
 }
 
+function NavLinks({
+  items,
+  pathname,
+  t,
+  badgeFor,
+  onNavigate,
+}: {
+  items: NavItem[];
+  pathname: string;
+  t: ReturnType<typeof useTranslations<'nav'>>;
+  badgeFor: (key: string) => number;
+  onNavigate?: () => void;
+}) {
+  return (
+    <>
+      {items.map(({ href, key, icon: Icon }) => {
+        const active = pathname === href || pathname.startsWith(href + '/');
+        return (
+          <Link
+            key={href}
+            href={href}
+            onClick={onNavigate}
+            className={`group relative flex items-center gap-3 rounded-base px-3 py-2 text-sm font-medium transition-colors duration-150 ${
+              active
+                ? 'bg-gold-soft text-gold'
+                : 'text-muted hover:text-foreground hover:bg-raised'
+            }`}
+          >
+            {active && (
+              <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-gold" />
+            )}
+            <Icon
+              className={`h-[18px] w-[18px] shrink-0 ${
+                active
+                  ? 'text-gold'
+                  : 'text-dark-gray group-hover:text-foreground'
+              }`}
+            />
+            {t(key)}
+            {badgeFor(key) > 0 && (
+              <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--danger)] px-1.5 text-[10px] font-bold text-white">
+                {badgeFor(key)}
+              </span>
+            )}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
 function Brand() {
   const t = useTranslations('nav');
   return (
@@ -84,10 +142,12 @@ function Brand() {
       href="/dashboard"
       className="flex items-center justify-center px-4 h-16 border-b border-border group"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src="/logo.png"
         alt={t('brand')}
+        width={866}
+        height={288}
+        priority
         className="h-9 w-auto object-contain transition-transform duration-150 group-hover:scale-[1.03]"
       />
     </Link>
@@ -140,51 +200,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const items = NAV.filter((i) => !i.admin || isAdmin);
 
-  const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <>
-      {items.map(({ href, key, icon: Icon }) => {
-        const active =
-          pathname === href || pathname.startsWith(href + '/');
-        return (
-          <Link
-            key={href}
-            href={href}
-            onClick={onNavigate}
-            className={`group relative flex items-center gap-3 rounded-base px-3 py-2 text-sm font-medium transition-colors duration-150 ${
-              active
-                ? 'bg-gold-soft text-gold'
-                : 'text-muted hover:text-foreground hover:bg-raised'
-            }`}
-          >
-            {active && (
-              <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-gold" />
-            )}
-            <Icon
-              className={`h-[18px] w-[18px] shrink-0 ${
-                active
-                  ? 'text-gold'
-                  : 'text-dark-gray group-hover:text-foreground'
-              }`}
-            />
-            {t(key)}
-            {badgeFor(key) > 0 && (
-              <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--danger)] px-1.5 text-[10px] font-bold text-white">
-                {badgeFor(key)}
-              </span>
-            )}
-          </Link>
-        );
-      })}
-    </>
-  );
-
   return (
     <div className="min-h-screen lg:pl-60">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-border bg-surface/95 backdrop-blur-sm lg:flex">
         <Brand />
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          <NavLinks />
+          <NavLinks
+            items={items}
+            pathname={pathname}
+            t={t}
+            badgeFor={badgeFor}
+          />
         </nav>
         <div className="space-y-2 border-t border-border p-3">
           {isLoading ? (
@@ -219,10 +246,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile top bar */}
       <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 backdrop-blur-sm lg:hidden">
         <Link href="/dashboard" className="flex items-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src="/logo.png"
             alt={t('brand')}
+            width={866}
+            height={288}
+            priority
             className="h-8 w-auto object-contain"
           />
         </Link>
@@ -239,7 +268,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile horizontal nav */}
       <nav className="sticky top-14 z-30 flex gap-1 overflow-x-auto border-b border-border bg-surface/95 px-2 py-2 backdrop-blur-sm lg:hidden">
-        <NavLinks />
+        <NavLinks items={items} pathname={pathname} t={t} badgeFor={badgeFor} />
       </nav>
 
       {children}
