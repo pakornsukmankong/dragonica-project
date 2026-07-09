@@ -11,3 +11,6 @@ dist
 .claude
 .vscode
 CLAUDE.md
+# Playwright
+test-results
+playwright-report

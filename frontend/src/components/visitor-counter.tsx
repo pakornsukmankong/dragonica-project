@@ -25,7 +25,9 @@ export function VisitorCounter() {
         const { total } = shouldRecord
           ? await recordVisit()
           : await getVisits();
-        setTotal(total);
+        // A malformed payload must not crash the landing page: an undefined
+        // total would slip past the null check and throw in render.
+        if (typeof total === 'number') setTotal(total);
       } catch {
         // Vanity counter — never block the page on it.
       }
