@@ -253,6 +253,24 @@ export interface CommunityBuildList {
   pageSize: number;
 }
 
+// A build row in the admin moderation table (GET /admin/skill-builds).
+export interface AdminSkillBuild {
+  id: string;
+  share_slug: string;
+  name: string;
+  description: string | null;
+  class_id: number;
+  char_level: number;
+  visibility: 'public' | 'unlisted';
+  like_count: number;
+  view_count: number;
+  comment_count: number;
+  created_at: string;
+  updated_at: string;
+  profiles: { username: string | null } | null;
+  skill_classes: { name: string; base_class: string } | null;
+}
+
 export interface DungeonStats {
   dungeonId: string;
   dungeonName: string;

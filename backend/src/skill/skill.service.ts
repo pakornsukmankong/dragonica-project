@@ -7,6 +7,7 @@ import { randomBytes } from 'crypto';
 import { I18nService } from 'nestjs-i18n';
 import { SupabaseService } from '../supabase/supabase.service';
 import { SaveBuildDto } from './dto/save-build.dto';
+import { AdminUpdateBuildDto } from './dto/admin-update-build.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import {
   SkillDef,
@@ -293,6 +294,74 @@ export class SkillService {
       );
     }
     return { deleted: true };
+  }
+
+  // --- admin moderation ---------------------------------------------------------
+  // Called from AdminController behind JwtAuthGuard + AdminGuard.
+
+  // Every build (public and unlisted) with author + class, for the admin table.
+  async listAllBuildsAsAdmin() {
+    const { data, error } = await this.supabase
+      .from('skill_builds')
+      .select(
+        'id, share_slug, name, description, class_id, char_level, visibility, ' +
+          'like_count, view_count, comment_count, created_at, updated_at, ' +
+          'profiles!skill_builds_user_id_fkey(username), skill_classes(name, base_class)',
+      )
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  }
+
+  // Metadata-only moderation edit (rename, rewrite description, unlist).
+  async updateBuildAsAdmin(id: string, dto: AdminUpdateBuildDto) {
+    const patch: Record<string, unknown> = {};
+    if (dto.name !== undefined) patch.name = dto.name;
+    if (dto.description !== undefined)
+      patch.description = dto.description || null;
+    if (dto.visibility !== undefined) patch.visibility = dto.visibility;
+    if (Object.keys(patch).length === 0) {
+      throw new BadRequestException(
+        this.i18n.t('errors.skill.nothing_to_update'),
+      );
+    }
+    patch.updated_at = new Date().toISOString();
+    const { data, error } = await this.supabase
+      .from('skill_builds')
+      .update(patch)
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      throw new NotFoundException(this.i18n.t('errors.skill.build_not_found'));
+    }
+    return data;
+  }
+
+  async deleteBuildAsAdmin(id: string) {
+    const { data, error } = await this.supabase
+      .from('skill_builds')
+      .delete()
+      .eq('id', id)
+      .select('id');
+    if (error) throw error;
+    if (!data?.length) {
+      throw new NotFoundException(this.i18n.t('errors.skill.build_not_found'));
+    }
+    return { deleted: true };
+  }
+
+  // Comments of one build by id (the public route resolves by slug instead).
+  async listCommentsByBuildId(buildId: string) {
+    const { data, error } = await this.supabase
+      .from('skill_build_comments')
+      .select('id, body, created_at, author_id, profiles(username)')
+      .eq('build_id', buildId)
+      .order('created_at', { ascending: true })
+      .limit(200);
+    if (error) throw error;
+    return data ?? [];
   }
 
   // --- helpers ----------------------------------------------------------------

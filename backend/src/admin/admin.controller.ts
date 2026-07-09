@@ -13,6 +13,8 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 import { AdminService } from './admin.service';
 import { SessionService } from '../session/session.service';
 import { CharacterService } from '../character/character.service';
+import { SkillService } from '../skill/skill.service';
+import { AdminUpdateBuildDto } from '../skill/dto/admin-update-build.dto';
 import { UpdateSessionDto } from '../session/dto/update-session.dto';
 import { CreateDropDto } from '../session/dto/create-drop.dto';
 import { UpdateDropDto } from '../session/dto/update-drop.dto';
@@ -27,6 +29,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly sessionService: SessionService,
     private readonly characterService: CharacterService,
+    private readonly skillService: SkillService,
   ) {}
 
   // Users
@@ -71,6 +74,29 @@ export class AdminController {
   @Delete('sessions/:id')
   deleteSession(@Param('id') id: string) {
     return this.sessionService.removeAsAdmin(id);
+  }
+
+  // Community skill builds (moderation: list all, edit metadata, delete).
+  // Comment deletion reuses DELETE /skills/comments/:id, which admins may
+  // already use on anyone's comment.
+  @Get('skill-builds')
+  getSkillBuilds() {
+    return this.skillService.listAllBuildsAsAdmin();
+  }
+
+  @Get('skill-builds/:id/comments')
+  getSkillBuildComments(@Param('id') id: string) {
+    return this.skillService.listCommentsByBuildId(id);
+  }
+
+  @Patch('skill-builds/:id')
+  updateSkillBuild(@Param('id') id: string, @Body() dto: AdminUpdateBuildDto) {
+    return this.skillService.updateBuildAsAdmin(id, dto);
+  }
+
+  @Delete('skill-builds/:id')
+  deleteSkillBuild(@Param('id') id: string) {
+    return this.skillService.deleteBuildAsAdmin(id);
   }
 
   // Dungeons

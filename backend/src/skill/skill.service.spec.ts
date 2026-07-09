@@ -154,4 +154,62 @@ describe('SkillService (social)', () => {
       });
     });
   });
+
+  describe('admin moderation', () => {
+    it('updateBuildAsAdmin patches only provided fields', async () => {
+      const updated = { id: 'b1', name: 'Renamed', visibility: 'unlisted' };
+      const { service: supabase, fromTables } = createSupabaseMock([
+        { data: updated, error: null },
+      ]);
+      const svc = new SkillService(supabase, i18n);
+
+      await expect(
+        svc.updateBuildAsAdmin('b1', { visibility: 'unlisted' }),
+      ).resolves.toEqual(updated);
+      expect(fromTables).toEqual(['skill_builds']);
+    });
+
+    it('updateBuildAsAdmin rejects an empty patch before any query', async () => {
+      const { service: supabase, fromTables } = createSupabaseMock([]);
+      const svc = new SkillService(supabase, i18n);
+
+      await expect(svc.updateBuildAsAdmin('b1', {})).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      expect(fromTables).toEqual([]);
+    });
+
+    it('updateBuildAsAdmin throws NotFound for an unknown id', async () => {
+      const { service: supabase } = createSupabaseMock([
+        { data: null, error: null },
+      ]);
+      const svc = new SkillService(supabase, i18n);
+
+      await expect(
+        svc.updateBuildAsAdmin('nope', { name: 'x' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('deleteBuildAsAdmin deletes any build without an owner filter', async () => {
+      const { service: supabase } = createSupabaseMock([
+        { data: [{ id: 'b1' }], error: null },
+      ]);
+      const svc = new SkillService(supabase, i18n);
+
+      await expect(svc.deleteBuildAsAdmin('b1')).resolves.toEqual({
+        deleted: true,
+      });
+    });
+
+    it('deleteBuildAsAdmin throws NotFound when nothing matched', async () => {
+      const { service: supabase } = createSupabaseMock([
+        { data: [], error: null },
+      ]);
+      const svc = new SkillService(supabase, i18n);
+
+      await expect(svc.deleteBuildAsAdmin('nope')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+  });
 });

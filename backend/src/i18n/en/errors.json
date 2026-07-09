@@ -29,6 +29,7 @@
     "build_not_found": "Build not found",
     "invalid_build": "This build is not valid.",
     "comment_not_found": "Comment not found",
-    "comment_empty": "Comment cannot be empty"
+    "comment_empty": "Comment cannot be empty",
+    "nothing_to_update": "Nothing to update"
   }
 }
