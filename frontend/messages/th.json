@@ -411,7 +411,7 @@
     "buildsTotal": "บิลด์ทั้งหมด",
     "buildsPublic": "เผยแพร่ในคอมมูนิตี้",
     "buildsNone": "ยังไม่มีสกิลบิลด์",
-    "buildSearchPlaceholder": "ค้นหาจากชื่อบิลด์หรือผู้สร้าง...",
+    "buildSearchPlaceholder": "ค้นหาจากชื่อบิลด์ (กด Enter)...",
     "colBuild": "บิลด์",
     "colAuthor": "ผู้สร้าง",
     "colVisibility": "การเผยแพร่",

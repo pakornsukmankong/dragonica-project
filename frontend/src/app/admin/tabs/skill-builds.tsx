@@ -2,7 +2,12 @@
 
 import { Fragment, useState } from 'react';
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Pagination } from '@/components/pagination';
@@ -21,7 +26,11 @@ import {
   Globe,
 } from 'lucide-react';
 import { Select } from '@/components/select';
-import type { AdminSkillBuild, BuildComment } from '@/types';
+import type {
+  AdminSkillBuild,
+  AdminSkillBuildList,
+  BuildComment,
+} from '@/types';
 import { ITEMS_PER_PAGE } from './shared';
 
 export function SkillBuildsTab() {
@@ -33,6 +42,7 @@ export function SkillBuildsTab() {
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [query, setQuery] = useState(''); // committed search (Enter/submit)
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -44,9 +54,16 @@ export function SkillBuildsTab() {
     null,
   );
 
-  const { data: builds, isLoading } = useQuery<AdminSkillBuild[]>({
-    queryKey: ['admin', 'skill-builds'],
-    queryFn: () => api.get('/admin/skill-builds'),
+  // Server-side paged + searched; previous page stays visible while fetching.
+  const { data, isLoading } = useQuery<AdminSkillBuildList>({
+    queryKey: ['admin', 'skill-builds', query, page],
+    queryFn: () => {
+      const p = new URLSearchParams();
+      if (query) p.set('search', query);
+      p.set('page', String(page));
+      return api.get(`/admin/skill-builds?${p.toString()}`);
+    },
+    placeholderData: keepPreviousData,
   });
 
   const invalidate = () => {
@@ -91,16 +108,11 @@ export function SkillBuildsTab() {
       }),
   });
 
-  const list = (builds ?? []).filter((b) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      b.name.toLowerCase().includes(q) ||
-      (b.profiles?.username ?? '').toLowerCase().includes(q)
-    );
-  });
-  const pageCount = Math.max(1, Math.ceil(list.length / ITEMS_PER_PAGE));
-  const paged = list.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const paged = data?.builds ?? [];
+  const pageCount = Math.max(
+    1,
+    Math.ceil((data?.total ?? 0) / (data?.pageSize ?? ITEMS_PER_PAGE)),
+  );
 
   const startEdit = (b: AdminSkillBuild) => {
     setEditingId(b.id);
@@ -118,7 +130,7 @@ export function SkillBuildsTab() {
             {t('buildsTotal')}
           </p>
           <p className="text-2xl font-bold text-gold tabular-nums">
-            {(builds ?? []).length}
+            {data?.total ?? 0}
           </p>
         </div>
         <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-5">
@@ -126,24 +138,29 @@ export function SkillBuildsTab() {
             {t('buildsPublic')}
           </p>
           <p className="text-2xl font-bold text-foreground tabular-nums">
-            {(builds ?? []).filter((b) => b.visibility === 'public').length}
+            {data?.publicTotal ?? 0}
           </p>
         </div>
       </div>
 
       <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
-        <input
-          value={search}
-          onChange={(e) => {
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
             setPage(1);
-            setSearch(e.target.value);
+            setQuery(search);
           }}
-          placeholder={t('buildSearchPlaceholder')}
-          className="mb-4 w-full max-w-sm rounded-base border border-border bg-raised px-3 py-2 text-sm text-foreground outline-none focus:border-gold/50"
-        />
+        >
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('buildSearchPlaceholder')}
+            className="mb-4 w-full max-w-sm rounded-base border border-border bg-raised px-3 py-2 text-sm text-foreground outline-none focus:border-gold/50"
+          />
+        </form>
         {isLoading ? (
           <p className="text-xs text-muted">{tc('loading')}</p>
-        ) : list.length === 0 ? (
+        ) : paged.length === 0 ? (
           <p className="text-xs text-muted">{t('buildsNone')}</p>
         ) : (
           <>

@@ -253,6 +253,15 @@ export interface CommunityBuildList {
   pageSize: number;
 }
 
+// One page of the admin moderation table (GET /admin/skill-builds).
+export interface AdminSkillBuildList {
+  builds: AdminSkillBuild[];
+  total: number;
+  publicTotal: number;
+  page: number;
+  pageSize: number;
+}
+
 // A build row in the admin moderation table (GET /admin/skill-builds).
 export interface AdminSkillBuild {
   id: string;

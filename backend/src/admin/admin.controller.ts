@@ -5,6 +5,7 @@ import {
   Patch,
   Delete,
   Param,
+  Query,
   Body,
   UseGuards,
 } from '@nestjs/common';
@@ -80,8 +81,14 @@ export class AdminController {
   // Comment deletion reuses DELETE /skills/comments/:id, which admins may
   // already use on anyone's comment.
   @Get('skill-builds')
-  getSkillBuilds() {
-    return this.skillService.listAllBuildsAsAdmin();
+  getSkillBuilds(
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+  ) {
+    return this.skillService.listAllBuildsAsAdmin({
+      search: search || undefined,
+      page: page ? Number(page) : 1,
+    });
   }
 
   @Get('skill-builds/:id/comments')
