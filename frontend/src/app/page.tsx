@@ -9,6 +9,24 @@ import { ArrowRight, Package, ChevronDown, Check, Sparkles } from 'lucide-react'
 // Demo bar heights (%) for the dashboard-preview chart. Index 4 is the peak.
 const CHART = [42, 58, 71, 49, 88, 63, 77];
 
+// Demo skill tree for the simulator preview: real Warrior icons from
+// /public/skill-icons on the same 62px grid the simulator uses.
+const SKILL_CELL = 62;
+const SKILL_ICON = 44;
+const MOCK_SKILLS = [
+  { icon: 1, x: 0, y: 0, cur: 5, max: 5 },
+  { icon: 2, x: 1, y: 0, cur: 3, max: 5 },
+  { icon: 3, x: 2, y: 0, cur: 1, max: 1 },
+  { icon: 5, x: 3, y: 0, cur: 0, max: 5, locked: true },
+  { icon: 7, x: 0, y: 1, cur: 2, max: 5, plus: true },
+  { icon: 9, x: 2, y: 1, cur: 0, max: 3, locked: true },
+];
+// prereq arrows: parent grid pos -> child grid pos (same column, row below)
+const MOCK_ARROWS = [
+  { x: 0, from: 0, to: 1 },
+  { x: 2, from: 0, to: 1 },
+];
+
 export default function HomePage() {
   const t = useTranslations('landing');
 
@@ -81,6 +99,9 @@ export default function HomePage() {
           </Reveal>
           <Reveal delay={240}>
             <SessionsPreview />
+          </Reveal>
+          <Reveal delay={360}>
+            <SkillsPreview />
           </Reveal>
         </div>
       </section>
@@ -262,6 +283,144 @@ function GrindPreview() {
             <Check className="h-4 w-4" />
             {g('saveSession')}
           </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SkillsPreview() {
+  const t = useTranslations('landing');
+  const s = useTranslations('skills');
+  const cols = Math.max(...MOCK_SKILLS.map((k) => k.x)) + 1;
+  const rows = Math.max(...MOCK_SKILLS.map((k) => k.y)) + 1;
+  const W = cols * SKILL_CELL;
+  const H = rows * SKILL_CELL;
+  const spSpent = 86;
+
+  return (
+    <div className="mx-auto max-w-[880px] overflow-hidden rounded-lg border border-border bg-surface text-left shadow-card">
+      {/* Browser chrome */}
+      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+        <span className="h-2.5 w-2.5 rounded-full bg-[#f43f5e]/70" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[rgba(224,165,60,0.75)]" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#4ade80]/60" />
+        <span className="ml-2 text-[11px] text-muted">
+          {t('previewSkillsLabel')}
+        </span>
+      </div>
+
+      <div className="p-4 laptop:p-6">
+        {/* SP budget bar (mirrors the simulator's control bar) */}
+        <div className="flex flex-wrap items-center gap-4 rounded-base bg-raised p-3">
+          <div className="min-w-[88px] rounded-base bg-surface px-4 py-2">
+            <p className="text-[10px] uppercase tracking-wider text-muted">
+              {s('spUsed')}
+            </p>
+            <p className="text-lg font-bold tabular-nums text-gold">
+              {spSpent}
+              <span className="text-sm text-muted">/230</span>
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted">
+              {s('charLevel')}
+            </p>
+            <p className="text-lg font-bold tabular-nums text-foreground">12</p>
+          </div>
+          <span className="ml-auto hidden items-center gap-2 rounded-base bg-gold px-4 py-2 text-sm font-semibold text-[#1b1407] shadow-button sm:inline-flex">
+            {s('saveShare')}
+          </span>
+        </div>
+
+        {/* One tier panel of the tree */}
+        <div className="mt-3 rounded-[6px] border border-border bg-surface p-3 shadow-sm">
+          <div className="mb-2 flex items-baseline gap-2">
+            <h3 className="text-[15px] font-semibold text-foreground">
+              {t('previewSkillsClass')}
+            </h3>
+            <span className="text-[11px] font-medium text-muted">
+              {spSpent} SP
+            </span>
+          </div>
+          <div className="relative mx-auto" style={{ width: W, height: H }}>
+            <svg
+              className="pointer-events-none absolute inset-0"
+              width={W}
+              height={H}
+              aria-hidden
+            >
+              <defs>
+                <marker
+                  id="landing-arw"
+                  markerWidth="7"
+                  markerHeight="7"
+                  refX="5.5"
+                  refY="3"
+                  orient="auto"
+                >
+                  <path d="M0,0 L6,3 L0,6 Z" fill="var(--gold-dim)" />
+                </marker>
+              </defs>
+              {MOCK_ARROWS.map((a) => {
+                const cx = a.x * SKILL_CELL + SKILL_ICON / 2;
+                return (
+                  <path
+                    key={a.x}
+                    d={`M${cx},${a.from * SKILL_CELL + SKILL_ICON} L${cx},${a.to * SKILL_CELL - 2}`}
+                    fill="none"
+                    stroke="var(--gold-dim)"
+                    strokeWidth="2"
+                    markerEnd="url(#landing-arw)"
+                  />
+                );
+              })}
+            </svg>
+            {MOCK_SKILLS.map((k) => (
+              <div
+                key={k.icon}
+                className="absolute select-none"
+                style={{ left: k.x * SKILL_CELL, top: k.y * SKILL_CELL, width: SKILL_ICON }}
+              >
+                <div className="relative h-11 w-11 rounded-[6px]">
+                  <div
+                    className={`h-full w-full overflow-hidden rounded-[6px] border ${
+                      k.cur > 0
+                        ? 'border-[var(--gold)] ring-1 ring-[var(--gold)]'
+                        : 'border-border'
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/skill-icons/${k.icon}.webp`}
+                      alt=""
+                      draggable={false}
+                      className={`h-full w-full object-cover ${k.locked ? 'opacity-60 grayscale' : ''}`}
+                    />
+                  </div>
+                  {k.plus && (
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-[3px] border border-[var(--gold-dim)] bg-[var(--gold)] text-[11px] font-bold leading-none text-[var(--root)] shadow">
+                      +
+                    </span>
+                  )}
+                </div>
+                <div className="mx-auto mt-1 w-11 rounded-[3px] bg-[var(--root)] text-center text-[10px] font-bold leading-[15px] tabular-nums">
+                  <span
+                    className={
+                      k.cur >= k.max
+                        ? 'text-gold'
+                        : k.cur > 0
+                          ? 'text-[var(--gold-strong)]'
+                          : 'text-foreground'
+                    }
+                  >
+                    {k.cur}
+                  </span>
+                  <span className="text-muted">/{k.max}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
