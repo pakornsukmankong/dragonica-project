@@ -9,9 +9,21 @@ describe('DashboardService', () => {
       const { service: supabase } = createSupabaseMock([
         {
           data: [
-            { gold_earned: 100, duration_minutes: 30, dungeons: { name: 'Ruins' } },
-            { gold_earned: 200, duration_minutes: 60, dungeons: { name: 'Ruins' } },
-            { gold_earned: 50, duration_minutes: 45, dungeons: { name: 'Cave' } },
+            {
+              gold_earned: 100,
+              duration_minutes: 30,
+              dungeons: { name: 'Ruins' },
+            },
+            {
+              gold_earned: 200,
+              duration_minutes: 60,
+              dungeons: { name: 'Ruins' },
+            },
+            {
+              gold_earned: 50,
+              duration_minutes: 45,
+              dungeons: { name: 'Cave' },
+            },
           ],
           error: null,
         },
@@ -68,9 +80,24 @@ describe('DashboardService', () => {
       const { service: supabase } = createSupabaseMock([
         {
           data: [
-            { character_id: 'a', gold_earned: 100, duration_minutes: 60, characters: char('Alpha') },
-            { character_id: 'b', gold_earned: 500, duration_minutes: 60, characters: char('Beta') },
-            { character_id: 'a', gold_earned: 200, duration_minutes: 30, characters: char('Alpha') },
+            {
+              character_id: 'a',
+              gold_earned: 100,
+              duration_minutes: 60,
+              characters: char('Alpha'),
+            },
+            {
+              character_id: 'b',
+              gold_earned: 500,
+              duration_minutes: 60,
+              characters: char('Beta'),
+            },
+            {
+              character_id: 'a',
+              gold_earned: 200,
+              duration_minutes: 30,
+              characters: char('Alpha'),
+            },
           ],
           error: null,
         },
@@ -89,7 +116,12 @@ describe('DashboardService', () => {
       const { service: supabase } = createSupabaseMock([
         {
           data: [
-            { character_id: 'x', gold_earned: 10, duration_minutes: 10, characters: null },
+            {
+              character_id: 'x',
+              gold_earned: 10,
+              duration_minutes: 10,
+              characters: null,
+            },
           ],
           error: null,
         },
@@ -107,9 +139,24 @@ describe('DashboardService', () => {
       const { service: supabase } = createSupabaseMock([
         {
           data: [
-            { dungeon_id: null, gold_earned: 999, duration_minutes: 1, dungeons: null },
-            { dungeon_id: 'd1', gold_earned: 100, duration_minutes: 60, dungeons: { name: 'Ruins' } },
-            { dungeon_id: 'd2', gold_earned: 300, duration_minutes: 60, dungeons: { name: 'Cave' } },
+            {
+              dungeon_id: null,
+              gold_earned: 999,
+              duration_minutes: 1,
+              dungeons: null,
+            },
+            {
+              dungeon_id: 'd1',
+              gold_earned: 100,
+              duration_minutes: 60,
+              dungeons: { name: 'Ruins' },
+            },
+            {
+              dungeon_id: 'd2',
+              gold_earned: 300,
+              duration_minutes: 60,
+              dungeons: { name: 'Cave' },
+            },
           ],
           error: null,
         },

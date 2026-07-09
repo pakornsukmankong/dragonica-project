@@ -32,7 +32,11 @@ describe('AuthService', () => {
     });
 
     it('creates a profile from the email local-part when none exists', async () => {
-      const { service: supabase, from, fromTables } = createSupabaseMock([
+      const {
+        service: supabase,
+        from,
+        fromTables,
+      } = createSupabaseMock([
         { data: null, error: { code: 'PGRST116' } }, // no row yet
         { data: { ...profile, username: 'flok' }, error: null }, // insert
       ]);
@@ -42,9 +46,8 @@ describe('AuthService', () => {
       expect(result.username).toBe('flok');
       expect(fromTables).toEqual(['profiles', 'profiles']);
 
-      const insertArg = (
-        from.mock.results[1].value.insert as jest.Mock
-      ).mock.calls[0][0];
+      const insertArg = (from.mock.results[1].value.insert as jest.Mock).mock
+        .calls[0][0];
       expect(insertArg).toEqual({ id: USER, username: 'flok' });
     });
 
@@ -72,9 +75,8 @@ describe('AuthService', () => {
         svc.updateProfile(USER, { username: '   ' }),
       ).resolves.toEqual(updated);
 
-      const updateArg = (
-        from.mock.results[0].value.update as jest.Mock
-      ).mock.calls[0][0];
+      const updateArg = (from.mock.results[0].value.update as jest.Mock).mock
+        .calls[0][0];
       expect(updateArg).toEqual({ username: null });
     });
 
@@ -86,9 +88,8 @@ describe('AuthService', () => {
 
       await svc.updateProfile(USER, { username: '  flok  ' });
 
-      const updateArg = (
-        from.mock.results[0].value.update as jest.Mock
-      ).mock.calls[0][0];
+      const updateArg = (from.mock.results[0].value.update as jest.Mock).mock
+        .calls[0][0];
       expect(updateArg).toEqual({ username: 'flok' });
     });
 
