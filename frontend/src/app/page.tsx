@@ -79,7 +79,7 @@ export default function HomePage() {
           </Link>
           <Link
             href="/skills"
-            className="inline-flex items-center justify-center gap-2 rounded-base border border-gold/40 bg-gold-soft px-6 py-3 text-sm font-semibold text-gold transition-all duration-150 hover:scale-[1.03] hover:border-gold/70 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2"
+            className="inline-flex items-center justify-center gap-2 rounded-base bg-gold-soft px-6 py-3 text-sm font-semibold text-gold-strong transition-all duration-150 hover:scale-[1.03] hover:bg-gold/25 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2"
           >
             <Sparkles className="h-4 w-4" />
             {t('ctaSkills')}

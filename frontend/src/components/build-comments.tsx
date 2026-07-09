@@ -176,7 +176,7 @@ export function BuildComments({
       ) : (
         <Link
           href={`/login?next=${encodeURIComponent(`/skills/build/${slug}`)}`}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-base border border-gold/40 bg-gold-soft px-3 py-2 text-sm font-medium text-gold transition-colors hover:border-gold/70"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-base bg-gold-soft px-3 py-2 text-sm font-medium text-gold transition-colors hover:bg-gold/25 hover:text-gold-strong"
         >
           <LogIn className="h-3.5 w-3.5" />
           {t('loginToComment')}
