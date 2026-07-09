@@ -17,6 +17,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { AdminModule } from './admin/admin.module';
 import { DonationModule } from './donation/donation.module';
 import { TicketModule } from './ticket/ticket.module';
+import { SkillModule } from './skill/skill.module';
 import { YoutubeModule } from './youtube/youtube.module';
 import { StatsModule } from './stats/stats.module';
 import { HealthController } from './health/health.controller';
@@ -48,6 +49,7 @@ import { HealthController } from './health/health.controller';
     AdminModule,
     DonationModule,
     TicketModule,
+    SkillModule,
     YoutubeModule,
     StatsModule,
   ],

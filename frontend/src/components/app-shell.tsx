@@ -14,6 +14,7 @@ import {
   Heart,
   LifeBuoy,
   BookOpen,
+  Sparkles,
   LogOut,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -34,6 +35,7 @@ const NAV: NavItem[] = [
   { href: '/grind', key: 'grind', icon: Swords },
   { href: '/characters', key: 'characters', icon: Users },
   { href: '/sessions', key: 'sessions', icon: ScrollText },
+  { href: '/skills', key: 'skills', icon: Sparkles },
   { href: '/admin', key: 'admin', icon: Shield, admin: true },
   { href: '/guide', key: 'guide', icon: BookOpen },
   { href: '/support', key: 'support', icon: Heart },

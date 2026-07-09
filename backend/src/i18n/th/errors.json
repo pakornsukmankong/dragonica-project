@@ -23,5 +23,12 @@
   },
   "payment": {
     "provider_error": "เกิดข้อผิดพลาดจากผู้ให้บริการชำระเงิน: {message}"
+  },
+  "skill": {
+    "class_not_found": "ไม่พบคลาสสกิล",
+    "build_not_found": "ไม่พบบิลด์",
+    "invalid_build": "บิลด์นี้ไม่ถูกต้อง",
+    "comment_not_found": "ไม่พบคอมเมนต์",
+    "comment_empty": "คอมเมนต์ต้องไม่ว่างเปล่า"
   }
 }

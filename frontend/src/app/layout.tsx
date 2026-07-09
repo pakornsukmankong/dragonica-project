@@ -24,6 +24,14 @@ const notoSansThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
+  // Absolute base for Open Graph/Twitter images (crawlers reject relative
+  // URLs). Falls back to the Vercel production domain, then localhost.
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ||
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : 'http://localhost:3000'),
+  ),
   title: 'Dragonica Grind Tracker',
   description: 'Track your grinding sessions, gold, and progress in Dragonica',
 };
