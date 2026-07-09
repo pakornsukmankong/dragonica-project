@@ -53,12 +53,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from auth pages
+  // Redirect authenticated users away from auth pages, honouring ?next=
+  // (internal paths only — anything else would be an open redirect).
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login');
   if (isAuthRoute && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
+    const next = request.nextUrl.searchParams.get('next');
+    const target =
+      next && next.startsWith('/') && !next.startsWith('//')
+        ? next
+        : '/dashboard';
+    return NextResponse.redirect(new URL(target, request.url));
   }
 
   return supabaseResponse;

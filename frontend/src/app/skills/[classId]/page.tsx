@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl';
 import {
   ArrowLeft,
   Loader2,
+  LogIn,
   RotateCcw,
   Share2,
   Save,
@@ -162,6 +163,15 @@ function SimulatorInner() {
     const url = `${window.location.origin}/skills/${classId}?b=${code}`;
     navigator.clipboard?.writeText(url).catch(() => {});
     toast({ title: t('linkCopied'), variant: 'success' });
+  };
+
+  // Guests who try to save are sent to login; the in-progress build rides
+  // along in ?next= (as a ?b= snapshot) so it survives the round trip.
+  const loginToSave = () => {
+    const code = encodeBuild({ classId, charLevel, allocations, bonusSp });
+    router.push(
+      `/login?next=${encodeURIComponent(`/skills/${classId}?b=${code}`)}`,
+    );
   };
 
   if (isLoading || !tree) {
@@ -353,7 +363,16 @@ function SimulatorInner() {
               )}
             </>
           ) : (
-            <span className="text-xs text-muted">{t('loginToSave')}</span>
+            <m.button
+              onClick={loginToSave}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+              className="ml-auto flex items-center gap-1.5 rounded-base bg-gold px-4 py-2 text-sm font-semibold text-[#1b1407] shadow-button transition-opacity hover:opacity-90"
+            >
+              <LogIn className="h-3.5 w-3.5" />
+              {t('loginToSave')}
+            </m.button>
           )}
         </div>
         {me && (

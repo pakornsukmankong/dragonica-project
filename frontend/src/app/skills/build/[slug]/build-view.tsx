@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { m } from 'motion/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
@@ -22,9 +22,11 @@ import type { SkillBuild, SkillClassTree } from '@/types';
 export function BuildView() {
   const t = useTranslations('skills');
   const params = useParams();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const slug = String(params.slug);
+  const loginNext = `/login?next=${encodeURIComponent(`/skills/build/${slug}`)}`;
 
   const { data: build, isLoading, isError } = useQuery<SkillBuild>({
     queryKey: ['skills', 'build', slug],
@@ -146,17 +148,18 @@ export function BuildView() {
           {/* social stats */}
           <div className="mt-3 flex items-center gap-3 text-sm text-muted">
             <m.button
-              onClick={() => me && likeMut.mutate()}
-              disabled={!me || likeMut.isPending}
+              // guests are sent to login and come straight back here after
+              onClick={() => (me ? likeMut.mutate() : router.push(loginNext))}
+              disabled={likeMut.isPending}
               title={me ? undefined : t('loginToLike')}
-              whileHover={me ? { scale: 1.05, y: -1 } : undefined}
-              whileTap={me ? { scale: 0.9 } : undefined}
+              whileHover={{ scale: 1.05, y: -1 }}
+              whileTap={{ scale: 0.9 }}
               transition={{ type: 'spring', stiffness: 400, damping: 17 }}
               className={`inline-flex items-center gap-1.5 rounded-base border px-3 py-1.5 transition-colors ${
                 liked
                   ? 'border-gold/40 bg-gold-soft text-gold'
                   : 'border-border text-muted hover:text-foreground'
-              } ${me ? '' : 'cursor-default opacity-70'}`}
+              }`}
             >
               {/* re-mounts on toggle so the heart pops both ways */}
               <m.span

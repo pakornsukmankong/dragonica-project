@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Image from 'next/image';
 import { m } from 'motion/react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
-export default function LoginPage() {
+function LoginInner() {
   const t = useTranslations('login');
   const tn = useTranslations('nav');
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -20,6 +20,15 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Where to land after login (?next=/skills/build/xyz). Internal paths only —
+  // anything else would be an open redirect.
+  const rawNext = searchParams.get('next');
+  const next =
+    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+      ? rawNext
+      : '/dashboard';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +65,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push('/dashboard');
+      router.push(next);
       return;
     }
 
@@ -71,7 +80,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push('/dashboard');
+    router.push(next);
   };
 
   const handleOAuthLogin = async (
@@ -85,7 +94,7 @@ export default function LoginPage() {
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
 
@@ -298,5 +307,14 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+// useSearchParams needs a Suspense boundary during prerender.
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginInner />
+    </Suspense>
   );
 }
