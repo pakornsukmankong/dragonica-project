@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { SupabaseService } from '../supabase/supabase.service';
+import { TablesUpdate } from '../supabase/types/database.types';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 export interface Profile {
@@ -38,7 +39,7 @@ export class AuthService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto): Promise<Profile> {
-    const updateData: Record<string, unknown> = {};
+    const updateData: TablesUpdate<'profiles'> = {};
     // Store an empty display name as null so the app falls back to the email.
     if (dto.username !== undefined)
       updateData['username'] = dto.username.trim() || null;

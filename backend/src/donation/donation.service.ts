@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { SupabaseService } from '../supabase/supabase.service';
+import { TablesUpdate } from '../supabase/types/database.types';
 import {
   PAYMENT_PROVIDER,
   PaymentProvider,
@@ -199,7 +200,7 @@ export class DonationService {
     if (row.status !== 'pending')
       throw new BadRequestException(this.i18n.t('errors.donation.not_pending'));
 
-    const update: Partial<DonationRow> = { status };
+    const update: TablesUpdate<'donations'> = { status };
     if (status === 'successful') update.paid_at = new Date().toISOString();
 
     const { data: updated, error } = await this.supabase
@@ -378,7 +379,7 @@ export class DonationService {
 
     if (status === current.status) return current;
 
-    const update: Partial<DonationRow> = { status };
+    const update: TablesUpdate<'donations'> = { status };
     if (status === 'successful' && !current.paid_at) {
       update.paid_at = new Date().toISOString();
     }
