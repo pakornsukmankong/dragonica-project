@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { BeamCharge, BeamService } from '../beam/beam.service';
 import { DonationChannel } from '../donation/dto/create-donation.dto';
 import {
@@ -27,6 +27,8 @@ const PAYMENT_METHOD: Partial<
  */
 @Injectable()
 export class BeamProvider implements PaymentProvider {
+  private readonly logger = new Logger(BeamProvider.name);
+
   readonly name = 'beam' as const;
 
   // Channels the Beam Charge API can create a charge for (keys of the map
@@ -80,8 +82,11 @@ export class BeamProvider implements PaymentProvider {
     };
   }
 
-  // Beam's exact status strings aren't enumerated in the public docs; map
-  // defensively. TODO: confirm the exact values against the sandbox.
+  // Beam's public docs only confirm SUCCEEDED (the charge.succeeded webhook);
+  // the rest of the enum is unpublished, so map by keyword on purpose. An
+  // unrecognized value stays pending (funds are only ever credited on an
+  // explicit success) and is logged so production traffic reveals the real
+  // vocabulary.
   private mapStatus(status: string): NormalizedChargeStatus {
     const s = (status || '').toUpperCase();
     if (s.includes('SUCC') || s === 'PAID' || s === 'COMPLETED')
@@ -89,6 +94,9 @@ export class BeamProvider implements PaymentProvider {
     if (s.includes('FAIL') || s.includes('CANCEL') || s.includes('REVERS'))
       return 'failed';
     if (s.includes('EXPIRE')) return 'expired';
+    if (!s.includes('PEND') && s !== 'CREATED' && s !== 'PROCESSING') {
+      this.logger.warn(`Unrecognized Beam charge status "${status}"`);
+    }
     return 'pending';
   }
 }

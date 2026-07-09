@@ -18,6 +18,7 @@ import {
 import { api } from '@/lib/api';
 import { useToast } from '@/components/toast';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { useHasSession } from '@/hooks/use-session';
 import type { SkillClass, SkillBuild } from '@/types';
 
 // Job icon per stage name; files in /public/class-icons (Dragon Saga wiki,
@@ -37,9 +38,12 @@ export default function SkillsPage() {
     staleTime: Infinity,
   });
 
+  // Guests have no builds — skip the request instead of collecting a 401.
+  const { hasSession } = useHasSession();
   const { data: builds } = useQuery<SkillBuild[]>({
     queryKey: ['skills', 'me', 'builds'],
     queryFn: () => api.get('/skills/me/builds'),
+    enabled: hasSession,
     retry: false,
   });
 

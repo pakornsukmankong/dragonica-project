@@ -300,18 +300,45 @@ export class SkillService {
   // --- admin moderation ---------------------------------------------------------
   // Called from AdminController behind JwtAuthGuard + AdminGuard.
 
-  // Every build (public and unlisted) with author + class, for the admin table.
-  async listAllBuildsAsAdmin() {
-    const { data, error } = await this.supabase
+  // Every build (public and unlisted) with author + class, for the admin
+  // table. Server-side paged + searched so the payload stays bounded as the
+  // gallery grows.
+  async listAllBuildsAsAdmin(opts: { search?: string; page?: number } = {}) {
+    const pageSize = 10;
+    const page = Math.max(1, opts.page ?? 1);
+    let query = this.supabase
       .from('skill_builds')
       .select(
         'id, share_slug, name, description, class_id, char_level, visibility, ' +
           'like_count, view_count, comment_count, created_at, updated_at, ' +
           'profiles!skill_builds_user_id_fkey(username), skill_classes(name, base_class)',
-      )
-      .order('created_at', { ascending: false });
+        { count: 'exact' },
+      );
+    if (opts.search) {
+      // same PostgREST-syntax stripping as the public gallery search
+      const q = opts.search.replace(/[%,()\\]/g, '');
+      if (q) query = query.ilike('name', `%${q}%`);
+    }
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range((page - 1) * pageSize, page * pageSize - 1);
     if (error) throw error;
-    return data ?? [];
+
+    // Public builds are counted separately so the summary card reflects the
+    // whole table, not the current page.
+    const { count: publicCount, error: countError } = await this.supabase
+      .from('skill_builds')
+      .select('id', { count: 'exact', head: true })
+      .eq('visibility', 'public');
+    if (countError) throw countError;
+
+    return {
+      builds: data ?? [],
+      total: count ?? 0,
+      publicTotal: publicCount ?? 0,
+      page,
+      pageSize,
+    };
   }
 
   // Metadata-only moderation edit (rename, rewrite description, unlist).

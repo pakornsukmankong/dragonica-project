@@ -411,7 +411,7 @@
     "buildsTotal": "Total builds",
     "buildsPublic": "Public in community",
     "buildsNone": "No skill builds yet.",
-    "buildSearchPlaceholder": "Search by build name or author...",
+    "buildSearchPlaceholder": "Search by build name (press Enter)...",
     "colBuild": "Build",
     "colAuthor": "Author",
     "colVisibility": "Visibility",
