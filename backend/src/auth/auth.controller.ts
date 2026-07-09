@@ -22,6 +22,8 @@ export class AuthController {
       email: user.email,
       username: profile.username,
       avatarUrl: profile.avatar_url,
+      // lets the client show moderation controls (server still re-checks)
+      role: profile.role,
     };
   }
 

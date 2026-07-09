@@ -153,6 +153,106 @@ export interface Ticket {
   profiles?: { username: string | null } | null;
 }
 
+// --- Skill simulator --------------------------------------------------------
+
+export interface SkillClass {
+  id: number; // in-game class bit (21..28)
+  base_class: string; // 'Warrior' | 'Magician' | 'Archer' | 'Thief'
+  name: string;
+  slug: string;
+  sort_order: number;
+}
+
+export interface SkillLevelRow {
+  level: number;
+  reqLevel: number; // character level required for this skill level
+  sp?: number; // skill points this level costs (spidpex model)
+  mp?: number;
+  cooldown?: number; // ms
+  castTime?: number;
+  range?: number;
+  power?: string | null;
+}
+
+export interface SkillPrereq {
+  id: number; // required skill id
+  level: number; // minimum level of that skill
+}
+
+export interface Skill {
+  id: number; // in-game NameNo
+  name: string;
+  description: string | null;
+  icon_url: string | null;
+  type: number;
+  class_bits: number[];
+  base_class: string | null;
+  req_level: number; // character level to learn (lv1)
+  max_level: number; // points investable
+  prerequisites: SkillPrereq[]; // skills that must be leveled first
+  // per-class tree position: { [classBit]: [tier, x, y] } (Dragonica sim layout)
+  positions: Record<string, [number, number, number]>;
+  weapon_limit: number;
+  levels: SkillLevelRow[];
+}
+
+export interface SkillClassTree {
+  class: SkillClass;
+  skills: Skill[];
+}
+
+export interface SkillBuild {
+  id: string;
+  user_id: string;
+  class_id: number;
+  name: string;
+  description?: string | null;
+  char_level: number;
+  bonus_sp: number; // extra SP added by hand
+  allocations: Record<string, number>; // skillId -> points
+  visibility: 'public' | 'unlisted';
+  share_slug: string;
+  like_count: number;
+  view_count: number;
+  comment_count: number;
+  created_at: string;
+  updated_at: string;
+  // joined by GET /skills/builds/:slug (feeds share-page metadata)
+  skill_classes?: { name: string; base_class: string } | null;
+}
+
+// A build in the public gallery (with author + class joined).
+export interface CommunityBuild {
+  id: string;
+  share_slug: string;
+  name: string;
+  description: string | null;
+  class_id: number;
+  char_level: number;
+  like_count: number;
+  view_count: number;
+  comment_count: number;
+  created_at: string;
+  profiles: { username: string | null } | null;
+  skill_classes: { name: string; base_class: string } | null;
+}
+
+// One comment under a shared build.
+export interface BuildComment {
+  id: string;
+  body: string;
+  created_at: string;
+  author_id: string;
+  profiles: { username: string | null } | null;
+}
+
+export interface CommunityBuildList {
+  builds: CommunityBuild[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface DungeonStats {
   dungeonId: string;
   dungeonName: string;

@@ -23,5 +23,12 @@
   },
   "payment": {
     "provider_error": "Payment provider error: {message}"
+  },
+  "skill": {
+    "class_not_found": "Skill class not found",
+    "build_not_found": "Build not found",
+    "invalid_build": "This build is not valid.",
+    "comment_not_found": "Comment not found",
+    "comment_empty": "Comment cannot be empty"
   }
 }
