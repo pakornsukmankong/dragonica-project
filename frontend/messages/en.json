@@ -433,6 +433,14 @@
     "deleteBuildCommentTitle": "Delete this comment?",
     "deleteBuildCommentDesc": "This permanently removes the comment. This cannot be undone."
   },
+  "errorPages": {
+    "notFoundTitle": "Page not found",
+    "notFoundDesc": "This page doesn't exist or may have been moved. Check the link, or head back to the homepage.",
+    "backHome": "Back to home",
+    "errorTitle": "Something went wrong",
+    "errorDesc": "An unexpected error occurred. Try again — if it keeps happening, let us know via a support ticket.",
+    "tryAgain": "Try again"
+  },
   "support": {
     "title": "Support the Project",
     "subtitle": "Donations keep the servers running. Thank you for chipping in ❤️",
