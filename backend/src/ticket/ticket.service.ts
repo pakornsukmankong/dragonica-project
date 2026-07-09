@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { SupabaseService } from '../supabase/supabase.service';
+import { TablesUpdate } from '../supabase/types/database.types';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { TicketStatus } from './dto/update-ticket-status.dto';
@@ -16,7 +17,7 @@ interface TicketMessageRow {
   is_admin: boolean;
   body: string;
   image_url: string | null;
-  created_at: string;
+  created_at: string | null; // NOT NULL default in practice; nullable in schema
 }
 
 @Injectable()
@@ -33,7 +34,8 @@ export class TicketService {
     if (Array.isArray(ticket.ticket_messages)) {
       ticket.ticket_messages.sort(
         (a, b) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+          new Date(a.created_at ?? 0).getTime() -
+          new Date(b.created_at ?? 0).getTime(),
       );
     }
     return ticket;
@@ -247,7 +249,7 @@ export class TicketService {
     return this.findOne(id);
   }
 
-  private async patchTicket(ticketId: string, patch: Record<string, unknown>) {
+  private async patchTicket(ticketId: string, patch: TablesUpdate<'tickets'>) {
     const { error } = await this.supabase
       .from('tickets')
       .update(patch)
@@ -258,13 +260,13 @@ export class TicketService {
 
   // Count rows where the viewer hasn't looked since the last update.
   private countUnseen(
-    rows: { updated_at: string; [key: string]: unknown }[] | null,
+    rows: { updated_at: string | null; [key: string]: unknown }[] | null,
     readField: 'user_last_read_at' | 'admin_last_read_at',
   ): number {
     if (!rows) return 0;
     return rows.filter((r) => {
       const readAt = r[readField] as string | null;
-      return !readAt || new Date(readAt) < new Date(r.updated_at);
+      return !readAt || new Date(readAt) < new Date(r.updated_at ?? 0);
     }).length;
   }
 }

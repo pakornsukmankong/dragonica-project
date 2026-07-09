@@ -6,6 +6,7 @@ import {
 import { randomBytes } from 'crypto';
 import { I18nService } from 'nestjs-i18n';
 import { SupabaseService } from '../supabase/supabase.service';
+import { TablesUpdate } from '../supabase/types/database.types';
 import { SaveBuildDto } from './dto/save-build.dto';
 import { AdminUpdateBuildDto } from './dto/admin-update-build.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -315,7 +316,7 @@ export class SkillService {
 
   // Metadata-only moderation edit (rename, rewrite description, unlist).
   async updateBuildAsAdmin(id: string, dto: AdminUpdateBuildDto) {
-    const patch: Record<string, unknown> = {};
+    const patch: TablesUpdate<'skill_builds'> = {};
     if (dto.name !== undefined) patch.name = dto.name;
     if (dto.description !== undefined)
       patch.description = dto.description || null;

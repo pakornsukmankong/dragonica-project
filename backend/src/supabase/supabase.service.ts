@@ -1,24 +1,30 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Database } from './types/database.types';
 
 @Injectable()
 export class SupabaseService {
-  private readonly client: SupabaseClient;
+  private readonly client: SupabaseClient<Database>;
 
   constructor(private readonly configService: ConfigService) {
-    this.client = createClient(
+    this.client = createClient<Database>(
       this.configService.getOrThrow<string>('SUPABASE_URL'),
       this.configService.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY'),
     );
   }
 
-  from(table: string) {
+  // Typed passthrough: table names and column shapes are checked against the
+  // generated Database type (regenerate with `npm run db:types`).
+  from<T extends keyof Database['public']['Tables']>(table: T) {
     return this.client.from(table);
   }
 
   /** Call a Postgres function (e.g. atomic counter increment). */
-  rpc(fn: string, args?: Record<string, unknown>) {
+  rpc<F extends keyof Database['public']['Functions']>(
+    fn: F,
+    args?: Database['public']['Functions'][F]['Args'],
+  ) {
     return this.client.rpc(fn, args);
   }
 

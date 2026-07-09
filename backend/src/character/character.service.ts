@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { SupabaseService } from '../supabase/supabase.service';
+import { TablesUpdate } from '../supabase/types/database.types';
 import { CreateCharacterDto } from './dto/create-character.dto';
 import { UpdateCharacterDto } from './dto/update-character.dto';
 
@@ -60,7 +61,7 @@ export class CharacterService {
   async update(id: string, userId: string, dto: UpdateCharacterDto) {
     await this.findOneByUser(id, userId);
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: TablesUpdate<'characters'> = {};
     if (dto.name) updateData['name'] = dto.name;
     if (dto.classId) updateData['class_id'] = dto.classId;
     if (dto.level !== undefined) updateData['level'] = dto.level;

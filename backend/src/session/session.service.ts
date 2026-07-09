@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { SupabaseService } from '../supabase/supabase.service';
+import { TablesUpdate } from '../supabase/types/database.types';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { CreateDropDto } from './dto/create-drop.dto';
@@ -66,7 +67,7 @@ export class SessionService {
   async update(id: string, userId: string, dto: UpdateSessionDto) {
     await this.findOneByUser(id, userId);
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: TablesUpdate<'sessions'> = {};
     if (dto.characterId) updateData['character_id'] = dto.characterId;
     if (dto.dungeonId) updateData['dungeon_id'] = dto.dungeonId;
     if (dto.startedAt) updateData['started_at'] = dto.startedAt;
@@ -125,7 +126,7 @@ export class SessionService {
   async updateAsAdmin(id: string, dto: UpdateSessionDto) {
     await this.findOneAsAdmin(id);
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: TablesUpdate<'sessions'> = {};
     if (dto.characterId) updateData['character_id'] = dto.characterId;
     if (dto.dungeonId) updateData['dungeon_id'] = dto.dungeonId;
     if (dto.startedAt) updateData['started_at'] = dto.startedAt;
@@ -225,7 +226,7 @@ export class SessionService {
   async updateDrop(userId: string, dropId: string, dto: UpdateDropDto) {
     await this.assertDropOwnership(userId, dropId);
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: TablesUpdate<'session_drops'> = {};
     if (dto.quantity !== undefined) updateData['quantity'] = dto.quantity;
     if (dto.priceEach !== undefined) updateData['price_each'] = dto.priceEach;
 
@@ -274,7 +275,7 @@ export class SessionService {
   }
 
   async updateDropAsAdmin(dropId: string, dto: UpdateDropDto) {
-    const updateData: Record<string, unknown> = {};
+    const updateData: TablesUpdate<'session_drops'> = {};
     if (dto.quantity !== undefined) updateData['quantity'] = dto.quantity;
     if (dto.priceEach !== undefined) updateData['price_each'] = dto.priceEach;
 
