@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { VisitorCounter } from '@/components/visitor-counter';
 import { Reveal } from '@/components/reveal';
-import { ArrowRight, Package, ChevronDown, Check } from 'lucide-react';
+import { ArrowRight, Package, ChevronDown, Check, Sparkles } from 'lucide-react';
 
 // Demo bar heights (%) for the dashboard-preview chart. Index 4 is the peak.
 const CHART = [42, 58, 71, 49, 88, 63, 77];
@@ -59,9 +59,17 @@ export default function HomePage() {
             {t('ctaPrimary')}
             <ArrowRight className="h-4 w-4" />
           </Link>
+          <Link
+            href="/skills"
+            className="inline-flex items-center justify-center gap-2 rounded-base border border-gold/40 bg-gold-soft px-6 py-3 text-sm font-semibold text-gold transition-all duration-150 hover:scale-[1.03] hover:border-gold/70 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2"
+          >
+            <Sparkles className="h-4 w-4" />
+            {t('ctaSkills')}
+          </Link>
         </div>
 
         <p className="mt-5 text-xs text-muted">{t('trustLine')}</p>
+        <p className="mt-1 text-xs text-muted">{t('ctaSkillsHint')}</p>
 
         {/* Product previews */}
         <div className="mt-14 space-y-6 laptop:mt-16">
