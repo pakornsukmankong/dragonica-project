@@ -46,9 +46,30 @@ function SkillCell({
   return (
     <div className="group relative select-none" style={{ width: ICON }}>
       <div
-        className={`relative h-11 w-11 overflow-visible rounded-[6px] ${!readOnly ? 'cursor-pointer' : ''}`}
+        className={`relative h-11 w-11 overflow-visible rounded-[6px] ${!readOnly ? 'cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--gold)]' : ''}`}
+        // Keyboard support: the cell is a real tab stop; Enter/Space/+ adds a
+        // point, Delete/Backspace/- removes one (mirrors click / right-click).
+        role={readOnly ? undefined : 'button'}
+        tabIndex={readOnly ? undefined : 0}
+        aria-label={
+          readOnly ? undefined : `${skill.name} ${cur}/${skill.max_level}`
+        }
         onClick={() => !readOnly && onAdd()}
         onContextMenu={(e) => { if (readOnly) return; e.preventDefault(); onRemove(); }}
+        onKeyDown={(e) => {
+          if (readOnly) return;
+          if (e.key === 'Enter' || e.key === ' ' || e.key === '+') {
+            e.preventDefault();
+            onAdd();
+          } else if (
+            e.key === 'Delete' ||
+            e.key === 'Backspace' ||
+            e.key === '-'
+          ) {
+            e.preventDefault();
+            onRemove();
+          }
+        }}
       >
         <div className={`h-full w-full overflow-hidden rounded-[6px] border ${
           cur > 0 ? 'border-[var(--gold)] ring-1 ring-[var(--gold)]' : locked ? 'border-[var(--border)]' : 'border-[var(--border)]'
@@ -65,13 +86,13 @@ function SkillCell({
         </div>
         {/* − button (remove a point), shown when the skill has points */}
         {!readOnly && cur > 0 && (
-          <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          <button type="button" tabIndex={-1} onClick={(e) => { e.stopPropagation(); onRemove(); }}
             className="absolute -left-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-[3px] border border-[var(--border-danger)] bg-[var(--danger)] text-[11px] font-bold leading-none text-white shadow"
             aria-label="remove point">−</button>
         )}
         {/* + button, shown when a point can be added */}
         {!readOnly && canAdd && (
-          <button type="button" onClick={(e) => { e.stopPropagation(); onAdd(); }}
+          <button type="button" tabIndex={-1} onClick={(e) => { e.stopPropagation(); onAdd(); }}
             className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-[3px] border border-[var(--gold-dim)] bg-[var(--gold)] text-[11px] font-bold leading-none text-[var(--root)] shadow"
             aria-label="add point">+</button>
         )}
@@ -83,8 +104,8 @@ function SkillCell({
         <span className="text-muted">/{skill.max_level}</span>
       </div>
 
-      {/* hover detail */}
-      <div className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden w-52 -translate-x-1/2 rounded-md border border-border bg-[var(--raised)] p-2.5 text-[11px] leading-relaxed text-muted shadow-xl group-hover:block">
+      {/* hover / keyboard-focus detail */}
+      <div className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden w-52 -translate-x-1/2 rounded-md border border-border bg-[var(--raised)] p-2.5 text-[11px] leading-relaxed text-muted shadow-xl group-hover:block group-focus-within:block">
         <div className="mb-1 font-semibold text-foreground">{skill.name}</div>
         {skill.description && <p className="mb-1">{skill.description}</p>}
         <div className="mb-1 flex flex-wrap gap-x-3 text-[10px] text-[var(--dark-gray)]">
