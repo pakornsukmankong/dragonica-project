@@ -77,7 +77,7 @@ export default function SkillsPage() {
         </div>
         <Link
           href="/skills/community"
-          className="inline-flex items-center gap-1.5 rounded-base border border-gold/40 bg-gold-soft px-3 py-2 text-sm font-medium text-gold transition-colors hover:border-gold/70"
+          className="inline-flex items-center gap-1.5 rounded-base bg-gold-soft px-3 py-2 text-sm font-medium text-gold transition-colors hover:bg-gold/25 hover:text-gold-strong"
         >
           <Users className="h-4 w-4" />
           {t('communityTitle')}

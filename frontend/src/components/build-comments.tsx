@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { AnimatePresence, m } from 'motion/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Loader2, MessageSquare, Send, Trash2 } from 'lucide-react';
+import { Loader2, LogIn, MessageSquare, Send, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/toast';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -173,7 +174,13 @@ export function BuildComments({
           </m.button>
         </form>
       ) : (
-        <p className="mt-4 text-xs text-muted">{t('loginToComment')}</p>
+        <Link
+          href={`/login?next=${encodeURIComponent(`/skills/build/${slug}`)}`}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-base bg-gold-soft px-3 py-2 text-sm font-medium text-gold transition-colors hover:bg-gold/25 hover:text-gold-strong"
+        >
+          <LogIn className="h-3.5 w-3.5" />
+          {t('loginToComment')}
+        </Link>
       )}
 
       <ConfirmDialog

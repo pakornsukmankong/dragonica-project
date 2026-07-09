@@ -43,9 +43,12 @@ const config: Config = {
         },
         gold: {
           soft: 'var(--gold-soft)',
-          DEFAULT: 'var(--gold)',
-          strong: 'var(--gold-strong)',
-          dim: 'var(--gold-dim)',
+          // rgb + <alpha-value> so opacity modifiers (border-gold/40 …) work;
+          // Tailwind can't add alpha to an opaque var(). Keep in sync with
+          // --gold / --gold-strong / --gold-dim in globals.css.
+          DEFAULT: 'rgb(224 165 60 / <alpha-value>)',
+          strong: 'rgb(242 189 85 / <alpha-value>)',
+          dim: 'rgb(181 130 31 / <alpha-value>)',
         },
         rarity: {
           common: 'var(--rarity-common)',
