@@ -39,6 +39,7 @@
     "allWeapons": "All weapon types",
     "allClassesTag": "All classes",
     "allRarities": "All rarities",
+    "resetFilters": "Reset",
     "levelMin": "Min",
     "levelMax": "Max",
     "resultCount": "{count} items",
