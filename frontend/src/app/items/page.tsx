@@ -13,10 +13,12 @@ import {
   BRANCH_IDS,
   EQUIP_SLOTS,
   ITEM_CATEGORIES,
+  RARITY_ORDER,
   SLOT_CATEGORY,
   STAT_META,
   WEAPON_TYPES,
   formatStatValue,
+  itemRarity,
   type EquipSlot,
   type GameItem,
   type GameItemDrops,
@@ -24,6 +26,7 @@ import {
   type ItemCategory,
   type StatKey,
 } from '@/lib/items';
+import { rarityStyle } from '@/lib/rarity';
 
 const PAGE_SIZE = 50;
 // Slot-based sub-filter only makes sense for wearable categories.
@@ -204,6 +207,7 @@ export default function ItemsPage() {
   const [branch, setBranch] = useState('');
   const [minLevel, setMinLevel] = useState('');
   const [maxLevel, setMaxLevel] = useState('');
+  const [rarity, setRarity] = useState('');
   const [sort, setSort] = useState('levelAsc');
   const [page, setPage] = useState(1);
   /** Expanded detail panel: item id + which panel */
@@ -303,6 +307,7 @@ export default function ItemsPage() {
           return false;
       }
       if (it.level < min || it.level > max) return false;
+      if (rarity && itemRarity(it) !== rarity) return false;
       return true;
     });
 
@@ -330,6 +335,7 @@ export default function ItemsPage() {
     branch,
     minLevel,
     maxLevel,
+    rarity,
     sort,
   ]);
 
@@ -438,6 +444,18 @@ export default function ItemsPage() {
             className="w-44"
           />
         )}
+        <Select
+          value={rarity}
+          onChange={withPageReset(setRarity)}
+          options={[
+            { value: '', label: t('allRarities') },
+            ...RARITY_ORDER.map((r) => ({
+              value: r,
+              label: t(`rarities.${r}`),
+            })),
+          ]}
+          className="w-40"
+        />
         <div className="flex items-center gap-1.5">
           <input
             type="text"
@@ -489,7 +507,10 @@ export default function ItemsPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {pageItems.map((item) => (
+              {pageItems.map((item) => {
+                const rk = itemRarity(item);
+                const rc = rk ? rarityStyle(rk) : null;
+                return (
                 <article
                   key={item.id}
                   className="rounded-base border border-border bg-raised px-3 py-2.5 transition-colors hover:border-gold/40"
@@ -498,11 +519,19 @@ export default function ItemsPage() {
                   <ItemIcon
                     icon={item.icon}
                     size={40}
-                    className="mt-0.5 rounded-[4px] border border-border bg-surface sm:mt-0"
+                    className="mt-0.5 rounded-[4px] border bg-surface sm:mt-0"
+                    style={
+                      rc
+                        ? { borderColor: rc.color, backgroundColor: rc.soft }
+                        : undefined
+                    }
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      <span className="text-sm font-medium text-foreground">
+                      <span
+                        className={`text-sm font-medium ${rc ? '' : 'text-foreground'}`}
+                        style={rc ? { color: rc.color } : undefined}
+                      >
                         {item.name}
                       </span>
                       {item.slot && (
@@ -632,7 +661,8 @@ export default function ItemsPage() {
                     <DropsPanel drops={dropData?.[item.id]} t={t} />
                   )}
                 </article>
-              ))}
+                );
+              })}
             </div>
           )}
 
