@@ -3,7 +3,7 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, X } from 'lucide-react';
 import { Currency } from '@/components/currency';
 import { ItemIcon } from '@/components/item-icon';
 import { Pagination } from '@/components/pagination';
@@ -273,6 +273,31 @@ export default function ItemsPage() {
     setPage(1);
   };
 
+  // Whether any filter (within the current category) is narrowing the list.
+  const filtersActive =
+    search !== '' ||
+    subcat !== 'all' ||
+    slot !== '' ||
+    weapon !== '' ||
+    branch !== '' ||
+    minLevel !== '' ||
+    maxLevel !== '' ||
+    rarity !== '' ||
+    sort !== 'levelAsc';
+
+  const resetFilters = () => {
+    setSearch('');
+    setSubcat('all');
+    setSlot('');
+    setWeapon('');
+    setBranch('');
+    setMinLevel('');
+    setMaxLevel('');
+    setRarity('');
+    setSort('levelAsc');
+    setPage(1);
+  };
+
   const slotOptions = useMemo(
     () => [
       { value: '', label: t('allSlots') },
@@ -489,6 +514,15 @@ export default function ItemsPage() {
           )}
           className="w-44"
         />
+        {filtersActive && (
+          <button
+            onClick={resetFilters}
+            className="inline-flex items-center gap-1 rounded-base border border-border px-2.5 py-2 text-sm text-muted transition-colors hover:border-gold/50 hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+            {t('resetFilters')}
+          </button>
+        )}
       </div>
 
       {isLoading ? (

@@ -39,6 +39,7 @@
     "allWeapons": "อาวุธทุกประเภท",
     "allClassesTag": "ทุกคลาส",
     "allRarities": "ทุกระดับ",
+    "resetFilters": "ล้างตัวกรอง",
     "levelMin": "ต่ำสุด",
     "levelMax": "สูงสุด",
     "resultCount": "{count} ชิ้น",
