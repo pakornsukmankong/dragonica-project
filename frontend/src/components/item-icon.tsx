@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { GameItemIcon } from '@/lib/items';
 
 // Atlas sheets default to 480x480 with a 12x12 grid (40px cells); a few
@@ -12,10 +13,13 @@ export function ItemIcon({
   icon,
   size = 40,
   className = '',
+  style,
 }: {
   icon: GameItemIcon;
   size?: number;
   className?: string;
+  /** Extra styles for the wrapper (e.g. a rarity border/background). */
+  style?: CSSProperties;
 }) {
   const [sheetW, sheetH] = icon.s ?? [DEFAULT_SHEET, DEFAULT_SHEET];
   const cellW = sheetW / icon.u;
@@ -30,7 +34,7 @@ export function ItemIcon({
     <span
       aria-hidden
       className={`inline-flex shrink-0 items-center justify-center overflow-hidden ${className}`}
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, ...style }}
     >
       <span
         style={{

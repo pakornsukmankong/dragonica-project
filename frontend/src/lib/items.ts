@@ -2,6 +2,8 @@
 // Items ship as per-category JSON under /data/items/<category>.json and are
 // filtered client-side.
 
+import type { RarityKey } from './rarity';
+
 export const ITEM_CATEGORIES = [
   'equipment',
   'costume',
@@ -222,4 +224,41 @@ export function formatStatValue(key: StatKey, value: number): string {
   const sign = value > 0 ? '+' : '';
   if (meta?.rate) return `${sign}${(value / 100).toLocaleString()}%`;
   return `${sign}${value.toLocaleString()}`;
+}
+
+// Ordered rarity tiers (low → high), reusing the app-wide palette in rarity.ts.
+export const RARITY_ORDER: RarityKey[] = [
+  'common',
+  'uncommon',
+  'rare',
+  'epic',
+  'legendary',
+];
+
+// Gear carries its tier as a leading name tag ([Normal] < [Rare] < [Hero],
+// mirroring the in-game white/blue/gold colors). Achievement medals/titles
+// instead use the numeric `rarity` field (1-4). The two systems are disjoint.
+const PREFIX_RARITY: Record<string, RarityKey> = {
+  normal: 'common',
+  superior: 'uncommon',
+  rare: 'rare',
+  premium: 'epic',
+  hero: 'legendary',
+};
+const FIELD_RARITY: Record<number, RarityKey> = {
+  1: 'common',
+  2: 'uncommon',
+  3: 'rare',
+  4: 'legendary',
+};
+
+/** Resolve an item's rarity tier, or null when it carries no rarity signal. */
+export function itemRarity(item: GameItem): RarityKey | null {
+  const tag = item.name.match(/^\s*\*?\[([^\]]+)\]/);
+  if (tag) {
+    const hit = PREFIX_RARITY[tag[1].toLowerCase()];
+    if (hit) return hit;
+  }
+  if (item.rarity != null) return FIELD_RARITY[item.rarity] ?? null;
+  return null;
 }
