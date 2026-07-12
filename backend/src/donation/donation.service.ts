@@ -14,6 +14,7 @@ import {
   PaymentProvider,
 } from '../payment/payment-provider.interface';
 import { CreateDonationDto, DonationChannel } from './dto/create-donation.dto';
+import { AdminUpdateDonationDto } from './dto/admin-update-donation.dto';
 
 // Per-channel maximums (in Baht) enforced before hitting the gateway. The DTO
 // already caps every amount at ฿150,000; TrueMoney is tightened further here.
@@ -169,6 +170,42 @@ export class DonationService {
 
     if (error) throw error;
     return data;
+  }
+
+  /** Admin: edit a donation's display name / message. */
+  async updateDetails(id: string, dto: AdminUpdateDonationDto) {
+    const update: TablesUpdate<'donations'> = {};
+    if (dto.displayName !== undefined) {
+      update.display_name = dto.displayName.trim() || 'Anonymous';
+    }
+    if (dto.message !== undefined) {
+      // An empty message clears it (same normalization as create()).
+      update.message = dto.message.trim() || null;
+    }
+
+    // Nothing to change — an empty update would error at the DB layer.
+    if (Object.keys(update).length === 0) {
+      const { data } = await this.supabase
+        .from('donations')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (!data)
+        throw new NotFoundException(this.i18n.t('errors.donation.not_found'));
+      return data as DonationRow;
+    }
+
+    const { data: updated, error } = await this.supabase
+      .from('donations')
+      .update(update)
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!updated)
+      throw new NotFoundException(this.i18n.t('errors.donation.not_found'));
+    return updated as DonationRow;
   }
 
   /** Admin: delete a donation record by id. */

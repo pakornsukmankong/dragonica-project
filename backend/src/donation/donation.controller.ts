@@ -24,6 +24,7 @@ import { StripeService } from '../stripe/stripe.service';
 import { DonationService } from './donation.service';
 import { CreateDonationDto } from './dto/create-donation.dto';
 import { UpdateVisibilityDto } from './dto/update-visibility.dto';
+import { AdminUpdateDonationDto } from './dto/admin-update-donation.dto';
 
 @Controller('donations')
 export class DonationController {
@@ -130,6 +131,14 @@ export class DonationController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   setVisibility(@Param('id') id: string, @Body() dto: UpdateVisibilityDto) {
     return this.donationService.setHideAmount(id, dto.hideAmount);
+  }
+
+  // Admin-only: edit a donation's display name / message (e.g. moderation).
+  // Declared after the more specific `admin/:id/...` routes.
+  @Patch('admin/:id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  updateAdmin(@Param('id') id: string, @Body() dto: AdminUpdateDonationDto) {
+    return this.donationService.updateDetails(id, dto);
   }
 
   @Delete('admin/:id')
