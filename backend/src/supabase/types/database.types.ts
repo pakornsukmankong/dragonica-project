@@ -194,6 +194,7 @@ export type Database = {
         Row: {
           default_price: number | null;
           game_item_id: number | null;
+          icon: Json | null;
           icon_url: string | null;
           id: string;
           name: string;
@@ -202,6 +203,7 @@ export type Database = {
         Insert: {
           default_price?: number | null;
           game_item_id?: number | null;
+          icon?: Json | null;
           icon_url?: string | null;
           id?: string;
           name: string;
@@ -210,6 +212,7 @@ export type Database = {
         Update: {
           default_price?: number | null;
           game_item_id?: number | null;
+          icon?: Json | null;
           icon_url?: string | null;
           id?: string;
           name?: string;

@@ -1,3 +1,5 @@
+import type { GameItemIcon } from '@/lib/items';
+
 export interface GameClass {
   id: string;
   name: string;
@@ -26,6 +28,10 @@ export interface Item {
   id: string;
   name: string;
   icon_url: string | null;
+  /** Sprite-atlas icon for game-database items (see lib/items GameItemIcon). */
+  icon: GameItemIcon | null;
+  /** Static game-database id when the row was ensured from a grind pick. */
+  game_item_id: number | null;
   rarity: string | null;
   default_price: number;
 }

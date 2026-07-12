@@ -157,7 +157,19 @@ export class AdminService {
       .select('*')
       .eq('game_item_id', dto.gameItemId)
       .maybeSingle();
-    if (existing) return existing;
+    if (existing) {
+      // Backfill the atlas icon onto rows created before icons were stored.
+      if (!existing.icon && dto.icon) {
+        const { data: updated } = await this.supabase
+          .from('items')
+          .update({ icon: { ...dto.icon } })
+          .eq('id', existing.id)
+          .select()
+          .single();
+        if (updated) return updated;
+      }
+      return existing;
+    }
 
     const { data, error } = await this.supabase
       .from('items')
@@ -165,6 +177,7 @@ export class AdminService {
         name: dto.name,
         rarity: dto.rarity ?? null,
         game_item_id: dto.gameItemId,
+        icon: dto.icon ? { ...dto.icon } : null,
       })
       .select()
       .single();

@@ -1,11 +1,13 @@
 'use client';
 
-import { useId, useMemo, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Check, ChevronDown, X } from 'lucide-react';
 
 export interface AutocompleteOption {
   value: string;
   label: string;
+  /** Optional leading visual (e.g. an <ItemIcon />) shown before the label. */
+  icon?: ReactNode;
 }
 
 // Cap the rendered list so typing into a large option set (hundreds of
@@ -189,7 +191,10 @@ export function Autocomplete({
                       : 'text-foreground'
                 }`}
               >
-                <span className="min-w-0 truncate">{opt.label}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  {opt.icon}
+                  <span className="min-w-0 truncate">{opt.label}</span>
+                </span>
                 {opt.value === value && (
                   <Check className="h-4 w-4 shrink-0 text-gold" />
                 )}

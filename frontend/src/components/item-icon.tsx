@@ -49,3 +49,34 @@ export function ItemIcon({
     </span>
   );
 }
+
+/**
+ * Thumbnail for a backend `items` row: the sprite-atlas icon when the row was
+ * ensured from the game database, else the admin-uploaded icon_url, else
+ * nothing.
+ */
+export function ItemThumb({
+  item,
+  size = 16,
+  className = '',
+}: {
+  item?: { icon?: GameItemIcon | null; icon_url?: string | null } | null;
+  size?: number;
+  className?: string;
+}) {
+  if (item?.icon)
+    return (
+      <ItemIcon icon={item.icon} size={size} className={`rounded-xs ${className}`} />
+    );
+  if (item?.icon_url)
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- dynamic storage URL thumbnail; not worth next/image optimization
+      <img
+        src={item.icon_url}
+        alt=""
+        className={`shrink-0 rounded-xs object-cover ${className}`}
+        style={{ width: size, height: size }}
+      />
+    );
+  return null;
+}

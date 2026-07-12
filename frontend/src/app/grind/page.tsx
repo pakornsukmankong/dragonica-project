@@ -77,12 +77,28 @@ export default function GrindPage() {
     staleTime: Infinity,
   });
 
+  // Items already ensured into the backend `items` table by past grind logs —
+  // familiar picks float to the top of the search dropdown.
+  const { data: dbItems } = useQuery<Item[]>({
+    queryKey: ['game-data', 'items'],
+    queryFn: () => api.get('/game-data/items'),
+  });
+
   // Options keyed by list position — game ids are only unique per category.
-  const itemOptions = useMemo(
-    () =>
-      (gameItems ?? []).map((g, i) => ({ value: String(i), label: g.name })),
-    [gameItems],
-  );
+  // Sorted (stably) so items that already exist in the database come first.
+  const itemOptions = useMemo(() => {
+    const known = new Set(
+      (dbItems ?? []).map((it) => it.game_item_id).filter((id) => id != null),
+    );
+    return (gameItems ?? [])
+      .map((g, i) => ({
+        value: String(i),
+        label: g.name,
+        icon: <ItemIcon icon={g.icon} size={24} className="rounded-xs" />,
+        known: known.has(g.id),
+      }))
+      .sort((a, b) => Number(b.known) - Number(a.known));
+  }, [gameItems, dbItems]);
 
   // All currency values are in copper. Total = item-drop value + raw currency.
   const dropsValue = useMemo(() => {
@@ -102,6 +118,7 @@ export default function GrindPage() {
         gameItemId: game.id,
         name: game.name,
         rarity: itemRarity(game) ?? undefined,
+        icon: game.icon,
       });
       return { row, game };
     },

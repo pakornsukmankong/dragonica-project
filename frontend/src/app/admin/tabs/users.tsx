@@ -11,6 +11,7 @@ import { useDateFormatter } from '@/lib/i18n';
 import { Trash2, ChevronDown, Pencil } from 'lucide-react';
 import { Currency, CurrencyInput } from '@/components/currency';
 import { Select } from '@/components/select';
+import { ItemThumb } from '@/components/item-icon';
 import type { AdminUser, Session, Character, Dungeon, Item } from '@/types';
 import { ITEMS_PER_PAGE } from './shared';
 
@@ -502,6 +503,7 @@ function AdminSessionEditForm({
                     key={drop.id}
                     className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-sm bg-raised px-2 py-1.5"
                   >
+                    <ItemThumb item={drop.items} />
                     <span className="min-w-0 flex-1 truncate text-xs text-foreground">
                       {drop.items?.name ?? t('unknownItem')}
                     </span>
@@ -546,7 +548,7 @@ function AdminSessionEditForm({
                   options={(items ?? []).map((it) => ({
                     value: it.id,
                     label: it.name,
-                    icon: it.icon_url,
+                    icon: <ItemThumb item={it} />,
                   }))}
                 />
               </div>

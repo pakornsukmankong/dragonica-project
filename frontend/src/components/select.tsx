@@ -2,12 +2,22 @@
 
 import * as RS from '@radix-ui/react-select';
 import { Check, ChevronDown } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 export interface SelectOption {
   value: string;
   label: string;
-  /** Optional leading image (e.g. an item icon) shown before the label. */
-  icon?: string | null;
+  /** Optional leading visual: an image URL or a ReactNode (e.g. <ItemIcon />). */
+  icon?: string | ReactNode | null;
+}
+
+// A string icon is an image URL; anything else renders as-is.
+function OptionIcon({ icon }: { icon: string | ReactNode }) {
+  if (typeof icon !== 'string') return <>{icon}</>;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- dynamic storage URL thumbnail
+    <img src={icon} alt="" className="h-4 w-4 shrink-0 rounded-xs object-cover" />
+  );
 }
 
 // Radix forbids an empty-string Item value, so map "" (our "None"/"All"
@@ -54,14 +64,7 @@ export function Select({
         id={id}
         className={`flex w-full items-center justify-between gap-2 rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors hover:border-[var(--border-dark)] focus:border-[var(--focus)] data-[state=open]:border-[var(--focus)] data-[placeholder]:text-muted disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
       >
-        {selectedIcon && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={selectedIcon}
-            alt=""
-            className="h-4 w-4 shrink-0 rounded-xs object-cover"
-          />
-        )}
+        {selectedIcon != null && <OptionIcon icon={selectedIcon} />}
         {/* min-w-0 + truncate so a long label ellipsizes instead of wrapping
             the trigger onto two lines. */}
         <span className="min-w-0 flex-1 truncate text-left">
@@ -86,14 +89,7 @@ export function Select({
                 className="flex cursor-pointer select-none items-center justify-between gap-2 rounded-sm px-3 py-2 text-sm text-foreground outline-none data-[highlighted]:bg-raised data-[state=checked]:bg-gold-soft data-[state=checked]:text-gold"
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  {opt.icon && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={opt.icon}
-                      alt=""
-                      className="h-4 w-4 shrink-0 rounded-xs object-cover"
-                    />
-                  )}
+                  {opt.icon != null && <OptionIcon icon={opt.icon} />}
                   <RS.ItemText>{opt.label}</RS.ItemText>
                 </span>
                 <RS.ItemIndicator>
