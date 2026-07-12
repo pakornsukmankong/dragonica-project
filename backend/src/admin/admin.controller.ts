@@ -23,6 +23,7 @@ import { CreateDungeonDto } from './dto/create-dungeon.dto';
 import { UpdateDungeonDto } from './dto/update-dungeon.dto';
 import { CreateItemDto } from './dto/create-item.dto';
 import { CreateClassDto } from './dto/create-class.dto';
+import { UpdateClassDto } from './dto/update-class.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -153,6 +154,11 @@ export class AdminController {
   @Post('classes')
   createClass(@Body() dto: CreateClassDto) {
     return this.adminService.createClass(dto);
+  }
+
+  @Patch('classes/:id')
+  updateClass(@Param('id') id: string, @Body() dto: UpdateClassDto) {
+    return this.adminService.updateClass(id, dto);
   }
 
   @Delete('classes/:id')

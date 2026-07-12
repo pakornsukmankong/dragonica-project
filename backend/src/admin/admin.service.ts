@@ -4,6 +4,7 @@ import { CreateDungeonDto } from './dto/create-dungeon.dto';
 import { UpdateDungeonDto } from './dto/update-dungeon.dto';
 import { CreateItemDto } from './dto/create-item.dto';
 import { CreateClassDto } from './dto/create-class.dto';
+import { UpdateClassDto } from './dto/update-class.dto';
 
 interface ProfileRow {
   id: string;
@@ -160,10 +161,49 @@ export class AdminService {
       .insert({
         name: dto.name,
         parent_class: dto.parentClass ?? null,
+        image_url: dto.imageUrl,
       })
       .select()
       .single();
     if (error) throw error;
+    return data;
+  }
+
+  async updateClass(id: string, dto: UpdateClassDto) {
+    // Only touch the columns the request actually carries.
+    const update: { name?: string; image_url?: string } = {};
+    if (dto.name !== undefined) update.name = dto.name;
+    if (dto.imageUrl !== undefined) update.image_url = dto.imageUrl;
+
+    // Children reference their base class by name (parent_class), so a rename
+    // must re-point them too. Grab the current name before it changes.
+    let oldName: string | undefined;
+    if (dto.name !== undefined) {
+      const { data: existing, error: readError } = await this.supabase
+        .from('classes')
+        .select('name')
+        .eq('id', id)
+        .single();
+      if (readError) throw readError;
+      oldName = existing.name;
+    }
+
+    const { data, error } = await this.supabase
+      .from('classes')
+      .update(update)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+
+    if (oldName && dto.name && oldName !== dto.name) {
+      const { error: childError } = await this.supabase
+        .from('classes')
+        .update({ parent_class: dto.name })
+        .eq('parent_class', oldName);
+      if (childError) throw childError;
+    }
+
     return data;
   }
 

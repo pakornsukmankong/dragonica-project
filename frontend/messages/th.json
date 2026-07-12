@@ -515,6 +515,8 @@
     "base": "พื้นฐาน",
     "toastClassAdded": "เพิ่มอาชีพแล้ว",
     "toastClassAddError": "เพิ่มอาชีพไม่สำเร็จ",
+    "toastClassUpdated": "อัปเดตอาชีพแล้ว",
+    "toastClassUpdateError": "อัปเดตอาชีพไม่สำเร็จ",
     "toastClassDeleted": "ลบอาชีพแล้ว",
     "toastClassDeleteError": "ลบอาชีพไม่สำเร็จ",
     "donationsTotalRaised": "ยอดบริจาครวม",

@@ -7,4 +7,8 @@ export class CreateClassDto {
   @IsOptional()
   @IsString()
   parentClass?: string;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 }

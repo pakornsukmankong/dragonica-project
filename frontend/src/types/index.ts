@@ -2,6 +2,7 @@ export interface GameClass {
   id: string;
   name: string;
   parent_class: string | null;
+  image_url: string | null;
   created_at: string;
 }
 

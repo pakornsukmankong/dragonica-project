@@ -515,6 +515,8 @@
     "base": "base",
     "toastClassAdded": "Class added",
     "toastClassAddError": "Could not add class",
+    "toastClassUpdated": "Class updated",
+    "toastClassUpdateError": "Could not update class",
     "toastClassDeleted": "Class deleted",
     "toastClassDeleteError": "Could not delete class",
     "donationsTotalRaised": "Total Raised",
