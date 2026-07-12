@@ -27,8 +27,9 @@ export function Reveal({
       '(prefers-reduced-motion: reduce)',
     ).matches;
     if (reduce || typeof IntersectionObserver === 'undefined') {
-      setVisible(true);
-      return;
+      // Deferred one frame so the effect body doesn't set state synchronously.
+      const raf = requestAnimationFrame(() => setVisible(true));
+      return () => cancelAnimationFrame(raf);
     }
 
     const obs = new IntersectionObserver(

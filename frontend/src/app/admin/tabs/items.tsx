@@ -143,6 +143,7 @@ export function ItemsTab() {
                 <div key={item.id} className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.05)] last:border-0">
                   <div className="flex items-center gap-3 min-w-0">
                     {item.icon_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- dynamic storage URL thumbnail; not worth next/image optimization
                       <img
                         src={item.icon_url}
                         alt={item.name}

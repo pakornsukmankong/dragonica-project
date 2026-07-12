@@ -99,7 +99,7 @@ function SimulatorInner() {
   // degrades to a clone (the form still seeds, but saving creates a new build).
   const isEditMode = !!editing && !!me && me.id === editing.user_id;
 
-  const skills = tree?.skills ?? [];
+  const skills = useMemo(() => tree?.skills ?? [], [tree]);
   const spBase = spBaseForClass(classId);
   const validation = useMemo(
     () => validateBuild(skills, charLevel, allocations, spBase, bonusSp),

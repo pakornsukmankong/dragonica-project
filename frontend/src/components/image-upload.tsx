@@ -59,6 +59,7 @@ export function ImageUpload({ currentUrl, onUploaded, className = '' }: ImageUpl
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       {preview ? (
+        // eslint-disable-next-line @next/next/no-img-element -- local blob/data URL preview; next/image can't optimize these
         <img
           src={preview}
           alt="Preview"

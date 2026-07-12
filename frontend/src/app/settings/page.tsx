@@ -31,12 +31,11 @@ function DisplayNameForm() {
     queryFn: () => api.get('/auth/me'),
   });
 
-  useEffect(() => {
-    if (me && !ready) {
-      setDisplayName(me.username ?? '');
-      setReady(true);
-    }
-  }, [me, ready]);
+  // Seed the input once when the profile loads (state adjusted during render).
+  if (me && !ready) {
+    setDisplayName(me.username ?? '');
+    setReady(true);
+  }
 
   const saveMutation = useMutation({
     mutationFn: (username: string) => api.patch('/auth/me', { username }),

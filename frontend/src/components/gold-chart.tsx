@@ -283,14 +283,16 @@ function PieChart({ data, total }: { data: ChartDatum[]; total: number }) {
     'var(--muted)',
   ];
 
-  // Calculate pie slices
-  let currentAngle = 0;
-  const pieSlices = slices.map((s, i) => {
+  // Calculate pie slices (each slice starts where the previous one ended)
+  const pieSlices = slices.reduce<
+    Array<{ label: string; value: number; startAngle: number; angle: number; color: string }>
+  >((acc, s, i) => {
     const angle = total > 0 ? (s.value / total) * 360 : 0;
-    const startAngle = currentAngle;
-    currentAngle += angle;
-    return { ...s, startAngle, angle, color: colors[i % colors.length] };
-  });
+    const prev = acc[acc.length - 1];
+    const startAngle = prev ? prev.startAngle + prev.angle : 0;
+    acc.push({ ...s, startAngle, angle, color: colors[i % colors.length] });
+    return acc;
+  }, []);
 
   return (
     <div className="flex items-center gap-6 h-[180px]">

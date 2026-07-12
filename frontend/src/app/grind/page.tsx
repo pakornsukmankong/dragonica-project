@@ -183,6 +183,7 @@ export default function GrindPage() {
             {/* Dungeon image */}
             {selectedDungeon?.image_url && (
               <div className="mb-4">
+                {/* eslint-disable-next-line @next/next/no-img-element -- dynamic storage URL behind login; not worth next/image optimization */}
                 <img
                   src={selectedDungeon.image_url}
                   alt={selectedDungeon.name}
@@ -328,6 +329,7 @@ export default function GrindPage() {
                             <td className="py-3 pr-4">
                               <div className="flex items-center gap-2.5">
                                 {item.icon_url ? (
+                                  // eslint-disable-next-line @next/next/no-img-element -- dynamic storage URL thumbnail; not worth next/image optimization
                                   <img
                                     src={item.icon_url}
                                     alt={item.name}
