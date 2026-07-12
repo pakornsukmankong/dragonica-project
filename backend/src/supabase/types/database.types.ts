@@ -281,6 +281,7 @@ export type Database = {
           gold_dropped: number | null;
           gold_earned: number | null;
           id: string;
+          note: string | null;
           started_at: string | null;
           user_id: string;
         };
@@ -293,6 +294,7 @@ export type Database = {
           gold_dropped?: number | null;
           gold_earned?: number | null;
           id?: string;
+          note?: string | null;
           started_at?: string | null;
           user_id: string;
         };
@@ -305,6 +307,7 @@ export type Database = {
           gold_dropped?: number | null;
           gold_earned?: number | null;
           id?: string;
+          note?: string | null;
           started_at?: string | null;
           user_id?: string;
         };
