@@ -62,16 +62,37 @@ const CHARACTERS = [
   { id: 'c1', name: 'Floki', level: 60, class_id: 21, user_id: 'e2e-user' },
 ];
 
-async function mockGrindApi(page: Page, onSessionPost: (body: unknown) => void) {
+async function mockGrindApi(
+  page: Page,
+  onSessionPost: (body: unknown) => void,
+  onDropPost: (body: unknown) => void = () => {},
+) {
   await page.route('**/api/game-data/dungeons', (route) =>
     route.fulfill({ json: DUNGEONS }),
   );
   await page.route('**/api/characters', (route) =>
     route.fulfill({ json: CHARACTERS }),
   );
-  await page.route('**/api/game-data/items', (route) =>
-    route.fulfill({ json: [] }),
-  );
+  // Find-or-create for a game-database pick; echo the requested item back.
+  await page.route('**/api/game-data/items/ensure', (route) => {
+    const body = route.request().postDataJSON() as {
+      gameItemId: number;
+      name: string;
+      rarity?: string;
+    };
+    return route.fulfill({
+      json: {
+        id: `item-${body.gameItemId}`,
+        name: body.name,
+        rarity: body.rarity ?? null,
+        game_item_id: body.gameItemId,
+      },
+    });
+  });
+  await page.route('**/api/sessions/drops', (route) => {
+    onDropPost(route.request().postDataJSON());
+    return route.fulfill({ json: { id: 'sd1' } });
+  });
   await page.route('**/api/sessions', (route) => {
     onSessionPost(route.request().postDataJSON());
     return route.fulfill({ json: { id: 's1' } });
@@ -138,4 +159,45 @@ test('saving a session sends the picked dungeon and the note', async ({ page }) 
     dungeonId: 'd3',
     note: 'full party, xp event',
   });
+});
+
+test('item drops: pick from the game database and save the drop', async ({ page }) => {
+  let postedDrop: Record<string, unknown> | undefined;
+  await mockGrindApi(
+    page,
+    () => {},
+    (body) => {
+      postedDrop = body as Record<string, unknown>;
+    },
+  );
+  await page.goto('/grind');
+
+  // Search the static game item database (served from /public/data).
+  const search = page.getByPlaceholder('Search the item database...');
+  await expect(search).toBeEnabled(); // waits for the item DB to load
+  await search.fill('dark soul crossbow');
+  await page.getByRole('option', { name: 'Dark Soul CrossBow', exact: true }).click();
+
+  // The pick becomes a drop row (qty 1, price intentionally left at 0).
+  const row = page.getByRole('row').filter({ hasText: 'Dark Soul CrossBow' });
+  await expect(row).toBeVisible();
+
+  // Removing works, and picking again re-adds it.
+  await row.getByRole('button', { name: /remove/i }).click();
+  await expect(page.getByRole('row').filter({ hasText: 'Dark Soul CrossBow' })).toHaveCount(0);
+  await search.fill('dark soul crossbow');
+  await page.getByRole('option', { name: 'Dark Soul CrossBow', exact: true }).click();
+
+  // Save with a character picked; the drop goes to /sessions/drops.
+  await page.getByText('Select character...').click();
+  await page.getByRole('option', { name: 'Floki (Lv.60)' }).click();
+  await page.getByRole('button', { name: 'Save Session' }).click();
+  await expect(page.getByText('Session saved', { exact: true })).toBeVisible();
+
+  expect(postedDrop).toMatchObject({
+    sessionId: 's1',
+    quantity: 1,
+    priceEach: 0,
+  });
+  expect(String(postedDrop?.itemId)).toMatch(/^item-\d+$/);
 });
