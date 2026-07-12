@@ -241,7 +241,6 @@ test('items already in the database sort to the top of the item search', async (
       name: crossbow.name,
       game_item_id: crossbow.id,
       icon: crossbow.icon,
-      icon_url: null,
       rarity: null,
       default_price: 0,
     },

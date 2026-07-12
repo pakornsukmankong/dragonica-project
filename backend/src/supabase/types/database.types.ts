@@ -195,7 +195,6 @@ export type Database = {
           default_price: number | null;
           game_item_id: number | null;
           icon: Json | null;
-          icon_url: string | null;
           id: string;
           name: string;
           rarity: string | null;
@@ -204,7 +203,6 @@ export type Database = {
           default_price?: number | null;
           game_item_id?: number | null;
           icon?: Json | null;
-          icon_url?: string | null;
           id?: string;
           name: string;
           rarity?: string | null;
@@ -213,7 +211,6 @@ export type Database = {
           default_price?: number | null;
           game_item_id?: number | null;
           icon?: Json | null;
-          icon_url?: string | null;
           id?: string;
           name?: string;
           rarity?: string | null;

@@ -507,7 +507,6 @@
     "itemNamePlaceholder": "Dragon Scale",
     "rarity": "Rarity",
     "defaultPrice": "Default Price",
-    "icon": "Icon",
     "toastItemAdded": "Item added",
     "toastItemAddError": "Could not add item",
     "toastItemDeleted": "Item deleted",

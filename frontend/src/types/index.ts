@@ -27,7 +27,6 @@ export interface Dungeon {
 export interface Item {
   id: string;
   name: string;
-  icon_url: string | null;
   /** Sprite-atlas icon for game-database items (see lib/items GameItemIcon). */
   icon: GameItemIcon | null;
   /** Static game-database id when the row was ensured from a grind pick. */

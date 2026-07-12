@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
-import { ImageUpload } from '@/components/image-upload';
+import { ItemIcon } from '@/components/item-icon';
 import { rarityStyle } from '@/lib/rarity';
 import { Pagination } from '@/components/pagination';
 import { useToast } from '@/components/toast';
@@ -22,7 +22,6 @@ export function ItemsTab() {
   const [name, setName] = useState('');
   const [rarity, setRarity] = useState('common');
   const [defaultPrice, setDefaultPrice] = useState<number | ''>('');
-  const [iconUrl, setIconUrl] = useState('');
   const [page, setPage] = useState(1);
 
   const { data: items, isLoading } = useQuery<Item[]>({
@@ -37,13 +36,12 @@ export function ItemsTab() {
   );
 
   const createMutation = useMutation({
-    mutationFn: (body: { name: string; rarity: string; defaultPrice?: number; iconUrl?: string }) =>
+    mutationFn: (body: { name: string; rarity: string; defaultPrice?: number }) =>
       api.post('/admin/items', body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'items'] });
       setName('');
       setDefaultPrice('');
-      setIconUrl('');
       toast({ title: t('toastItemAdded'), variant: 'success' });
     },
     onError: (e) =>
@@ -80,7 +78,6 @@ export function ItemsTab() {
               name,
               rarity,
               defaultPrice: defaultPrice || undefined,
-              iconUrl: iconUrl || undefined,
             });
           }}
           className="flex flex-col gap-4"
@@ -118,10 +115,6 @@ export function ItemsTab() {
               />
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted">{t('icon')}</label>
-            <ImageUpload currentUrl={iconUrl || null} onUploaded={setIconUrl} />
-          </div>
           <button
             type="submit"
             disabled={createMutation.isPending}
@@ -142,12 +135,11 @@ export function ItemsTab() {
               return (
                 <div key={item.id} className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.05)] last:border-0">
                   <div className="flex items-center gap-3 min-w-0">
-                    {item.icon_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- dynamic storage URL thumbnail; not worth next/image optimization
-                      <img
-                        src={item.icon_url}
-                        alt={item.name}
-                        className="w-9 h-9 rounded-sm object-cover"
+                    {item.icon ? (
+                      <ItemIcon
+                        icon={item.icon}
+                        size={36}
+                        className="rounded-sm"
                         style={{ outline: `2px solid ${r.color}`, outlineOffset: '-1px' }}
                       />
                     ) : (

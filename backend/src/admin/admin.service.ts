@@ -131,7 +131,6 @@ export class AdminService {
       .insert({
         name: dto.name,
         rarity: dto.rarity,
-        icon_url: dto.iconUrl,
         default_price: dto.defaultPrice,
       })
       .select()

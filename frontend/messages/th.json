@@ -507,7 +507,6 @@
     "itemNamePlaceholder": "Dragon Scale",
     "rarity": "ความหายาก",
     "defaultPrice": "ราคาเริ่มต้น",
-    "icon": "ไอคอน",
     "toastItemAdded": "เพิ่มไอเทมแล้ว",
     "toastItemAddError": "เพิ่มไอเทมไม่สำเร็จ",
     "toastItemDeleted": "ลบไอเทมแล้ว",

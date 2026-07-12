@@ -9,10 +9,6 @@ export class CreateItemDto {
   rarity?: string;
 
   @IsOptional()
-  @IsString()
-  iconUrl?: string;
-
-  @IsOptional()
   @IsNumber()
   @Min(0)
   defaultPrice?: number;
