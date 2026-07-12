@@ -63,12 +63,11 @@ dragonica-project/
 
 > **หมายเหตุ:** Redirect URL ของ Supabase จะแสดงอยู่ในหน้า Provider settings (`https://<project>.supabase.co/auth/v1/callback`) ให้นำไปใส่ใน Google Cloud Console ให้ตรงกัน
 
-### 3. Run Database Migration
+### 3. Run Database Migrations
 
 1. ไปที่ Supabase Dashboard → **SQL Editor**
 2. สร้าง New Query
-3. Copy เนื้อหาจากไฟล์ `backend/supabase/migrations/001_initial_schema.sql` ไปวาง
-4. กด **Run** — จะสร้าง tables, indexes, RLS policies, seed data, และ trigger ทั้งหมด
+3. Copy เนื้อหาจากไฟล์ใน `backend/supabase/migrations/` ไปวางแล้วกด **Run** ทีละไฟล์ **เรียงตามลำดับ** (`001` → `008`) — จะสร้าง tables, indexes, RLS policies, seed data, และ triggers ทั้งหมด
 
 ### 4. Setup Backend
 
