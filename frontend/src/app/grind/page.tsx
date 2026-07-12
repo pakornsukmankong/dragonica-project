@@ -32,7 +32,12 @@ export default function GrindPage() {
   const [hours, setHours] = useState(1);
   const [minutes, setMinutes] = useState(0);
   const [drops, setDrops] = useState<DropEntry[]>([]);
-  const [goldDropped, setGoldDropped] = useState(0); // raw currency, in copper
+  // Wallet gold before/after the run (in copper) — the currency picked up is
+  // their difference. Ending below the start (repairs, potions) counts as 0
+  // rather than subtracting: the backend rejects a negative goldDropped.
+  const [goldStart, setGoldStart] = useState(0);
+  const [goldEnd, setGoldEnd] = useState(0);
+  const goldDropped = Math.max(0, goldEnd - goldStart);
 
   const { data: dungeons } = useQuery<Dungeon[]>({
     queryKey: ['game-data', 'dungeons'],
@@ -127,7 +132,8 @@ export default function GrindPage() {
       setDrops([]);
       setHours(1);
       setMinutes(0);
-      setGoldDropped(0);
+      setGoldStart(0);
+      setGoldEnd(0);
       toast({ title: t('toastSavedTitle'), description: t('toastSavedDesc'), variant: 'success' });
     },
     onError: (e) =>
@@ -230,16 +236,29 @@ export default function GrindPage() {
                 </div>
               </div>
 
-              {/* Raw currency picked up during the run */}
+              {/* Wallet gold before/after the run — picked-up currency is the difference */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted">
-                  {t('goldDrop')} <span className="text-dark-gray">{t('goldDropHint')}</span>
+                  {t('goldStart')}
                 </label>
                 <CurrencyInput
-                  value={goldDropped}
-                  onChange={setGoldDropped}
-                  maxGold={9999}
+                  value={goldStart}
+                  onChange={setGoldStart}
+                  maxGold={999999}
                 />
+                <label className="mt-1 text-xs font-medium text-muted">
+                  {t('goldEnd')}
+                </label>
+                <CurrencyInput
+                  value={goldEnd}
+                  onChange={setGoldEnd}
+                  maxGold={999999}
+                />
+                {goldEnd > 0 && goldEnd < goldStart && (
+                  <p className="text-xs text-[var(--fg-danger)]">
+                    {t('goldDiffWarn')}
+                  </p>
+                )}
               </div>
 
             </div>
@@ -352,7 +371,9 @@ export default function GrindPage() {
                     <Currency copper={dropsValue} className="text-sm" />
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="shrink-0 text-xs text-muted">{t('goldDrop')}</span>
+                    <span className="shrink-0 text-xs text-muted">
+                      {t('goldDrop')} <span className="text-dark-gray">{t('goldDropHint')}</span>
+                    </span>
                     <Currency copper={goldDropped} className="text-sm" />
                   </div>
 
