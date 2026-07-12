@@ -24,6 +24,7 @@ import { StripeService } from '../stripe/stripe.service';
 import { DonationService } from './donation.service';
 import { CreateDonationDto } from './dto/create-donation.dto';
 import { UpdateVisibilityDto } from './dto/update-visibility.dto';
+import { AdminUpdateDonationDto } from './dto/admin-update-donation.dto';
 
 @Controller('donations')
 export class DonationController {
@@ -125,11 +126,20 @@ export class DonationController {
     return this.donationService.settleManual(id, 'failed');
   }
 
-  // Admin-only: show or hide this donation's amount on the public wall.
+  // Admin-only: control what the public wall shows for this donation —
+  // mask the amount and/or withhold the entire entry.
   @Patch('admin/:id/visibility')
   @UseGuards(JwtAuthGuard, AdminGuard)
   setVisibility(@Param('id') id: string, @Body() dto: UpdateVisibilityDto) {
-    return this.donationService.setHideAmount(id, dto.hideAmount);
+    return this.donationService.setVisibility(id, dto);
+  }
+
+  // Admin-only: edit a donation's display name / message (e.g. moderation).
+  // Declared after the more specific `admin/:id/...` routes.
+  @Patch('admin/:id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  updateAdmin(@Param('id') id: string, @Body() dto: AdminUpdateDonationDto) {
+    return this.donationService.updateDetails(id, dto);
   }
 
   @Delete('admin/:id')

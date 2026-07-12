@@ -8,7 +8,7 @@ import { Pagination } from '@/components/pagination';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useToast } from '@/components/toast';
 import { useDateFormatter } from '@/lib/i18n';
-import { Trash2, Check, X, Eye, EyeOff } from 'lucide-react';
+import { Trash2, Check, X, Eye, EyeOff, Pencil, Globe, GlobeLock } from 'lucide-react';
 import type { Donation } from '@/types';
 import { ITEMS_PER_PAGE } from './shared';
 
@@ -42,6 +42,12 @@ export function DonationsTab() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
   const [pendingDelete, setPendingDelete] = useState<Donation | null>(null);
+  // Row currently in edit mode, with its draft name/message.
+  const [editing, setEditing] = useState<{
+    id: string;
+    name: string;
+    message: string;
+  } | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<Donation | null>(null);
   const [pendingReject, setPendingReject] = useState<Donation | null>(null);
   const formatDate = useDateFormatter();
@@ -69,10 +75,34 @@ export function DonationsTab() {
       }),
   });
 
-  // Show or hide a donation's amount on the public wall.
+  // Edit a donation's display name / message (both shown on the public wall).
+  const editMutation = useMutation({
+    mutationFn: ({ id, name, message }: { id: string; name: string; message: string }) =>
+      api.patch(`/donations/admin/${id}`, { displayName: name, message }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'donations'] });
+      queryClient.invalidateQueries({ queryKey: ['donations', 'wall'] });
+      setEditing(null);
+      toast({ title: t('toastDonationUpdated'), variant: 'success' });
+    },
+    onError: (e) =>
+      toast({
+        title: t('toastDonationUpdateError'),
+        description: (e as Error).message,
+        variant: 'error',
+      }),
+  });
+
+  // Wall visibility: mask just the amount, or withhold the whole entry.
   const visibilityMutation = useMutation({
-    mutationFn: ({ id, hideAmount }: { id: string; hideAmount: boolean }) =>
-      api.patch(`/donations/admin/${id}/visibility`, { hideAmount }),
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id: string;
+      hideAmount?: boolean;
+      hideFromWall?: boolean;
+    }) => api.patch(`/donations/admin/${id}/visibility`, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'donations'] });
       queryClient.invalidateQueries({ queryKey: ['donations', 'wall'] });
@@ -164,11 +194,36 @@ export function DonationsTab() {
                       className="border-b border-[rgba(255,255,255,0.05)] align-middle transition-colors last:border-0 hover:bg-[rgba(255,255,255,0.02)]"
                     >
                       <td className="py-4 pr-6">
-                        <p className="text-sm font-medium text-foreground">{d.display_name}</p>
-                        {d.message && (
-                          <p className="max-w-[240px] truncate text-xs text-muted" title={d.message}>
-                            {d.message}
-                          </p>
+                        {editing?.id === d.id ? (
+                          <div className="flex flex-col gap-1.5">
+                            <input
+                              value={editing.name}
+                              onChange={(e) =>
+                                setEditing({ ...editing, name: e.target.value })
+                              }
+                              maxLength={60}
+                              placeholder={t('colDonor')}
+                              className="w-full max-w-[240px] rounded-base border border-border bg-surface px-2 py-1.5 text-sm text-foreground outline-none focus:border-[var(--focus)]"
+                            />
+                            <input
+                              value={editing.message}
+                              onChange={(e) =>
+                                setEditing({ ...editing, message: e.target.value })
+                              }
+                              maxLength={200}
+                              placeholder={t('editMessagePlaceholder')}
+                              className="w-full max-w-[240px] rounded-base border border-border bg-surface px-2 py-1.5 text-xs text-foreground outline-none focus:border-[var(--focus)]"
+                            />
+                          </div>
+                        ) : (
+                          <div className={d.hide_from_wall ? 'opacity-50' : undefined}>
+                            <p className="text-sm font-medium text-foreground">{d.display_name}</p>
+                            {d.message && (
+                              <p className="max-w-[240px] truncate text-xs text-muted" title={d.message}>
+                                {d.message}
+                              </p>
+                            )}
+                          </div>
                         )}
                       </td>
                       <td className="py-4 pr-6 text-xs text-muted whitespace-nowrap">{CHANNEL_LABEL[d.channel]}</td>
@@ -227,6 +282,69 @@ export function DonationsTab() {
                       </td>
                       <td className="py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() =>
+                              visibilityMutation.mutate({
+                                id: d.id,
+                                hideFromWall: !d.hide_from_wall,
+                              })
+                            }
+                            disabled={visibilityMutation.isPending}
+                            className="rounded-base p-1.5 text-muted transition-colors hover:text-foreground hover:bg-raised disabled:opacity-50"
+                            aria-label={
+                              d.hide_from_wall
+                                ? t('wallHiddenTitle')
+                                : t('wallShownTitle')
+                            }
+                            title={
+                              d.hide_from_wall
+                                ? t('wallHiddenTitle')
+                                : t('wallShownTitle')
+                            }
+                          >
+                            {d.hide_from_wall ? (
+                              <GlobeLock className="h-4 w-4" />
+                            ) : (
+                              <Globe className="h-4 w-4" />
+                            )}
+                          </button>
+                          {editing?.id === d.id ? (
+                            <>
+                              <button
+                                onClick={() => editMutation.mutate(editing)}
+                                disabled={editMutation.isPending}
+                                className="rounded-base p-1.5 text-muted transition-colors hover:text-[var(--fg-success)] hover:bg-[var(--success-soft,rgba(74,222,128,0.12))] disabled:opacity-50"
+                                aria-label={`Save donation from ${d.display_name}`}
+                                title={tc('save')}
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => setEditing(null)}
+                                disabled={editMutation.isPending}
+                                className="rounded-base p-1.5 text-muted transition-colors hover:text-foreground hover:bg-raised disabled:opacity-50"
+                                aria-label="Cancel edit"
+                                title={tc('cancel')}
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() =>
+                                setEditing({
+                                  id: d.id,
+                                  name: d.display_name,
+                                  message: d.message ?? '',
+                                })
+                              }
+                              className="rounded-base p-1.5 text-muted transition-colors hover:text-foreground hover:bg-raised"
+                              aria-label={`Edit donation from ${d.display_name}`}
+                              title={t('editDonation')}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
                           {d.status === 'pending' && d.provider === 'manual' && (
                             <>
                               <button

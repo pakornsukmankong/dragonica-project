@@ -1,7 +1,13 @@
-import { IsBoolean } from 'class-validator';
+import { IsBoolean, IsOptional } from 'class-validator';
 
-// Admin toggles whether a donation's amount is shown on the public wall.
+// Admin toggles what the public wall shows for a donation: mask just the
+// amount (hideAmount) or withhold the whole entry (hideFromWall).
 export class UpdateVisibilityDto {
+  @IsOptional()
   @IsBoolean()
-  hideAmount: boolean;
+  hideAmount?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hideFromWall?: boolean;
 }

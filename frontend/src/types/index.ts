@@ -118,6 +118,7 @@ export interface Donation {
   provider?: string; // which provider created it ('manual' rows are settled by an admin)
   status: DonationStatus;
   hide_amount?: boolean; // amount withheld from the public wall
+  hide_from_wall?: boolean; // entire entry withheld from the public wall
   created_at: string;
   paid_at: string | null;
 }
