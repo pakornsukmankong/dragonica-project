@@ -1,16 +1,24 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     // Keep the raw request body available (req.rawBody) so the Beam webhook can
     // verify its X-Beam-Signature over the exact bytes received.
     rawBody: true,
   });
+
+  // Production sits behind Cloudflare → Railway's edge proxy. Trust that one
+  // hop so req.ip/req.protocol come from the forwarded headers instead of the
+  // edge's own address. Real client identity uses CF-Connecting-IP (see
+  // ThrottlerBehindProxyGuard); deliberately not `true` so a client can't
+  // spoof req.ip by seeding X-Forwarded-For.
+  app.set('trust proxy', 1);
 
   app.use(helmet());
 
