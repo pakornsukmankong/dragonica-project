@@ -10,16 +10,25 @@ import { Currency, CurrencyInput } from '@/components/currency';
 import { formatGoldShort } from '@/lib/currency';
 import { Select } from '@/components/select';
 import { Autocomplete } from '@/components/autocomplete';
+import { ItemIcon } from '@/components/item-icon';
+import {
+  ITEM_CATEGORIES,
+  itemRarity,
+  type GameItem,
+  type GameItemIcon,
+} from '@/lib/items';
 import { rarityStyle } from '@/lib/rarity';
 import { useToast } from '@/components/toast';
+import { X } from 'lucide-react';
 import type { Character, Dungeon, Item } from '@/types';
 
 interface DropEntry {
-  itemId: string;
+  itemId: string; // items-table uuid (via /game-data/items/ensure)
   itemName: string;
   rarity: string | null;
   quantity: number;
   priceEach: number;
+  icon?: GameItemIcon;
 }
 
 export default function GrindPage() {
@@ -51,10 +60,57 @@ export default function GrindPage() {
     queryFn: () => api.get('/characters'),
   });
 
-  const { data: items } = useQuery<Item[]>({
+  // Full static game item database — the same per-category JSON the /items
+  // page reads. Loaded once (staleTime: Infinity) and searched client-side.
+  const { data: gameItems } = useQuery<GameItem[]>({
+    queryKey: ['game-db', 'all-items'],
+    queryFn: async () => {
+      const lists = await Promise.all(
+        ITEM_CATEGORIES.map(async (cat) => {
+          const res = await fetch(`/data/items/${cat}.json`);
+          if (!res.ok) throw new Error(`Failed to load ${cat} items`);
+          return (await res.json()) as GameItem[];
+        }),
+      );
+      return lists.flat();
+    },
+    staleTime: Infinity,
+  });
+
+  // Items already ensured into the backend `items` table by past grind logs —
+  // familiar picks float to the top of the search dropdown.
+  const { data: dbItems } = useQuery<Item[]>({
     queryKey: ['game-data', 'items'],
     queryFn: () => api.get('/game-data/items'),
   });
+
+  // Options keyed by list position — game ids are only unique per category.
+  // The game data repeats many names across categories, so duplicates
+  // collapse to one option (preferring one already in the database). Sorted
+  // (stably) so items that already exist in the database come first.
+  const itemOptions = useMemo(() => {
+    const known = new Set(
+      (dbItems ?? []).map((it) => it.game_item_id).filter((id) => id != null),
+    );
+    const byName = new Map<
+      string,
+      { value: string; label: string; icon: React.ReactNode; known: boolean }
+    >();
+    (gameItems ?? []).forEach((g, i) => {
+      const key = g.name.toLowerCase();
+      const isKnown = known.has(g.id);
+      if (byName.has(key) && !(isKnown && !byName.get(key)!.known)) return;
+      byName.set(key, {
+        value: String(i),
+        label: g.name,
+        icon: <ItemIcon icon={g.icon} size={24} className="rounded-xs" />,
+        known: isKnown,
+      });
+    });
+    return [...byName.values()].sort(
+      (a, b) => Number(b.known) - Number(a.known),
+    );
+  }, [gameItems, dbItems]);
 
   // All currency values are in copper. Total = item-drop value + raw currency.
   const dropsValue = useMemo(() => {
@@ -65,40 +121,58 @@ export default function GrindPage() {
   const durationMinutes = hours * 60 + minutes;
   const goldPerHour = durationMinutes > 0 ? Math.round((totalGold / durationMinutes) * 60) : 0;
 
-  // Update drop entry
-  const updateDrop = (itemId: string, field: 'quantity' | 'priceEach', value: number) => {
-    setDrops((prev) => {
-      const existing = prev.find((d) => d.itemId === itemId);
-      if (existing) {
-        return prev.map((d) =>
-          d.itemId === itemId ? { ...d, [field]: value } : d,
-        );
-      }
-      // Create new entry
-      const item = items?.find((i) => i.id === itemId);
-      if (!item) return prev;
-      return [
-        ...prev,
-        {
-          itemId,
-          itemName: item.name,
-          rarity: item.rarity,
-          quantity: field === 'quantity' ? value : 0,
-          priceEach: field === 'priceEach' ? value : item.default_price,
-        },
-      ];
-    });
+  // Picking a game item: find-or-create its `items` row (drops reference the
+  // row by uuid), then append an entry. Price is intentionally left at 0 for
+  // the user to fill in — market value isn't the NPC price.
+  const addItemMutation = useMutation({
+    mutationFn: async (game: GameItem) => {
+      const row = await api.post<Item>('/game-data/items/ensure', {
+        gameItemId: game.id,
+        name: game.name,
+        rarity: itemRarity(game) ?? undefined,
+        icon: game.icon,
+      });
+      return { row, game };
+    },
+    onSuccess: ({ row, game }) => {
+      setDrops((prev) =>
+        prev.some((d) => d.itemId === row.id)
+          ? prev
+          : [
+              ...prev,
+              {
+                itemId: row.id,
+                itemName: game.name,
+                rarity: itemRarity(game),
+                quantity: 1,
+                priceEach: 0,
+                icon: game.icon,
+              },
+            ],
+      );
+    },
+    onError: (e) =>
+      toast({
+        title: t('toastAddItemError'),
+        description: (e as Error).message,
+        variant: 'error',
+      }),
+  });
+
+  const pickGameItem = (key: string) => {
+    if (!key) return; // the picker clearing itself
+    const game = gameItems?.[Number(key)];
+    if (game) addItemMutation.mutate(game);
   };
 
-  // Get current value for a drop
-  const getDropValue = (itemId: string, field: 'quantity' | 'priceEach'): number => {
-    const entry = drops.find((d) => d.itemId === itemId);
-    if (entry) return entry[field];
-    if (field === 'priceEach') {
-      const item = items?.find((i) => i.id === itemId);
-      return item?.default_price ?? 0;
-    }
-    return 0;
+  const updateDrop = (itemId: string, field: 'quantity' | 'priceEach', value: number) => {
+    setDrops((prev) =>
+      prev.map((d) => (d.itemId === itemId ? { ...d, [field]: value } : d)),
+    );
+  };
+
+  const removeDrop = (itemId: string) => {
+    setDrops((prev) => prev.filter((d) => d.itemId !== itemId));
   };
 
   // Save session
@@ -300,9 +374,20 @@ export default function GrindPage() {
                 {t('itemDrops')}
               </h2>
 
-              {!items || items.length === 0 ? (
+              {/* Search the full game item database; picks become rows below. */}
+              <Autocomplete
+                value=""
+                onChange={pickGameItem}
+                placeholder={gameItems ? t('searchItem') : tc('loading')}
+                emptyText={t('noItemResults')}
+                options={itemOptions}
+                disabled={!gameItems}
+                className="mb-4"
+              />
+
+              {drops.length === 0 ? (
                 <p className="text-xs text-muted py-8 text-center">
-                  {t('noItems')}
+                  {t('noDropsSelected')}
                 </p>
               ) : (
                 <div className="overflow-x-auto">
@@ -313,48 +398,47 @@ export default function GrindPage() {
                         <th className="pb-3 text-right text-xs font-medium text-muted w-[88px]">{t('colQuantity')}</th>
                         <th className="pb-3 text-right text-xs font-medium text-muted w-[232px]">{t('colPriceEach')}</th>
                         <th className="pb-3 text-right text-xs font-medium text-muted w-[100px]">{t('colSubtotal')}</th>
+                        <th className="pb-3 w-[40px]" />
                       </tr>
                     </thead>
                     <tbody>
-                      {items.map((item) => {
-                        const qty = getDropValue(item.id, 'quantity');
-                        const price = getDropValue(item.id, 'priceEach');
-                        const subtotal = qty * price;
+                      {drops.map((d) => {
+                        const subtotal = d.quantity * d.priceEach;
+                        const style = rarityStyle(d.rarity);
 
                         return (
                           <tr
-                            key={item.id}
+                            key={d.itemId}
                             className="border-b border-[rgba(255,255,255,0.05)] last:border-0"
                           >
                             <td className="py-3 pr-4">
                               <div className="flex items-center gap-2.5">
-                                {item.icon_url ? (
-                                  // eslint-disable-next-line @next/next/no-img-element -- dynamic storage URL thumbnail; not worth next/image optimization
-                                  <img
-                                    src={item.icon_url}
-                                    alt={item.name}
-                                    className="h-8 w-8 shrink-0 rounded-sm object-cover"
-                                    style={{ outline: `2px solid ${rarityStyle(item.rarity).color}`, outlineOffset: '-1px' }}
+                                {d.icon ? (
+                                  <ItemIcon
+                                    icon={d.icon}
+                                    size={32}
+                                    className="rounded-sm"
+                                    style={{ outline: `2px solid ${style.color}`, outlineOffset: '-1px' }}
                                   />
                                 ) : (
                                   <div
                                     className="h-8 w-8 shrink-0 rounded-sm"
-                                    style={{ background: rarityStyle(item.rarity).soft, outline: `2px solid ${rarityStyle(item.rarity).color}`, outlineOffset: '-1px' }}
+                                    style={{ background: style.soft, outline: `2px solid ${style.color}`, outlineOffset: '-1px' }}
                                   />
                                 )}
                                 <span
                                   className="text-sm font-semibold leading-snug"
-                                  style={{ color: rarityStyle(item.rarity).color }}
+                                  style={{ color: style.color }}
                                 >
-                                  {item.name}
+                                  {d.itemName}
                                 </span>
                               </div>
                             </td>
                             <td className="py-3">
                               <NumericInput
-                                value={qty}
+                                value={d.quantity}
                                 onValueChange={(v) =>
-                                  updateDrop(item.id, 'quantity', Math.min(9999, v))
+                                  updateDrop(d.itemId, 'quantity', Math.min(9999, v))
                                 }
                                 placeholder="0"
                                 className="w-full rounded-base border border-border bg-surface px-2 py-1.5 text-sm text-foreground text-right outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
@@ -362,8 +446,8 @@ export default function GrindPage() {
                             </td>
                             <td className="py-3">
                               <CurrencyInput
-                                value={price}
-                                onChange={(v) => updateDrop(item.id, 'priceEach', v)}
+                                value={d.priceEach}
+                                onChange={(v) => updateDrop(d.itemId, 'priceEach', v)}
                                 maxGold={9999}
                                 className="justify-end"
                               />
@@ -379,6 +463,16 @@ export default function GrindPage() {
                               ) : (
                                 <span className="text-sm text-muted">-</span>
                               )}
+                            </td>
+                            <td className="py-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => removeDrop(d.itemId)}
+                                aria-label={`Remove ${d.itemName}`}
+                                className="rounded-base p-1.5 text-muted transition-colors hover:text-[var(--fg-danger)] hover:bg-[var(--danger-soft)]"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
                             </td>
                           </tr>
                         );

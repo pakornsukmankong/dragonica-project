@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateDungeonDto } from './dto/create-dungeon.dto';
 import { UpdateDungeonDto } from './dto/update-dungeon.dto';
+import { EnsureItemDto } from './dto/ensure-item.dto';
 import { CreateItemDto } from './dto/create-item.dto';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
@@ -130,7 +131,6 @@ export class AdminService {
       .insert({
         name: dto.name,
         rarity: dto.rarity,
-        icon_url: dto.iconUrl,
         default_price: dto.defaultPrice,
       })
       .select()
@@ -143,6 +143,57 @@ export class AdminService {
     const { error } = await this.supabase.from('items').delete().eq('id', id);
     if (error) throw error;
     return { deleted: true };
+  }
+
+  /**
+   * Find-or-create an items row for a game-database pick (grind drops). Rows
+   * are deduped on game_item_id, so every user logging the same drop shares
+   * one row. No default_price — the donor prices each drop by hand.
+   */
+  async ensureGameItem(dto: EnsureItemDto) {
+    const { data: existing } = await this.supabase
+      .from('items')
+      .select('*')
+      .eq('game_item_id', dto.gameItemId)
+      .maybeSingle();
+    if (existing) {
+      // Backfill the atlas icon onto rows created before icons were stored.
+      if (!existing.icon && dto.icon) {
+        const { data: updated } = await this.supabase
+          .from('items')
+          .update({ icon: { ...dto.icon } })
+          .eq('id', existing.id)
+          .select()
+          .single();
+        if (updated) return updated;
+      }
+      return existing;
+    }
+
+    const { data, error } = await this.supabase
+      .from('items')
+      .insert({
+        name: dto.name,
+        rarity: dto.rarity ?? null,
+        game_item_id: dto.gameItemId,
+        icon: dto.icon ? { ...dto.icon } : null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // Unique-index race: another request inserted this item first — use it.
+      if ((error as { code?: string }).code === '23505') {
+        const { data: raced } = await this.supabase
+          .from('items')
+          .select('*')
+          .eq('game_item_id', dto.gameItemId)
+          .maybeSingle();
+        if (raced) return raced;
+      }
+      throw error;
+    }
+    return data;
   }
 
   // ===== CLASSES =====

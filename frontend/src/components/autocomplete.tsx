@@ -1,11 +1,13 @@
 'use client';
 
-import { useId, useMemo, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Check, ChevronDown, X } from 'lucide-react';
 
 export interface AutocompleteOption {
   value: string;
   label: string;
+  /** Optional leading visual (e.g. an <ItemIcon />) shown before the label. */
+  icon?: ReactNode;
 }
 
 // Cap the rendered list so typing into a large option set (hundreds of
@@ -50,10 +52,30 @@ export function Autocomplete({
 
   const filtered = useMemo(() => {
     const q = (query ?? '').trim().toLowerCase();
-    const base = q
-      ? options.filter((o) => o.label.toLowerCase().includes(q))
-      : options;
-    return base.slice(0, MAX_RESULTS);
+    if (!q) return options.slice(0, MAX_RESULTS);
+    // Rank matches so short/prefix names aren't crowded out of the capped
+    // list by the thousands of names that merely contain the query:
+    // exact > prefix > word-start > substring. The sort is stable, so the
+    // caller's ordering (e.g. known-items-first) breaks ties within a tier.
+    const scored: { opt: AutocompleteOption; tier: number }[] = [];
+    for (const opt of options) {
+      const label = opt.label.toLowerCase();
+      const at = label.indexOf(q);
+      if (at === -1) continue;
+      const tier =
+        at === 0
+          ? label.length === q.length
+            ? 0
+            : 1
+          : /[^a-z0-9]/.test(label[at - 1])
+            ? 2
+            : 3;
+      scored.push({ opt, tier });
+    }
+    return scored
+      .sort((a, b) => a.tier - b.tier)
+      .slice(0, MAX_RESULTS)
+      .map((s) => s.opt);
   }, [options, query]);
 
   const openList = () => {
@@ -189,7 +211,10 @@ export function Autocomplete({
                       : 'text-foreground'
                 }`}
               >
-                <span className="min-w-0 truncate">{opt.label}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  {opt.icon}
+                  <span className="min-w-0 truncate">{opt.label}</span>
+                </span>
                 {opt.value === value && (
                   <Check className="h-4 w-4 shrink-0 text-gold" />
                 )}

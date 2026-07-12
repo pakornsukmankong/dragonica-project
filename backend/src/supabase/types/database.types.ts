@@ -193,21 +193,24 @@ export type Database = {
       items: {
         Row: {
           default_price: number | null;
-          icon_url: string | null;
+          game_item_id: number | null;
+          icon: Json | null;
           id: string;
           name: string;
           rarity: string | null;
         };
         Insert: {
           default_price?: number | null;
-          icon_url?: string | null;
+          game_item_id?: number | null;
+          icon?: Json | null;
           id?: string;
           name: string;
           rarity?: string | null;
         };
         Update: {
           default_price?: number | null;
-          icon_url?: string | null;
+          game_item_id?: number | null;
+          icon?: Json | null;
           id?: string;
           name?: string;
           rarity?: string | null;

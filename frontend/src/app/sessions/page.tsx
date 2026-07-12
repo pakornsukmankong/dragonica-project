@@ -10,6 +10,7 @@ import { useDateFormatter } from '@/lib/i18n';
 import { Pagination } from '@/components/pagination';
 import { Currency, CurrencyInput } from '@/components/currency';
 import { Select } from '@/components/select';
+import { ItemThumb } from '@/components/item-icon';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { formatGoldShort, toParts } from '@/lib/currency';
 import type { Session, Character, Dungeon, Item } from '@/types';
@@ -540,7 +541,7 @@ export default function SessionsPage() {
                     {editingDropsSessionId === session.id ? (
                       // Edit mode: every drop editable at once + a row to add one.
                       <div className="flex flex-col gap-1.5">
-                        {session.session_drops?.map((drop: { id: string; quantity: number; price_each: number; items?: { name: string; icon_url?: string | null } }) => {
+                        {session.session_drops?.map((drop) => {
                           const draft = dropDrafts[drop.id] ?? {
                             quantity: drop.quantity,
                             priceEach: drop.price_each,
@@ -550,6 +551,7 @@ export default function SessionsPage() {
                               key={drop.id}
                               className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-sm bg-raised px-2 py-1.5"
                             >
+                              <ItemThumb item={drop.items} />
                               <span className="min-w-0 flex-1 truncate text-xs text-foreground">
                                 {drop.items?.name ?? t('unknownItem')}
                               </span>
@@ -590,7 +592,7 @@ export default function SessionsPage() {
                               options={(items ?? []).map((it) => ({
                                 value: it.id,
                                 label: it.name,
-                                icon: it.icon_url,
+                                icon: <ItemThumb item={it} />,
                               }))}
                             />
                           </div>
@@ -609,15 +611,13 @@ export default function SessionsPage() {
                     ) : session.session_drops && session.session_drops.length > 0 ? (
                       // Read-only chips.
                       <div className="flex flex-wrap gap-2">
-                        {session.session_drops.map((drop: { id: string; quantity: number; price_each: number; items?: { name: string; icon_url?: string | null } }) => (
+                        {session.session_drops.map((drop) => (
                           <div
                             key={drop.id}
                             className="flex items-center gap-1.5 bg-raised rounded-sm px-2 py-1"
                           >
-                            {drop.items?.icon_url && (
-                              // eslint-disable-next-line @next/next/no-img-element -- dynamic storage URL thumbnail; not worth next/image optimization
-                              <img src={drop.items.icon_url} alt="" className="w-4 h-4 rounded-xs object-cover" />
-                            )}
+                            <ItemThumb item={drop.items} />
+
                             <span className="text-xs text-foreground">
                               {drop.items?.name ?? t('unknownItem')}
                             </span>
