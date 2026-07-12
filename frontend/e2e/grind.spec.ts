@@ -209,6 +209,21 @@ test('item drops: pick from the game database and save the drop', async ({ page 
   expect(String(postedDrop?.itemId)).toMatch(/^item-\d+$/);
 });
 
+test('item search ranks exact/prefix matches first and hides duplicate names', async ({ page }) => {
+  await mockGrindApi(page, () => {});
+  await page.goto('/grind');
+
+  const search = page.getByPlaceholder('Search the item database...');
+  await expect(search).toBeEnabled();
+  await search.fill('soul');
+  // ~2k names contain "soul", but the exact match leads the capped list.
+  await expect(page.getByRole('option').first()).toHaveText('Soul');
+  // The game data repeats this name across categories; only one option shows.
+  await expect(
+    page.getByRole('option', { name: 'Soul Capsule 20', exact: true }),
+  ).toHaveCount(1);
+});
+
 test('items already in the database sort to the top of the item search', async ({ page }) => {
   // Pretend one real game item was logged before: it should lead the list.
   const equipment = JSON.parse(

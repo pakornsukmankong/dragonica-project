@@ -85,19 +85,31 @@ export default function GrindPage() {
   });
 
   // Options keyed by list position — game ids are only unique per category.
-  // Sorted (stably) so items that already exist in the database come first.
+  // The game data repeats many names across categories, so duplicates
+  // collapse to one option (preferring one already in the database). Sorted
+  // (stably) so items that already exist in the database come first.
   const itemOptions = useMemo(() => {
     const known = new Set(
       (dbItems ?? []).map((it) => it.game_item_id).filter((id) => id != null),
     );
-    return (gameItems ?? [])
-      .map((g, i) => ({
+    const byName = new Map<
+      string,
+      { value: string; label: string; icon: React.ReactNode; known: boolean }
+    >();
+    (gameItems ?? []).forEach((g, i) => {
+      const key = g.name.toLowerCase();
+      const isKnown = known.has(g.id);
+      if (byName.has(key) && !(isKnown && !byName.get(key)!.known)) return;
+      byName.set(key, {
         value: String(i),
         label: g.name,
         icon: <ItemIcon icon={g.icon} size={24} className="rounded-xs" />,
-        known: known.has(g.id),
-      }))
-      .sort((a, b) => Number(b.known) - Number(a.known));
+        known: isKnown,
+      });
+    });
+    return [...byName.values()].sort(
+      (a, b) => Number(b.known) - Number(a.known),
+    );
   }, [gameItems, dbItems]);
 
   // All currency values are in copper. Total = item-drop value + raw currency.
