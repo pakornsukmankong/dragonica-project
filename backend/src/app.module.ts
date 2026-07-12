@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import {
   I18nModule,
   AcceptLanguageResolver,
@@ -21,6 +21,7 @@ import { SkillModule } from './skill/skill.module';
 import { YoutubeModule } from './youtube/youtube.module';
 import { StatsModule } from './stats/stats.module';
 import { HealthController } from './health/health.controller';
+import { ThrottlerBehindProxyGuard } from './common/guards/throttler-behind-proxy.guard';
 
 @Module({
   imports: [
@@ -39,7 +40,8 @@ import { HealthController } from './health/health.controller';
         AcceptLanguageResolver,
       ],
     }),
-    // Global rate limit: 100 requests per minute per IP.
+    // Global rate limit: 100 requests per minute per client IP (resolved
+    // through the Cloudflare proxy by ThrottlerBehindProxyGuard).
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     SupabaseModule,
     AuthModule,
@@ -57,7 +59,7 @@ import { HealthController } from './health/health.controller';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: ThrottlerBehindProxyGuard,
     },
   ],
 })
