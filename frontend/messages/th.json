@@ -432,6 +432,7 @@
     "dungeon": "ดันเจี้ยน",
     "totalValue": "มูลค่ารวม",
     "durationMin": "ระยะเวลา (นาที)",
+    "note": "โน้ต",
     "toastDeleted": "ลบรอบฟาร์มแล้ว",
     "toastDeleteError": "ลบรอบฟาร์มไม่สำเร็จ",
     "toastDeletedAll": "ลบแล้ว {count} รอบ",

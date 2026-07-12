@@ -491,6 +491,16 @@ export default function SessionsPage() {
                     </div>
                   </div>
 
+                  {/* Session note */}
+                  {session.note && (
+                    <div className="mt-4">
+                      <p className="text-xs text-muted mb-1">{t('note')}</p>
+                      <p className="rounded-sm bg-raised px-3 py-2 text-xs text-foreground/85 whitespace-pre-wrap">
+                        {session.note}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Item Drops */}
                   <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.05)]">
                     <div className="mb-2 flex items-center justify-between">
@@ -648,6 +658,7 @@ function SessionEditForm({
   const [gold, setGold] = useState(Number(session.gold_earned));
   const [goldDrop, setGoldDrop] = useState(Number(session.gold_dropped ?? 0));
   const [duration, setDuration] = useState(session.duration_minutes ?? 0);
+  const [note, setNote] = useState(session.note ?? '');
 
   const { data: dungeons } = useQuery<Dungeon[]>({
     queryKey: ['game-data', 'dungeons'],
@@ -661,6 +672,7 @@ function SessionEditForm({
       goldEarned: number;
       goldDropped: number;
       durationMinutes?: number;
+      note?: string;
     }) => api.patch(`/sessions/${session.id}`, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
@@ -689,6 +701,9 @@ function SessionEditForm({
             goldEarned: gold,
             goldDropped: goldDrop,
             durationMinutes: duration || undefined,
+            // Always sent (even '') so clearing the note actually clears it —
+            // undefined would mean "leave unchanged" on the backend.
+            note: note.trim(),
           });
         }}
         className="flex flex-col gap-4"
@@ -736,6 +751,17 @@ function SessionEditForm({
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
               className="rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <label htmlFor="edit-session-note" className="text-xs font-medium text-muted">{t('note')}</label>
+            <textarea
+              id="edit-session-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={1000}
+              rows={3}
+              className="w-full resize-y rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
             />
           </div>
         </div>

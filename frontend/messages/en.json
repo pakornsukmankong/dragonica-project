@@ -432,6 +432,7 @@
     "dungeon": "Dungeon",
     "totalValue": "Total Value",
     "durationMin": "Duration (min)",
+    "note": "Note",
     "toastDeleted": "Session deleted",
     "toastDeleteError": "Could not delete session",
     "toastDeletedAll": "Deleted {count, plural, one {# session} other {# sessions}}",
