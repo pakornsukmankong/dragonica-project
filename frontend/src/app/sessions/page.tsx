@@ -760,7 +760,7 @@ function SessionEditForm({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               maxLength={1000}
-              rows={3}
+              rows={1}
               className="w-full resize-y rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
             />
           </div>
