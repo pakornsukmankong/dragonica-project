@@ -20,6 +20,7 @@ import { UpdateSessionDto } from '../session/dto/update-session.dto';
 import { CreateDropDto } from '../session/dto/create-drop.dto';
 import { UpdateDropDto } from '../session/dto/update-drop.dto';
 import { CreateDungeonDto } from './dto/create-dungeon.dto';
+import { UpdateDungeonDto } from './dto/update-dungeon.dto';
 import { CreateItemDto } from './dto/create-item.dto';
 import { CreateClassDto } from './dto/create-class.dto';
 
@@ -115,6 +116,11 @@ export class AdminController {
   @Post('dungeons')
   createDungeon(@Body() dto: CreateDungeonDto) {
     return this.adminService.createDungeon(dto);
+  }
+
+  @Patch('dungeons/:id')
+  updateDungeon(@Param('id') id: string, @Body() dto: UpdateDungeonDto) {
+    return this.adminService.updateDungeon(id, dto);
   }
 
   @Delete('dungeons/:id')

@@ -15,6 +15,8 @@ export function DungeonsTab() {
   const { toast } = useToast();
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  // Which dungeon row is in image-edit mode (null = none).
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const { data: dungeons, isLoading } = useQuery<Dungeon[]>({
     queryKey: ['admin', 'dungeons'],
@@ -33,6 +35,24 @@ export function DungeonsTab() {
     onError: (e) =>
       toast({
         title: t('toastDungeonAddError'),
+        description: (e as Error).message,
+        variant: 'error',
+      }),
+  });
+
+  const updateImageMutation = useMutation({
+    mutationFn: ({ id, imageUrl }: { id: string; imageUrl: string }) =>
+      api.patch(`/admin/dungeons/${id}`, { imageUrl }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dungeons'] });
+      // The grind page reads the same dungeons through /game-data.
+      queryClient.invalidateQueries({ queryKey: ['game-data', 'dungeons'] });
+      setEditingId(null);
+      toast({ title: t('toastDungeonUpdated'), variant: 'success' });
+    },
+    onError: (e) =>
+      toast({
+        title: t('toastDungeonUpdateError'),
         description: (e as Error).message,
         variant: 'error',
       }),
@@ -99,23 +119,49 @@ export function DungeonsTab() {
         ) : (
           <div className="space-y-2">
             {dungeons?.map((d) => (
-              <div key={d.id} className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.05)] last:border-0">
-                <div className="flex items-center gap-3">
-                  {d.image_url ? (
-                    <img src={d.image_url} alt={d.name} className="w-8 h-8 rounded-sm object-cover" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-sm bg-raised" />
-                  )}
-                  <div>
-                    <span className="text-sm text-foreground font-medium">{d.name}</span>
+              <div key={d.id} className="py-2 border-b border-[rgba(255,255,255,0.05)] last:border-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {d.image_url ? (
+                      <img src={d.image_url} alt={d.name} className="w-8 h-8 rounded-sm object-cover" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-sm bg-raised" />
+                    )}
+                    <div>
+                      <span className="text-sm text-foreground font-medium">{d.name}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() =>
+                        setEditingId(editingId === d.id ? null : d.id)
+                      }
+                      className="text-xs text-[var(--blue)] hover:underline"
+                    >
+                      {editingId === d.id ? tc('cancel') : t('editImage')}
+                    </button>
+                    <button
+                      onClick={() => deleteMutation.mutate(d.id)}
+                      className="text-xs text-[var(--fg-danger)] hover:underline"
+                    >
+                      {tc('delete')}
+                    </button>
                   </div>
                 </div>
-                <button
-                  onClick={() => deleteMutation.mutate(d.id)}
-                  className="text-xs text-[var(--fg-danger)] hover:underline"
-                >
-                  {tc('delete')}
-                </button>
+                {editingId === d.id && (
+                  <div className="mt-3 pl-11">
+                    {/* Saves as soon as the upload finishes */}
+                    <ImageUpload
+                      currentUrl={d.image_url}
+                      onUploaded={(url) =>
+                        updateImageMutation.mutate({ id: d.id, imageUrl: url })
+                      }
+                    />
+                    {updateImageMutation.isPending && (
+                      <p className="mt-2 text-xs text-muted">{tc('saving')}</p>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
             {dungeons?.length === 0 && <p className="text-xs text-muted">{t('noDungeons')}</p>}
