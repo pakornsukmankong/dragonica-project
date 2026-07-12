@@ -24,7 +24,6 @@ interface Props {
 
 const CELL = 62; // grid step
 const ICON = 44; // icon box
-const HEAD = 34; // panel header height
 
 function initials(name: string) {
   return name.replace(/\[[^\]]*\]/g, '').trim().split(/\s+/).slice(0, 2)

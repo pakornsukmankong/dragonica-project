@@ -123,6 +123,7 @@ export function DungeonsTab() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {d.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- dynamic storage URL thumbnail; not worth next/image optimization
                       <img src={d.image_url} alt={d.name} className="w-8 h-8 rounded-sm object-cover" />
                     ) : (
                       <div className="w-8 h-8 rounded-sm bg-raised" />

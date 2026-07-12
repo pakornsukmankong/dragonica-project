@@ -23,20 +23,20 @@ export function useCountUp(target: number, durationMs = 900): number {
       '(prefers-reduced-motion: reduce)',
     ).matches;
     if (reduce || target === 0) {
-      setValue(target);
-      return;
+      // Deferred one frame so the effect body doesn't set state synchronously.
+      rafRef.current = requestAnimationFrame(() => setValue(target));
+    } else {
+      let start: number | null = null;
+      const from = 0;
+      const tick = (now: number) => {
+        if (start === null) start = now;
+        const t = Math.min((now - start) / durationMs, 1);
+        const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+        setValue(Math.round(from + (target - from) * eased));
+        if (t < 1) rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
     }
-
-    let start: number | null = null;
-    const from = 0;
-    const tick = (now: number) => {
-      if (start === null) start = now;
-      const t = Math.min((now - start) / durationMs, 1);
-      const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
-      setValue(Math.round(from + (target - from) * eased));
-      if (t < 1) rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
 
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);

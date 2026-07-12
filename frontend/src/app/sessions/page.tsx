@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Pencil, Check, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -238,10 +238,14 @@ export default function SessionsPage() {
     page * PAGE_SIZE,
   );
 
-  // Reset to page 1 whenever filters/sort change the result set.
-  useEffect(() => {
+  // Reset to page 1 whenever filters/sort change the result set
+  // (state adjusted during render — avoids an extra effect render pass).
+  const filterKey = `${filterCharId}|${filterDateFrom}|${filterDateTo}|${sortBy}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
     setPage(1);
-  }, [filterCharId, filterDateFrom, filterDateTo, sortBy]);
+  }
 
   // Export to a real .xlsx file (SheetJS lazy-loaded only on click).
   const handleExportExcel = async () => {
@@ -611,6 +615,7 @@ export default function SessionsPage() {
                             className="flex items-center gap-1.5 bg-raised rounded-sm px-2 py-1"
                           >
                             {drop.items?.icon_url && (
+                              // eslint-disable-next-line @next/next/no-img-element -- dynamic storage URL thumbnail; not worth next/image optimization
                               <img src={drop.items.icon_url} alt="" className="w-4 h-4 rounded-xs object-cover" />
                             )}
                             <span className="text-xs text-foreground">

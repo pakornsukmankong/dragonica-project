@@ -101,20 +101,18 @@ function SupportPageInner() {
     queryKey: ['me'],
     queryFn: () => api.get('/auth/me'),
   });
-  useEffect(() => {
-    if (me && !nameTouched && !displayName) {
-      setDisplayName(me.username?.trim() || me.email?.split('@')[0] || '');
-    }
-  }, [me, nameTouched, displayName]);
+  // (state adjusted during render — React bails out when the value is unchanged)
+  if (me && !nameTouched && !displayName) {
+    const prefill = me.username?.trim() || me.email?.split('@')[0] || '';
+    if (prefill) setDisplayName(prefill);
+  }
 
   // If the selected channel isn't supported by the active provider, snap to the
   // first one that is (e.g. GrabPay/mobile-banking hidden under Beam, or
   // everything but PromptPay under manual mode).
-  useEffect(() => {
-    if (supportedChannels && !supportedChannels.includes(channel)) {
-      setChannel(supportedChannels[0] ?? 'promptpay');
-    }
-  }, [supportedChannels, channel]);
+  if (supportedChannels && !supportedChannels.includes(channel)) {
+    setChannel(supportedChannels[0] ?? 'promptpay');
+  }
 
   // Thank-you wall.
   const { data: wall } = useQuery<DonationWallEntry[]>({
@@ -138,24 +136,24 @@ function SupportPageInner() {
 
   // After a TrueMoney redirect, Omise returns to ?donation=<id>. Pick that up,
   // open the modal in "confirming" mode, and clear the param from the URL.
+  const returnedDonationId = searchParams.get('donation');
+  if (returnedDonationId && !charge) {
+    // State adjusted during render; the URL cleanup below stays in an effect.
+    setCharge({
+      id: returnedDonationId,
+      status: 'pending',
+      channel: 'truemoney',
+      amount: 0,
+      displayName: '',
+      provider: 'omise',
+      qrImageUri: null,
+      authorizeUri: null,
+      expiresAt: null,
+    });
+  }
   useEffect(() => {
-    const returned = searchParams.get('donation');
-    if (returned && !charge) {
-      setCharge({
-        id: returned,
-        status: 'pending',
-        channel: 'truemoney',
-        amount: 0,
-        displayName: '',
-        provider: 'omise',
-        qrImageUri: null,
-        authorizeUri: null,
-        expiresAt: null,
-      });
-      router.replace('/support');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+    if (returnedDonationId) router.replace('/support');
+  }, [returnedDonationId, router]);
 
   // Poll the donation while it is pending; the backend re-checks Omise on read.
   // In manual mode there is nothing to poll — the donor closes the modal after
@@ -189,7 +187,7 @@ function SupportPageInner() {
         variant: 'error',
       });
     }
-  }, [status, charge, toast, queryClient]);
+  }, [status, charge, toast, queryClient, t]);
 
   const donationPayload = () => ({
     amount: Number(amount),
@@ -562,7 +560,7 @@ function PaymentModal({
 }) {
   const t = useTranslations('support');
   // Live countdown for the PromptPay QR (gateway mode only; manual has no poll).
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (status !== 'pending' || isManual) return;
     const t = setInterval(() => setNow(Date.now()), 1000);
