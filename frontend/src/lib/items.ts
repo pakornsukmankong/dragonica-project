@@ -210,10 +210,10 @@ export type StatKey = (typeof STAT_META)[number]['key'];
 export const BRANCH_ICON: Record<number, string> = {
   21: 'knight',
   22: 'gladiator',
-  23: 'monk',
+  23: 'acolyte',
   24: 'battlemage',
-  25: 'pathfinder',
-  26: 'arbalist',
+  25: 'hunter',
+  26: 'ranger',
   27: 'jester',
   28: 'assassin',
 };
