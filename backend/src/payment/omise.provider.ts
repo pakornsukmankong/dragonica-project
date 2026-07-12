@@ -24,6 +24,8 @@ export class OmiseProvider implements PaymentProvider {
   readonly name = 'omise' as const;
   // Everything except `card` — the Omise card flow (tokenization) isn't built.
   readonly supportedChannels = DONATION_CHANNELS.filter((c) => c !== 'card');
+  // Omise's minimum charge is ฿20.
+  readonly minAmount = 20;
 
   constructor(private readonly omise: OmiseService) {}
 

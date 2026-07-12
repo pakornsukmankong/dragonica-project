@@ -60,12 +60,18 @@ function SupportPageInner() {
   const { data: paymentConfig, isLoading: configLoading } = useQuery<{
     provider: string;
     channels?: DonationChannel[];
+    minAmount?: number;
   }>({
     queryKey: ['donations', 'config'],
     queryFn: () => api.get('/donations/config'),
     staleTime: Infinity,
   });
   const isManual = paymentConfig?.provider === 'manual';
+
+  // Provider-specific minimum (Stripe ฿10, others ฿20) — the backend reports
+  // it; keep the stricter ฿20 until the config resolves.
+  const minAmount = paymentConfig?.minAmount ?? 20;
+  const presets = minAmount < PRESETS[0] ? [minAmount, ...PRESETS] : PRESETS;
 
   // Only offer channels the active provider can actually collect (the backend
   // reports them). Falls back to all channels until the config resolves.
@@ -266,7 +272,7 @@ function SupportPageInner() {
 
   const phoneValid = /^0\d{9}$/.test(phone.trim());
   const canSubmit =
-    Number(amount) >= 20 &&
+    Number(amount) >= minAmount &&
     (channel !== 'truemoney' || phoneValid) &&
     // Wait for the provider to be known so we pick the right flow. This only
     // gates the initial load; if the config request fails, `configLoading`
@@ -317,10 +323,10 @@ function SupportPageInner() {
 
               {/* Amount */}
               <label className="block text-xs font-medium text-muted mb-2">
-                {t('amountLabel')}
+                {t('amountLabel', { min: minAmount })}
               </label>
               <div className="flex flex-wrap gap-2 mb-3">
-                {PRESETS.map((p) => (
+                {presets.map((p) => (
                   <button
                     key={p}
                     type="button"
@@ -342,7 +348,7 @@ function SupportPageInner() {
                 <NumericInput
                   value={amount}
                   onValueChange={(v) => setAmount(v === 0 ? '' : Math.min(150000, v))}
-                  placeholder="20"
+                  placeholder={String(minAmount)}
                   className="w-full rounded-base border border-border bg-surface pl-7 pr-3 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-[var(--focus)]"
                 />
               </div>

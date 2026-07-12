@@ -35,6 +35,8 @@ export class BeamProvider implements PaymentProvider {
   // below). Anything else — GrabPay, BAY/BBL/KTB mobile banking — is hidden
   // from the donor when Beam is active rather than failing at charge time.
   readonly supportedChannels = Object.keys(PAYMENT_METHOD) as DonationChannel[];
+  // Keep the pre-abstraction floor of ฿20 for Beam.
+  readonly minAmount = 20;
 
   constructor(private readonly beam: BeamService) {}
 
