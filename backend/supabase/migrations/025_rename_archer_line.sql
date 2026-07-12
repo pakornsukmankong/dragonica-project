@@ -1,4 +1,6 @@
--- Rename the Archer (id 25) job path: Pathfinder → Ranger → Sentinel becomes
--- Hunter → Trapper → Sentinel. The slug stays 'sentinel', so build URLs and
--- share links are unaffected.
+-- Rename both Archer (base class) job paths. Slugs stay the same, so build
+-- URLs and share links are unaffected.
+--   id 25: Pathfinder → Ranger → Sentinel      becomes Hunter → Trapper → Sentinel
+--   id 26: Arbalist → Grenadier → Bombardier   becomes Ranger → Ballista → Bombardier
 update skill_classes set name = 'Hunter → Trapper → Sentinel' where id = 25;
+update skill_classes set name = 'Ranger → Ballista → Bombardier' where id = 26;
