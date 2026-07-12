@@ -8,7 +8,7 @@ import { Pagination } from '@/components/pagination';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useToast } from '@/components/toast';
 import { useDateFormatter } from '@/lib/i18n';
-import { Trash2, Check, X, Eye, EyeOff, Pencil } from 'lucide-react';
+import { Trash2, Check, X, Eye, EyeOff, Pencil, Globe, GlobeLock } from 'lucide-react';
 import type { Donation } from '@/types';
 import { ITEMS_PER_PAGE } from './shared';
 
@@ -93,10 +93,16 @@ export function DonationsTab() {
       }),
   });
 
-  // Show or hide a donation's amount on the public wall.
+  // Wall visibility: mask just the amount, or withhold the whole entry.
   const visibilityMutation = useMutation({
-    mutationFn: ({ id, hideAmount }: { id: string; hideAmount: boolean }) =>
-      api.patch(`/donations/admin/${id}/visibility`, { hideAmount }),
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id: string;
+      hideAmount?: boolean;
+      hideFromWall?: boolean;
+    }) => api.patch(`/donations/admin/${id}/visibility`, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'donations'] });
       queryClient.invalidateQueries({ queryKey: ['donations', 'wall'] });
@@ -210,14 +216,14 @@ export function DonationsTab() {
                             />
                           </div>
                         ) : (
-                          <>
+                          <div className={d.hide_from_wall ? 'opacity-50' : undefined}>
                             <p className="text-sm font-medium text-foreground">{d.display_name}</p>
                             {d.message && (
                               <p className="max-w-[240px] truncate text-xs text-muted" title={d.message}>
                                 {d.message}
                               </p>
                             )}
-                          </>
+                          </div>
                         )}
                       </td>
                       <td className="py-4 pr-6 text-xs text-muted whitespace-nowrap">{CHANNEL_LABEL[d.channel]}</td>
@@ -276,6 +282,32 @@ export function DonationsTab() {
                       </td>
                       <td className="py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() =>
+                              visibilityMutation.mutate({
+                                id: d.id,
+                                hideFromWall: !d.hide_from_wall,
+                              })
+                            }
+                            disabled={visibilityMutation.isPending}
+                            className="rounded-base p-1.5 text-muted transition-colors hover:text-foreground hover:bg-raised disabled:opacity-50"
+                            aria-label={
+                              d.hide_from_wall
+                                ? t('wallHiddenTitle')
+                                : t('wallShownTitle')
+                            }
+                            title={
+                              d.hide_from_wall
+                                ? t('wallHiddenTitle')
+                                : t('wallShownTitle')
+                            }
+                          >
+                            {d.hide_from_wall ? (
+                              <GlobeLock className="h-4 w-4" />
+                            ) : (
+                              <Globe className="h-4 w-4" />
+                            )}
+                          </button>
                           {editing?.id === d.id ? (
                             <>
                               <button

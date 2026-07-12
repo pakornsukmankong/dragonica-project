@@ -547,6 +547,8 @@
     "toastDonationSettleError": "Could not update the donation",
     "amountShownTitle": "Amount is shown on the wall — click to hide",
     "amountHiddenTitle": "Amount is hidden from the wall — click to show",
+    "wallShownTitle": "Shown on the supporters wall — click to hide",
+    "wallHiddenTitle": "Hidden from the supporters wall — click to show",
     "toastVisibilityError": "Could not update amount visibility",
     "statusPending": "pending",
     "statusSuccessful": "successful",

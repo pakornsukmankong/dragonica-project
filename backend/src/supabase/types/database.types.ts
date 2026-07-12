@@ -85,6 +85,7 @@ export type Database = {
           currency: string;
           display_name: string;
           hide_amount: boolean;
+          hide_from_wall: boolean;
           id: string;
           message: string | null;
           omise_charge_id: string | null;
@@ -100,6 +101,7 @@ export type Database = {
           currency?: string;
           display_name: string;
           hide_amount?: boolean;
+          hide_from_wall?: boolean;
           id?: string;
           message?: string | null;
           omise_charge_id?: string | null;
@@ -115,6 +117,7 @@ export type Database = {
           currency?: string;
           display_name?: string;
           hide_amount?: boolean;
+          hide_from_wall?: boolean;
           id?: string;
           message?: string | null;
           omise_charge_id?: string | null;

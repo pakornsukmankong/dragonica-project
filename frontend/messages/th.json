@@ -547,6 +547,8 @@
     "toastDonationSettleError": "อัปเดตการบริจาคไม่สำเร็จ",
     "amountShownTitle": "แสดงยอดบนกำแพงผู้สนับสนุน — คลิกเพื่อซ่อน",
     "amountHiddenTitle": "ซ่อนยอดจากกำแพงผู้สนับสนุน — คลิกเพื่อแสดง",
+    "wallShownTitle": "แสดงบนบอร์ดผู้สนับสนุน — กดเพื่อซ่อน",
+    "wallHiddenTitle": "ซ่อนจากบอร์ดผู้สนับสนุน — กดเพื่อแสดง",
     "toastVisibilityError": "อัปเดตการแสดงยอดไม่สำเร็จ",
     "statusPending": "รอดำเนินการ",
     "statusSuccessful": "สำเร็จ",

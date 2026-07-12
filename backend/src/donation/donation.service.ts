@@ -48,6 +48,7 @@ export interface DonationRow {
   provider: string | null;
   status: DonationStatus;
   hide_amount: boolean;
+  hide_from_wall: boolean;
   created_at: string;
   paid_at: string | null;
 }
@@ -301,7 +302,10 @@ export class DonationService {
   }
 
   /** Admin: show or hide a donation's amount on the public thank-you wall. */
-  async setHideAmount(id: string, hide: boolean) {
+  async setVisibility(
+    id: string,
+    opts: { hideAmount?: boolean; hideFromWall?: boolean },
+  ) {
     const { data } = await this.supabase
       .from('donations')
       .select('id')
@@ -311,9 +315,15 @@ export class DonationService {
     if (!data)
       throw new NotFoundException(this.i18n.t('errors.donation.not_found'));
 
+    const update: TablesUpdate<'donations'> = {};
+    if (opts.hideAmount !== undefined) update.hide_amount = opts.hideAmount;
+    if (opts.hideFromWall !== undefined)
+      update.hide_from_wall = opts.hideFromWall;
+    if (Object.keys(update).length === 0) return data as DonationRow;
+
     const { data: updated, error } = await this.supabase
       .from('donations')
-      .update({ hide_amount: hide })
+      .update(update)
       .eq('id', id)
       .select('*')
       .single();
@@ -366,6 +376,7 @@ export class DonationService {
       .from('donations')
       .select('display_name, amount, message, paid_at, hide_amount')
       .eq('status', 'successful')
+      .eq('hide_from_wall', false)
       .order('paid_at', { ascending: false })
       .limit(limit);
 

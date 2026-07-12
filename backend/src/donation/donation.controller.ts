@@ -126,11 +126,12 @@ export class DonationController {
     return this.donationService.settleManual(id, 'failed');
   }
 
-  // Admin-only: show or hide this donation's amount on the public wall.
+  // Admin-only: control what the public wall shows for this donation —
+  // mask the amount and/or withhold the entire entry.
   @Patch('admin/:id/visibility')
   @UseGuards(JwtAuthGuard, AdminGuard)
   setVisibility(@Param('id') id: string, @Body() dto: UpdateVisibilityDto) {
-    return this.donationService.setHideAmount(id, dto.hideAmount);
+    return this.donationService.setVisibility(id, dto);
   }
 
   // Admin-only: edit a donation's display name / message (e.g. moderation).
