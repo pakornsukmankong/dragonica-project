@@ -17,8 +17,9 @@ export function ClassesTab() {
   const [name, setName] = useState('');
   const [parentClass, setParentClass] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  // Which class row is in image-edit mode (null = none).
+  // Which class row is in edit mode (null = none), and its name draft.
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
 
   const { data: classes, isLoading } = useQuery<GameClass[]>({
     queryKey: ['admin', 'classes'],
@@ -44,9 +45,15 @@ export function ClassesTab() {
       }),
   });
 
-  const updateImageMutation = useMutation({
-    mutationFn: ({ id, imageUrl }: { id: string; imageUrl: string }) =>
-      api.patch(`/admin/classes/${id}`, { imageUrl }),
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id: string;
+      name?: string;
+      imageUrl?: string;
+    }) => api.patch(`/admin/classes/${id}`, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'classes'] });
       // The character form reads the same classes through /game-data.
@@ -162,12 +169,13 @@ export function ClassesTab() {
                   </div>
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() =>
-                        setEditingId(editingId === cls.id ? null : cls.id)
-                      }
+                      onClick={() => {
+                        setEditingId(editingId === cls.id ? null : cls.id);
+                        setEditName(cls.name);
+                      }}
                       className="text-xs text-[var(--blue)] hover:underline"
                     >
-                      {editingId === cls.id ? tc('cancel') : t('editImage')}
+                      {editingId === cls.id ? tc('cancel') : tc('edit')}
                     </button>
                     <button
                       onClick={() => deleteMutation.mutate(cls.id)}
@@ -178,15 +186,45 @@ export function ClassesTab() {
                   </div>
                 </div>
                 {editingId === cls.id && (
-                  <div className="mt-3 pl-11">
-                    {/* Saves as soon as the upload finishes */}
+                  <div className="mt-3 pl-11 space-y-3">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const next = editName.trim();
+                        if (!next || next === cls.name) return;
+                        updateMutation.mutate({ id: cls.id, name: next });
+                      }}
+                      className="flex items-end gap-3"
+                    >
+                      <div className="flex flex-col gap-1.5 w-56">
+                        <label className="text-xs font-medium text-muted">{t('name')}</label>
+                        <input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          required
+                          className="rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={
+                          updateMutation.isPending ||
+                          !editName.trim() ||
+                          editName.trim() === cls.name
+                        }
+                        className="rounded-base px-4 py-2 text-sm font-medium text-[#1b1407] bg-[var(--blue)] shadow-button hover:opacity-90 disabled:opacity-50"
+                      >
+                        {tc('save')}
+                      </button>
+                    </form>
+                    {/* Image saves as soon as the upload finishes */}
                     <ImageUpload
                       currentUrl={cls.image_url}
                       onUploaded={(url) =>
-                        updateImageMutation.mutate({ id: cls.id, imageUrl: url })
+                        updateMutation.mutate({ id: cls.id, imageUrl: url })
                       }
                     />
-                    {updateImageMutation.isPending && (
+                    {updateMutation.isPending && (
                       <p className="mt-2 text-xs text-muted">{tc('saving')}</p>
                     )}
                   </div>

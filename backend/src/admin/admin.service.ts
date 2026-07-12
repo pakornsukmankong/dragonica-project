@@ -175,6 +175,19 @@ export class AdminService {
     if (dto.name !== undefined) update.name = dto.name;
     if (dto.imageUrl !== undefined) update.image_url = dto.imageUrl;
 
+    // Children reference their base class by name (parent_class), so a rename
+    // must re-point them too. Grab the current name before it changes.
+    let oldName: string | undefined;
+    if (dto.name !== undefined) {
+      const { data: existing, error: readError } = await this.supabase
+        .from('classes')
+        .select('name')
+        .eq('id', id)
+        .single();
+      if (readError) throw readError;
+      oldName = existing.name;
+    }
+
     const { data, error } = await this.supabase
       .from('classes')
       .update(update)
@@ -182,6 +195,15 @@ export class AdminService {
       .select()
       .single();
     if (error) throw error;
+
+    if (oldName && dto.name && oldName !== dto.name) {
+      const { error: childError } = await this.supabase
+        .from('classes')
+        .update({ parent_class: dto.name })
+        .eq('parent_class', oldName);
+      if (childError) throw childError;
+    }
+
     return data;
   }
 
