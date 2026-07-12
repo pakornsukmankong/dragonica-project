@@ -4,6 +4,7 @@ import { CreateDungeonDto } from './dto/create-dungeon.dto';
 import { UpdateDungeonDto } from './dto/update-dungeon.dto';
 import { CreateItemDto } from './dto/create-item.dto';
 import { CreateClassDto } from './dto/create-class.dto';
+import { UpdateClassDto } from './dto/update-class.dto';
 
 interface ProfileRow {
   id: string;
@@ -160,7 +161,24 @@ export class AdminService {
       .insert({
         name: dto.name,
         parent_class: dto.parentClass ?? null,
+        image_url: dto.imageUrl,
       })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async updateClass(id: string, dto: UpdateClassDto) {
+    // Only touch the columns the request actually carries.
+    const update: { name?: string; image_url?: string } = {};
+    if (dto.name !== undefined) update.name = dto.name;
+    if (dto.imageUrl !== undefined) update.image_url = dto.imageUrl;
+
+    const { data, error } = await this.supabase
+      .from('classes')
+      .update(update)
+      .eq('id', id)
       .select()
       .single();
     if (error) throw error;

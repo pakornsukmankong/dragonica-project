@@ -236,6 +236,7 @@ function CharacterForm({
                 label: cls.parent_class
                   ? `${cls.name} (${cls.parent_class})`
                   : cls.name,
+                icon: cls.image_url,
               }))}
             />
           </div>
