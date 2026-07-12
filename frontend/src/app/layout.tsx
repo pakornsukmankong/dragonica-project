@@ -6,6 +6,7 @@ import './globals.css';
 import { Providers } from '@/components/providers';
 import { AppShell } from '@/components/app-shell';
 import { Clarity } from '@/components/clarity';
+import { GoogleAnalytics } from '@/components/google-analytics';
 import { JsonLd } from '@/components/json-ld';
 import { siteUrl } from '@/lib/site-url';
 
@@ -101,6 +102,7 @@ export default async function RootLayout({
           }}
         />
         <Clarity />
+        <GoogleAnalytics />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <AppShell>{children}</AppShell>
