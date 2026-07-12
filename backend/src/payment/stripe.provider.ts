@@ -17,6 +17,8 @@ import {
 export class StripeProvider implements PaymentProvider {
   readonly name = 'stripe' as const;
   readonly supportedChannels = ['promptpay', 'card'] as const;
+  // Stripe's minimum charge for THB is ฿10.
+  readonly minAmount = 10;
 
   constructor(private readonly stripe: StripeService) {}
 

@@ -611,7 +611,7 @@
     "title": "Support the Project",
     "subtitle": "Donations keep the servers running. Thank you for chipping in ❤️",
     "makeDonation": "Make a donation",
-    "amountLabel": "Amount (THB) — min ฿20",
+    "amountLabel": "Amount (THB) — min ฿{min}",
     "paymentMethod": "Payment method",
     "promptpay": "PromptPay (QR)",
     "truemoney": "TrueMoney Wallet",
@@ -826,7 +826,7 @@
         "title": "Support the Project (optional)",
         "steps": [
           "Open Support to donate via PromptPay QR or TrueMoney Wallet.",
-          "Enter an amount (minimum ฿20), your display name and an optional message, then pay.",
+          "Enter an amount (minimum ฿10), your display name and an optional message, then pay.",
           "Confirmed donations appear on the supporters wall. Donating is entirely optional and only helps cover server costs."
         ]
       },

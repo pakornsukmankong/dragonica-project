@@ -34,6 +34,8 @@ export interface PaymentProvider {
   readonly name: 'omise' | 'beam' | 'manual' | 'stripe';
   /** Channels this provider can actually collect — drives the donor's options. */
   readonly supportedChannels: readonly DonationChannel[];
+  /** Smallest charge the gateway accepts, in whole Baht (Stripe ฿10, Omise ฿20). */
+  readonly minAmount: number;
   createCharge(input: CreateChargeInput): Promise<NormalizedCharge>;
   getCharge(providerChargeId: string): Promise<NormalizedCharge>;
   /** Pull the provider charge id out of a webhook payload (for re-verify). */

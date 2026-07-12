@@ -1,6 +1,7 @@
 {
   "donation": {
     "max_exceeded": "Maximum for {channel} is ฿{max}.",
+    "min_not_met": "Minimum donation is ฿{min}.",
     "not_found": "Donation not found",
     "not_manual": "Only manual (gateway-free) donations can be settled by hand.",
     "not_pending": "This donation is not pending and cannot be changed.",

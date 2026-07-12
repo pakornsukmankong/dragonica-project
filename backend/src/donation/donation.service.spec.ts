@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DonationService } from './donation.service';
 import { PaymentProvider } from '../payment/payment-provider.interface';
@@ -23,6 +23,7 @@ function providerMock(
 ): PaymentProvider {
   return {
     name: 'omise',
+    minAmount: 20,
     createCharge: jest.fn(),
     getCharge: jest.fn(),
     extractChargeId: jest.fn((event: unknown) => {
@@ -64,6 +65,48 @@ describe('DonationService (ownership & payment integrity)', () => {
       const result = await svc.findOneByUser('d1', USER);
       expect(result.status).toBe('successful');
       expect(provider.getCharge).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('amount limits', () => {
+    it('rejects a donation below the active provider minimum', async () => {
+      const { service: supabase, fromTables } = createSupabaseMock([]);
+      const svc = new DonationService(
+        supabase,
+        providerMock({ minAmount: 20 }),
+        config,
+        i18n,
+      );
+
+      await expect(
+        svc.create(USER, 'u@example.com', {
+          amount: 15,
+          channel: 'promptpay',
+          displayName: 'Tester',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      // Rejected before anything was written.
+      expect(fromTables).toEqual([]);
+    });
+
+    it('reports the provider minimum via config (Stripe = ฿10)', () => {
+      const { service: supabase } = createSupabaseMock([]);
+      const svc = new DonationService(
+        supabase,
+        providerMock({
+          name: 'stripe',
+          minAmount: 10,
+          supportedChannels: ['promptpay', 'card'],
+        }),
+        config,
+        i18n,
+      );
+
+      expect(svc.getConfig()).toEqual({
+        provider: 'stripe',
+        channels: ['promptpay', 'card'],
+        minAmount: 10,
+      });
     });
   });
 

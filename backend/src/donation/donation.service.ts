@@ -62,8 +62,15 @@ export class DonationService {
     private readonly i18n: I18nService,
   ) {}
 
-  /** Start a donation: record it, create the gateway charge, return payment info. */
-  async create(userId: string, userEmail: string, dto: CreateDonationDto) {
+  /** The active provider's minimum and the per-channel cap, both in whole Baht. */
+  private assertAmountWithinLimits(dto: CreateDonationDto) {
+    if (dto.amount < this.provider.minAmount) {
+      throw new BadRequestException(
+        this.i18n.t('errors.donation.min_not_met', {
+          args: { min: this.provider.minAmount },
+        }),
+      );
+    }
     if (dto.amount > MAX_BAHT[dto.channel]) {
       throw new BadRequestException(
         this.i18n.t('errors.donation.max_exceeded', {
@@ -74,6 +81,11 @@ export class DonationService {
         }),
       );
     }
+  }
+
+  /** Start a donation: record it, create the gateway charge, return payment info. */
+  async create(userId: string, userEmail: string, dto: CreateDonationDto) {
+    this.assertAmountWithinLimits(dto);
 
     const amountSatang = dto.amount * 100;
     const displayName = dto.displayName.trim() || 'Anonymous';
@@ -143,6 +155,7 @@ export class DonationService {
     return {
       provider: this.provider.name,
       channels: this.provider.supportedChannels,
+      minAmount: this.provider.minAmount,
     };
   }
 
@@ -226,16 +239,7 @@ export class DonationService {
         this.i18n.t('errors.donation.preview_unavailable'),
       );
 
-    if (dto.amount > MAX_BAHT[dto.channel]) {
-      throw new BadRequestException(
-        this.i18n.t('errors.donation.max_exceeded', {
-          args: {
-            channel: dto.channel,
-            max: MAX_BAHT[dto.channel].toLocaleString(),
-          },
-        }),
-      );
-    }
+    this.assertAmountWithinLimits(dto);
 
     const amountSatang = dto.amount * 100;
     const charge = await this.provider.createCharge({

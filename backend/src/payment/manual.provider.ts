@@ -22,6 +22,9 @@ const PROMPTPAY_TTL_MS = 60 * 60 * 1000; // 1 hour
 export class ManualProvider implements PaymentProvider {
   readonly name = 'manual' as const;
   readonly supportedChannels = ['promptpay'] as const;
+  // No gateway floor, but keep ฿20 — tiny transfers aren't worth the manual
+  // bank-statement reconciliation.
+  readonly minAmount = 20;
 
   constructor(private readonly config: ConfigService) {}
 

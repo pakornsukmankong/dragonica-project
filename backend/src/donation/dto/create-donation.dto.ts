@@ -32,10 +32,11 @@ export const DONATION_CHANNELS = [
 export type DonationChannel = (typeof DONATION_CHANNELS)[number];
 
 export class CreateDonationDto {
-  // Amount in whole Baht. Omise minimum is ฿20; PromptPay max is ฿150,000.
-  // Per-channel caps are enforced in the service.
+  // Amount in whole Baht. ฿10 is the absolute floor (Stripe's THB minimum);
+  // the service enforces the active provider's own minimum (e.g. Omise ฿20)
+  // and the per-channel caps.
   @IsInt()
-  @Min(20)
+  @Min(10)
   @Max(150000)
   amount: number;
 
