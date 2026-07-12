@@ -8,9 +8,14 @@ dist
 
 # Editor / tooling
 .agents
-.claude
 .vscode
-CLAUDE.md
+
+# Claude Code — track shared project config & skills so teammates/agents get the
+# same setup; keep machine-local files (auth, personal settings) out of git.
+.claude/*
+!.claude/launch.json
+!.claude/skills/
+.claude/settings.local.json
 # Playwright
 test-results
 playwright-report
