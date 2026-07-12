@@ -186,7 +186,9 @@ export default function GrindPage() {
                 />
               </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 laptop:grid-cols-4 gap-4">
+            {/* items-center: the gold column is two rows tall — keep the
+                single-row fields vertically centered beside it */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 laptop:grid-cols-4 gap-4 items-center">
               {/* Dungeon */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted">{t('dungeon')}</label>
