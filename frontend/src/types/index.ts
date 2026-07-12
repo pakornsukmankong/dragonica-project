@@ -48,6 +48,7 @@ export interface Session {
   duration_minutes: number | null;
   gold_earned: number;
   gold_dropped: number;
+  note: string | null;
   created_at: string;
   characters: Character;
   dungeons: Dungeon | null;

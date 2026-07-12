@@ -4,6 +4,8 @@ import {
   IsISO8601,
   IsInt,
   IsNumber,
+  IsString,
+  MaxLength,
   Min,
 } from 'class-validator';
 
@@ -37,4 +39,9 @@ export class CreateSessionDto {
   @IsNumber()
   @Min(0)
   goldDropped?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  note?: string;
 }

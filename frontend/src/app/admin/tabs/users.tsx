@@ -292,6 +292,7 @@ function AdminSessionEditForm({
   const [gold, setGold] = useState(Number(session.gold_earned));
   const [goldDrop, setGoldDrop] = useState(Number(session.gold_dropped ?? 0));
   const [duration, setDuration] = useState(session.duration_minutes ?? 0);
+  const [note, setNote] = useState(session.note ?? '');
 
   // Drop edits are staged locally and committed atomically on Save alongside
   // the session fields: qty/price drafts, drops flagged for deletion, and one
@@ -345,6 +346,7 @@ function AdminSessionEditForm({
       goldEarned: number;
       goldDropped: number;
       durationMinutes?: number;
+      note?: string;
     }) => {
       const ops: Promise<unknown>[] = [
         api.patch(`/admin/sessions/${session.id}`, body),
@@ -410,6 +412,9 @@ function AdminSessionEditForm({
             goldEarned: gold,
             goldDropped: goldDrop,
             durationMinutes: duration || undefined,
+            // Always sent (even '') so clearing the note actually clears it —
+            // undefined would mean "leave unchanged" on the backend.
+            note: note.trim(),
           });
         }}
         className="flex flex-col gap-4"
@@ -464,6 +469,19 @@ function AdminSessionEditForm({
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
               className="rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <label htmlFor="admin-session-note" className="text-xs font-medium text-muted">
+              {t('note')}
+            </label>
+            <textarea
+              id="admin-session-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={1000}
+              rows={1}
+              className="w-full resize-y rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
             />
           </div>
         </div>

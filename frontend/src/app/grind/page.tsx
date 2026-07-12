@@ -9,6 +9,7 @@ import { NumericInput } from '@/components/numeric-input';
 import { Currency, CurrencyInput } from '@/components/currency';
 import { formatGoldShort } from '@/lib/currency';
 import { Select } from '@/components/select';
+import { Autocomplete } from '@/components/autocomplete';
 import { rarityStyle } from '@/lib/rarity';
 import { useToast } from '@/components/toast';
 import type { Character, Dungeon, Item } from '@/types';
@@ -31,6 +32,7 @@ export default function GrindPage() {
   const [selectedCharacterId, setSelectedCharacterId] = useState('');
   const [hours, setHours] = useState(1);
   const [minutes, setMinutes] = useState(0);
+  const [note, setNote] = useState('');
   const [drops, setDrops] = useState<DropEntry[]>([]);
   // Wallet gold before/after the run (in copper) — the currency picked up is
   // their difference. Ending below the start (repairs, potions) counts as 0
@@ -108,6 +110,7 @@ export default function GrindPage() {
         durationMinutes: durationMinutes || undefined,
         goldEarned: totalGold,
         goldDropped: goldDropped || undefined,
+        note: note.trim() || undefined,
         startedAt: new Date().toISOString(),
       });
 
@@ -132,6 +135,7 @@ export default function GrindPage() {
       setDrops([]);
       setHours(1);
       setMinutes(0);
+      setNote('');
       setGoldStart(0);
       setGoldEnd(0);
       toast({ title: t('toastSavedTitle'), description: t('toastSavedDesc'), variant: 'success' });
@@ -186,16 +190,17 @@ export default function GrindPage() {
                 />
               </div>
             )}
-            {/* items-center: the gold column is two rows tall — keep the
-                single-row fields vertically centered beside it */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 laptop:grid-cols-4 gap-4 items-center">
-              {/* Dungeon */}
+            {/* Two rows on laptop: dungeon/character/duration/gold-start,
+                then the note (3 cols) beside gold-end */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 laptop:grid-cols-4 gap-4 items-start">
+              {/* Dungeon — searchable: the seeded list is hundreds of names */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted">{t('dungeon')}</label>
-                <Select
+                <Autocomplete
                   value={selectedDungeonId}
                   onChange={setSelectedDungeonId}
-                  placeholder={t('selectDungeon')}
+                  placeholder={t('searchDungeon')}
+                  emptyText={t('noDungeonResults')}
                   options={(dungeons ?? []).map((d) => ({
                     value: d.id,
                     label: d.name,
@@ -238,7 +243,7 @@ export default function GrindPage() {
                 </div>
               </div>
 
-              {/* Wallet gold before/after the run — picked-up currency is the difference */}
+              {/* Wallet gold before the run */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted">
                   {t('goldStart')}
@@ -248,7 +253,27 @@ export default function GrindPage() {
                   onChange={setGoldStart}
                   maxGold={999999}
                 />
-                <label className="mt-1 text-xs font-medium text-muted">
+              </div>
+
+              {/* Session note — spans under dungeon/character/duration */}
+              <div className="flex flex-col gap-1.5 laptop:col-span-3">
+                <label htmlFor="session-note" className="text-xs font-medium text-muted">
+                  {t('note')}
+                </label>
+                <textarea
+                  id="session-note"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder={t('notePlaceholder')}
+                  maxLength={1000}
+                  rows={1}
+                  className="w-full resize-y rounded-base border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted outline-none transition-colors hover:border-[var(--border-dark)] focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
+                />
+              </div>
+
+              {/* Wallet gold after the run — picked-up currency is the difference */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted">
                   {t('goldEnd')}
                 </label>
                 <CurrencyInput

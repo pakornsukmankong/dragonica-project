@@ -56,6 +56,7 @@ export class SessionService {
         duration_minutes: dto.durationMinutes,
         gold_earned: dto.goldEarned ?? 0,
         gold_dropped: dto.goldDropped ?? 0,
+        note: dto.note,
       })
       .select('*, characters(*, classes(*)), dungeons(*)')
       .single();
@@ -78,6 +79,7 @@ export class SessionService {
       updateData['gold_earned'] = dto.goldEarned;
     if (dto.goldDropped !== undefined)
       updateData['gold_dropped'] = dto.goldDropped;
+    if (dto.note !== undefined) updateData['note'] = dto.note;
 
     const { data, error } = await this.supabase
       .from('sessions')
@@ -137,6 +139,7 @@ export class SessionService {
       updateData['gold_earned'] = dto.goldEarned;
     if (dto.goldDropped !== undefined)
       updateData['gold_dropped'] = dto.goldDropped;
+    if (dto.note !== undefined) updateData['note'] = dto.note;
 
     const { data, error } = await this.supabase
       .from('sessions')
