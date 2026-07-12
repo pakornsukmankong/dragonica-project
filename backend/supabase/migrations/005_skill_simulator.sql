@@ -1,5 +1,9 @@
 -- Skill Simulator - reference skill data + user-created skill builds.
 --
+-- CONSOLIDATED (2026-07): equals former migrations 015, 017-019, 025
+-- (build columns folded into the create table; class-line renames folded
+-- into the seed).
+--
 -- Skill data is imported from the Dragonica Chapter 5 definition DB
 -- (TB_DefSkill_Player) joined with the client string table. It is READ-ONLY
 -- reference data (like classes/items/dungeons) - public read, admin-managed.
@@ -43,6 +47,9 @@ create index if not exists skills_class_bits_idx on skills using gin (class_bits
 create index if not exists skills_base_class_idx on skills (base_class);
 
 -- A saved skill build. `allocations` maps skill_id -> points, e.g. {"2000101001": 5}.
+-- bonus_sp: extra skill points a build adds by hand (quest/event SP not
+--   derived from level).
+-- description: optional text shown when the build is shared publicly.
 create table if not exists skill_builds (
   id           uuid primary key default gen_random_uuid(),
   user_id      uuid not null references profiles(id) on delete cascade,
@@ -53,11 +60,17 @@ create table if not exists skill_builds (
   visibility   text not null default 'unlisted',   -- 'public' | 'unlisted'
   share_slug   text not null unique,
   created_at   timestamptz default now(),
-  updated_at   timestamptz default now()
+  updated_at   timestamptz default now(),
+  bonus_sp     integer not null default 0,
+  description  text
 );
 
 create index if not exists skill_builds_user_id_idx on skill_builds (user_id);
 create index if not exists skill_builds_class_id_idx on skill_builds (class_id);
+
+-- Community gallery: public builds most-recent-first.
+create index if not exists skill_builds_public_idx
+  on skill_builds (visibility, created_at desc);
 
 -- Reference tables: public read (backend writes via service role).
 alter table skill_classes enable row level security;
@@ -94,10 +107,10 @@ create policy "Users can delete own builds"
 insert into skill_classes (id, base_class, name, slug, sort_order) values
   (21, 'Warrior',  'Knight → Paladin → Dragoon',         'dragoon',      1),
   (22, 'Warrior',  'Gladiator → Myrmidon → Berserker',   'berserker',    2),
-  (23, 'Magician', 'Monk → Priest → Cleric',             'cleric',       3),
+  (23, 'Magician', 'Acolyte → Oracle → Cleric',          'cleric',       3),
   (24, 'Magician', 'Battlemage → Archmage → Chaosmage',  'chaosmage',    4),
-  (25, 'Archer',   'Pathfinder → Ranger → Sentinel',     'sentinel',     5),
-  (26, 'Archer',   'Arbalist → Grenadier → Bombardier',  'bombardier',   6),
+  (25, 'Archer',   'Hunter → Trapper → Sentinel',        'sentinel',     5),
+  (26, 'Archer',   'Ranger → Ballista → Bombardier',     'bombardier',   6),
   (27, 'Thief',    'Jester → Harlequin → Joker',         'joker',        7),
   (28, 'Thief',    'Assassin → Ninja → Shadow Walker',   'shadow-walker', 8)
 on conflict (id) do update

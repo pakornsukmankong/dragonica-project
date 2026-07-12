@@ -2,13 +2,23 @@
 -- A ticket is a conversation thread — each reply is a row in ticket_messages.
 -- RLS is enabled (deny-by-default); the backend uses the service-role key and
 -- enforces per-user ownership in application code, same as the other tables.
+--
+-- CONSOLIDATED (2026-07): equals former migrations 008, 009.
+--
+-- Unread notification badges: `last_sender_is_admin` records who wrote the
+-- most recent message; the two read timestamps record when each side last
+-- viewed the thread. A ticket is "unread" for a side when the other side sent
+-- last and they haven't looked since (updated_at > their last_read_at).
 create table if not exists tickets (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id) on delete cascade,
   subject text not null,
   status text not null default 'open',   -- open | in_progress | resolved | closed
   created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  updated_at timestamptz default now(),
+  last_sender_is_admin boolean not null default false,
+  user_last_read_at timestamptz,
+  admin_last_read_at timestamptz
 );
 
 create table if not exists ticket_messages (
