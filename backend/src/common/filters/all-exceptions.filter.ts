@@ -24,7 +24,11 @@ function isPostgrestError(err: unknown): err is PostgrestLikeError {
     'message' in err &&
     // Other SDK errors (e.g. Stripe) also carry code+message but tag a `type`;
     // Postgrest errors don't — so don't misclassify them as a DB error.
-    !('type' in err)
+    !('type' in err) &&
+    // Node system errors (fs, net: ENOENT, ECONNREFUSED, …) also carry
+    // code+message but always tag `errno`; those are server bugs, not bad
+    // requests — let them fall through to a logged 500.
+    !('errno' in err)
   );
 }
 
