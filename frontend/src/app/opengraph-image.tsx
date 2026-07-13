@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 
 // Default social/link-preview card for the whole site. Individual pages inherit
@@ -7,7 +9,11 @@ export const alt =
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-export default function OpengraphImage() {
+export default async function OpengraphImage() {
+  // The real app logo (866x288), inlined so satori can rasterize it.
+  const logo = await readFile(join(process.cwd(), 'public', 'logo.png'));
+  const logoSrc = `data:image/png;base64,${logo.toString('base64')}`;
+
   return new ImageResponse(
     (
       <div
@@ -24,25 +30,13 @@ export default function OpengraphImage() {
           fontFamily: 'sans-serif',
         }}
       >
-        <div
-          style={{
-            fontSize: 84,
-            fontWeight: 800,
-            letterSpacing: -2,
-            color: '#e0a53c',
-          }}
-        >
-          Dragonica
-        </div>
-        <div style={{ fontSize: 40, fontWeight: 700, marginTop: 4 }}>
-          Grind Tracker
-        </div>
+        <img src={logoSrc} width={780} height={259} alt="" />
         <div
           style={{
             display: 'flex',
             gap: 16,
-            marginTop: 40,
-            fontSize: 26,
+            marginTop: 48,
+            fontSize: 28,
             color: '#b8bcc6',
           }}
         >
