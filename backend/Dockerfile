@@ -13,5 +13,7 @@ ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
+# Runtime reference data read by ensureGameItem (resolved as dist/../../game-data).
+COPY --from=build /app/game-data ./game-data
 EXPOSE 3001
 CMD ["node", "dist/main"]
