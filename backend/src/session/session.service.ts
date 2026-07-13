@@ -5,6 +5,8 @@ import { TablesUpdate } from '../supabase/types/database.types';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { CreateDropDto } from './dto/create-drop.dto';
+import { CreateDropsBulkDto } from './dto/create-drops-bulk.dto';
+import { ListSessionsQueryDto } from './dto/list-sessions-query.dto';
 import { UpdateDropDto } from './dto/update-drop.dto';
 
 @Injectable()
@@ -14,15 +16,41 @@ export class SessionService {
     private readonly i18n: I18nService,
   ) {}
 
-  async findAllByUser(userId: string) {
-    const { data, error } = await this.supabase
+  async findAllByUser(userId: string, query?: ListSessionsQueryDto) {
+    let q = this.supabase
       .from('sessions')
       .select(
         '*, characters(*, classes(*)), dungeons(*), session_drops(*, items(*))',
+        { count: 'exact' },
       )
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .eq('user_id', userId);
 
+    if (query?.characterId) q = q.eq('character_id', query.characterId);
+    if (query?.dateFrom) q = q.gte('started_at', query.dateFrom);
+    if (query?.dateTo) {
+      // Inclusive through the end of the given day.
+      q = q.lte('started_at', `${query.dateTo}T23:59:59.999Z`);
+    }
+
+    if (query?.sortBy === 'gold') {
+      q = q.order('gold_earned', { ascending: false });
+    } else {
+      q = q
+        .order('started_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false });
+    }
+
+    // Paginated shape only when the client asks for a page; the dashboard
+    // still consumes the whole history as a plain array.
+    if (query?.page) {
+      const limit = query.limit ?? 10;
+      const from = (query.page - 1) * limit;
+      const { data, count, error } = await q.range(from, from + limit - 1);
+      if (error) throw error;
+      return { data, total: count ?? 0 };
+    }
+
+    const { data, error } = await q;
     if (error) throw error;
     return data;
   }
@@ -188,6 +216,27 @@ export class SessionService {
 
     if (error) throw error;
     return { deleted: ids.length };
+  }
+
+  async addDropsBulk(userId: string, dto: CreateDropsBulkDto) {
+    // RLS is bypassed (service-role key), so verify the session belongs to
+    // the user before attaching drops to it — once for the whole batch.
+    await this.findOneByUser(dto.sessionId, userId);
+
+    const { data, error } = await this.supabase
+      .from('session_drops')
+      .insert(
+        dto.drops.map((d) => ({
+          session_id: dto.sessionId,
+          item_id: d.itemId,
+          quantity: d.quantity,
+          price_each: d.priceEach ?? 0,
+        })),
+      )
+      .select('*, items(*)');
+
+    if (error) throw error;
+    return data;
   }
 
   async addDrop(userId: string, dto: CreateDropDto) {

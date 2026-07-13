@@ -6,6 +6,7 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -13,6 +14,8 @@ import { SessionService } from './session.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { CreateDropDto } from './dto/create-drop.dto';
+import { CreateDropsBulkDto } from './dto/create-drops-bulk.dto';
+import { ListSessionsQueryDto } from './dto/list-sessions-query.dto';
 import { UpdateDropDto } from './dto/update-drop.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -23,8 +26,11 @@ export class SessionController {
   constructor(private readonly sessionService: SessionService) {}
 
   @Get()
-  findAll(@CurrentUser() user: JwtPayload) {
-    return this.sessionService.findAllByUser(user.sub);
+  findAll(
+    @Query() query: ListSessionsQueryDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.sessionService.findAllByUser(user.sub, query);
   }
 
   @Get(':id')
@@ -40,6 +46,15 @@ export class SessionController {
   @Post('drops')
   addDrop(@Body() dto: CreateDropDto, @CurrentUser() user: JwtPayload) {
     return this.sessionService.addDrop(user.sub, dto);
+  }
+
+  // A whole run's drops in one request (grind save).
+  @Post('drops/bulk')
+  addDropsBulk(
+    @Body() dto: CreateDropsBulkDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.sessionService.addDropsBulk(user.sub, dto);
   }
 
   @Patch('drops/:dropId')
