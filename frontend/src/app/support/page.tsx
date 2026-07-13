@@ -523,13 +523,12 @@ function SupportPageInner() {
 
               {/* YouTube subscribe */}
               <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
-                <div className="mb-3 flex items-center gap-2">
+                <div className="mb-4 flex items-center gap-2">
                   <PlaySquare className="h-4 w-4 text-[#FF0000]" />
                   <h2 className="text-sm font-semibold text-foreground">
                     {t('youtubeTitle')}
                   </h2>
                 </div>
-                <p className="mb-4 text-xs text-muted">{t('youtubeSubtitle')}</p>
                 <div className="flex items-center gap-3">
                   <AvatarImg
                     src={ytAvatar}
@@ -549,7 +548,7 @@ function SupportPageInner() {
                     href="https://www.youtube.com/channel/UC2HoBQZT88jlscMBsWzg8KA?sub_confirmation=1"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex shrink-0 items-center gap-1.5 rounded-base bg-[#FF0000] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    className="flex min-w-[132px] shrink-0 items-center justify-center gap-1.5 rounded-base bg-[#FF0000] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                   >
                     <PlaySquare className="h-4 w-4" />
                     {t('subscribe')}
@@ -559,13 +558,12 @@ function SupportPageInner() {
 
               {/* Discord community */}
               <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-6">
-                <div className="mb-3 flex items-center gap-2">
+                <div className="mb-4 flex items-center gap-2">
                   <DiscordIcon className="h-4 w-4" />
                   <h2 className="text-sm font-semibold text-foreground">
                     {t('discordTitle')}
                   </h2>
                 </div>
-                <p className="mb-4 text-xs text-muted">{t('discordSubtitle')}</p>
                 <div className="flex items-center gap-3">
                   <AvatarImg
                     src={discordAvatar}
@@ -587,7 +585,7 @@ function SupportPageInner() {
                     href="https://discord.gg/sYCfyYAcdG"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex shrink-0 items-center gap-1.5 rounded-base bg-[#5865F2] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    className="flex min-w-[132px] shrink-0 items-center justify-center gap-1.5 rounded-base bg-[#5865F2] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                   >
                     <DiscordIcon className="h-4 w-4 [&_path]:fill-white" />
                     {t('joinDiscord')}
