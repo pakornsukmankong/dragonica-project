@@ -23,17 +23,31 @@ export function ImageUpload({ currentUrl, onUploaded, className = '' }: ImageUpl
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Images only, capped at 5 MB — mirrors the bucket's server-side limits
+    // (migration 010) so bad files fail fast with a friendly message.
+    const allowed: Record<string, string> = {
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+    };
+    const mimeExt = allowed[file.type];
+    if (!mimeExt || file.size > 5 * 1024 * 1024) {
+      toast({ title: t('invalidFile'), variant: 'error' });
+      return;
+    }
+
     // Preview
     const reader = new FileReader();
     reader.onload = () => setPreview(reader.result as string);
     reader.readAsDataURL(file);
 
-    // Upload to Supabase Storage directly
+    // Upload to Supabase Storage directly. The extension comes from the MIME
+    // type, never from the user-supplied filename.
     setIsUploading(true);
     try {
       const supabase = createClient();
-      const ext = file.name.split('.').pop() ?? 'png';
-      const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${mimeExt}`;
       const path = `images/${filename}`;
 
       const { error } = await supabase.storage

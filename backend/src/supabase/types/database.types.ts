@@ -681,6 +681,14 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      admin_user_stats: {
+        Args: Record<string, never>;
+        Returns: {
+          user_id: string;
+          session_count: number;
+          total_gold: number;
+        }[];
+      };
       increment_build_view: {
         Args: {
           build_slug: string;

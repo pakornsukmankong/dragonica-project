@@ -29,7 +29,7 @@ export class JwtAuthGuard implements CanActivate {
       );
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.slice('Bearer '.length);
 
     try {
       const jwksUri = `${this.supabaseUrl}/auth/v1/.well-known/jwks.json`;
@@ -38,8 +38,12 @@ export class JwtAuthGuard implements CanActivate {
         this.jwks = createRemoteJWKSet(new URL(jwksUri));
       }
 
+      // Pin the algorithm AND the audience: only Supabase user access tokens
+      // (aud "authenticated") are accepted, never other token types the same
+      // key set might sign in the future.
       const { payload } = await jwtVerify(token, this.jwks, {
         algorithms: ['ES256'],
+        audience: 'authenticated',
       });
 
       const user: JwtPayload = {

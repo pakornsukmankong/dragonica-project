@@ -47,7 +47,9 @@ async function bootstrap() {
       } catch {
         // fall through to reject on an unparseable origin
       }
-      return cb(new Error('Not allowed by CORS'), false);
+      // Disallow without throwing: the request gets no CORS headers (so the
+      // browser blocks it) instead of a 500 from the error handler.
+      return cb(null, false);
     },
     credentials: true,
   });

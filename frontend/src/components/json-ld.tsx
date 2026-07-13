@@ -4,8 +4,11 @@ export function JsonLd({ data }: { data: Record<string, unknown> }) {
   return (
     <script
       type="application/ld+json"
-      // Data is authored in-repo (no user input), so this is safe to inline.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      // Data is authored in-repo (no user input); "<" is still escaped so no
+      // string could ever close the tag early if that changes.
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(data).replace(/</g, '\\u003c'),
+      }}
     />
   );
 }

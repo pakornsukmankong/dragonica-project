@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Pencil, Check, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -51,10 +51,43 @@ export default function SessionsPage() {
   const [newQty, setNewQty] = useState(1);
   const [newPrice, setNewPrice] = useState(0);
 
-  const { data: sessions, isLoading } = useQuery<Session[]>({
-    queryKey: ['sessions'],
-    queryFn: () => api.get('/sessions'),
+  // Server-side pagination + filters: only the visible page crosses the wire.
+  const listParams = (extra: Record<string, string> = {}) => {
+    const p = new URLSearchParams(extra);
+    if (filterCharId) p.set('characterId', filterCharId);
+    if (filterDateFrom) p.set('dateFrom', filterDateFrom);
+    if (filterDateTo) p.set('dateTo', filterDateTo);
+    if (sortBy !== 'date') p.set('sortBy', sortBy);
+    return p.toString();
+  };
+  const { data: sessionPage, isLoading } = useQuery<{
+    data: Session[];
+    total: number;
+  }>({
+    queryKey: [
+      'sessions',
+      page,
+      filterCharId,
+      filterDateFrom,
+      filterDateTo,
+      sortBy,
+    ],
+    queryFn: () =>
+      api.get(
+        `/sessions?${listParams({ page: String(page), limit: String(PAGE_SIZE) })}`,
+      ),
+    placeholderData: (prev) => prev, // keep the old page while the next loads
   });
+  const pagedSessions = sessionPage?.data ?? [];
+  const totalSessions = sessionPage?.total ?? 0;
+
+  // Unfiltered grand total — drives the Delete All button and its dialog,
+  // which always act on every session regardless of active filters.
+  const { data: grandTotal } = useQuery<{ data: Session[]; total: number }>({
+    queryKey: ['sessions', 'grand-total'],
+    queryFn: () => api.get('/sessions?page=1&limit=1'),
+  });
+  const allCount = grandTotal?.total ?? 0;
 
   const { data: characters } = useQuery<Character[]>({
     queryKey: ['characters'],
@@ -198,46 +231,8 @@ export default function SessionsPage() {
       }),
   });
 
-  // Filter & sort logic
-  const filteredSessions = useMemo(() => {
-    let result = sessions ?? [];
-
-    if (filterCharId) {
-      result = result.filter((s) => s.character_id === filterCharId);
-    }
-
-    if (filterDateFrom) {
-      const from = new Date(filterDateFrom);
-      result = result.filter(
-        (s) => s.started_at && new Date(s.started_at) >= from,
-      );
-    }
-
-    if (filterDateTo) {
-      const to = new Date(filterDateTo);
-      to.setHours(23, 59, 59, 999);
-      result = result.filter(
-        (s) => s.started_at && new Date(s.started_at) <= to,
-      );
-    }
-
-    result = [...result].sort((a, b) => {
-      if (sortBy === 'gold') return Number(b.gold_earned) - Number(a.gold_earned);
-      return (
-        new Date(b.started_at ?? b.created_at).getTime() -
-        new Date(a.started_at ?? a.created_at).getTime()
-      );
-    });
-
-    return result;
-  }, [sessions, filterCharId, filterDateFrom, filterDateTo, sortBy]);
-
-  // Pagination derived from the filtered list.
-  const pageCount = Math.max(1, Math.ceil(filteredSessions.length / PAGE_SIZE));
-  const pagedSessions = filteredSessions.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE,
-  );
+  // Filtering/sorting/paging all happen server-side (see listParams).
+  const pageCount = Math.max(1, Math.ceil(totalSessions / PAGE_SIZE));
 
   // Reset to page 1 whenever filters/sort change the result set
   // (state adjusted during render — avoids an extra effect render pass).
@@ -249,11 +244,17 @@ export default function SessionsPage() {
   }
 
   // Export to a real .xlsx file (SheetJS lazy-loaded only on click).
+  // Fetches every matching session (not just the visible page).
   const handleExportExcel = async () => {
-    if (!filteredSessions.length) return;
+    if (!totalSessions) return;
+
+    const { data: allSessions } = await api.get<{
+      data: Session[];
+      total: number;
+    }>(`/sessions?${listParams({ page: '1', limit: '1000' })}`);
 
     const XLSX = await import('xlsx');
-    const rows = filteredSessions.map((s) => {
+    const rows = allSessions.map((s) => {
       const v = toParts(Number(s.gold_earned));
       return {
         Character: s.characters?.name ?? '',
@@ -309,12 +310,12 @@ export default function SessionsPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleExportExcel}
-                disabled={filteredSessions.length === 0}
+                disabled={totalSessions === 0}
                 className="rounded-base px-4 py-2.5 text-sm font-medium text-foreground border border-border hover:bg-raised transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('exportExcel')}
               </button>
-              {(sessions?.length ?? 0) > 0 && (
+              {allCount > 0 && (
                 <button
                   onClick={() => setConfirmDeleteAll(true)}
                   className="rounded-base px-4 py-2.5 text-sm font-medium text-[var(--fg-danger)] border border-[var(--border-danger)] hover:bg-[var(--danger-soft)] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] focus:ring-offset-2"
@@ -330,7 +331,7 @@ export default function SessionsPage() {
             open={confirmDeleteAll}
             onOpenChange={setConfirmDeleteAll}
             title={t('deleteAllTitle')}
-            description={t('deleteAllDesc', { count: sessions?.length ?? 0 })}
+            description={t('deleteAllDesc', { count: allCount })}
             confirmLabel={t('deleteAllConfirm')}
             danger
             loading={deleteAllMutation.isPending}
@@ -403,7 +404,7 @@ export default function SessionsPage() {
 
           {/* Results count */}
           <p className="text-xs text-muted mb-4">
-            {t('showing', { count: filteredSessions.length })}
+            {t('showing', { count: totalSessions })}
           </p>
 
           {editingSession && (
@@ -415,7 +416,7 @@ export default function SessionsPage() {
             />
           )}
 
-          {filteredSessions.length === 0 ? (
+          {pagedSessions.length === 0 ? (
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-10 text-center">
               <p className="text-sm text-muted">
                 {t('empty')}

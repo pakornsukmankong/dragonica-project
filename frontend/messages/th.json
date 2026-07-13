@@ -744,7 +744,8 @@
     "uploading": "กำลังอัปโหลด...",
     "change": "เปลี่ยน",
     "upload": "อัปโหลด",
-    "uploadFailed": "อัปโหลดไม่สำเร็จ"
+    "uploadFailed": "อัปโหลดไม่สำเร็จ",
+    "invalidFile": "รองรับเฉพาะรูปภาพ (PNG/JPG/WebP/GIF) ขนาดไม่เกิน 5 MB"
   },
   "rarity": {
     "common": "ทั่วไป",

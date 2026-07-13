@@ -122,15 +122,13 @@ export default function GrindPage() {
   const goldPerHour = durationMinutes > 0 ? Math.round((totalGold / durationMinutes) * 60) : 0;
 
   // Picking a game item: find-or-create its `items` row (drops reference the
-  // row by uuid), then append an entry. Price is intentionally left at 0 for
-  // the user to fill in — market value isn't the NPC price.
+  // row by uuid), then append an entry. Only the game id is sent — the server
+  // fills name/rarity/icon from its own manifest. Price is intentionally left
+  // at 0 for the user to fill in — market value isn't the NPC price.
   const addItemMutation = useMutation({
     mutationFn: async (game: GameItem) => {
       const row = await api.post<Item>('/game-data/items/ensure', {
         gameItemId: game.id,
-        name: game.name,
-        rarity: itemRarity(game) ?? undefined,
-        icon: game.icon,
       });
       return { row, game };
     },
@@ -188,17 +186,17 @@ export default function GrindPage() {
         startedAt: new Date().toISOString(),
       });
 
-      // Save drops
+      // Save all drops in one request.
       const activeDrops = drops.filter((d) => d.quantity > 0);
       if (activeDrops.length > 0 && session.id) {
-        for (const drop of activeDrops) {
-          await api.post('/sessions/drops', {
-            sessionId: session.id,
-            itemId: drop.itemId,
-            quantity: drop.quantity,
-            priceEach: drop.priceEach,
-          });
-        }
+        await api.post('/sessions/drops/bulk', {
+          sessionId: session.id,
+          drops: activeDrops.map((d) => ({
+            itemId: d.itemId,
+            quantity: d.quantity,
+            priceEach: d.priceEach,
+          })),
+        });
       }
 
       return session;

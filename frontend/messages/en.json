@@ -744,7 +744,8 @@
     "uploading": "Uploading...",
     "change": "Change",
     "upload": "Upload",
-    "uploadFailed": "Upload failed"
+    "uploadFailed": "Upload failed",
+    "invalidFile": "Images only (PNG/JPG/WebP/GIF), max 5 MB"
   },
   "rarity": {
     "common": "Common",
