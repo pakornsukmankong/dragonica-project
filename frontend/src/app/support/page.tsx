@@ -134,6 +134,41 @@ function SupportPageInner() {
   const ytAvatar = ytChannel?.avatarUrl || '/youtube-avatar.jpg';
   const ytSubs = ytChannel?.subscriberCount ?? 479;
 
+  // Live Discord server info from the public invite (no API key needed; the
+  // endpoint is CORS-enabled). Gives the real server icon + member count, with
+  // a self-hosted avatar fallback if the fetch is blocked or fails.
+  const DISCORD_INVITE = 'sYCfyYAcdG';
+  const { data: discordServer } = useQuery<{
+    name: string | null;
+    iconUrl: string | null;
+    memberCount: number | null;
+  } | null>({
+    queryKey: ['discord', 'invite', DISCORD_INVITE],
+    queryFn: async () => {
+      const res = await fetch(
+        `https://discord.com/api/v9/invites/${DISCORD_INVITE}?with_counts=true`,
+      );
+      if (!res.ok) return null;
+      const d = (await res.json()) as {
+        guild?: { id?: string; name?: string; icon?: string | null };
+        approximate_member_count?: number;
+      };
+      const g = d.guild;
+      return {
+        name: g?.name ?? null,
+        iconUrl:
+          g?.id && g?.icon
+            ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=128`
+            : null,
+        memberCount: d.approximate_member_count ?? null,
+      };
+    },
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+  });
+  const discordName = discordServer?.name || t('discordServerName');
+  const discordAvatar = discordServer?.iconUrl || '/discord-avatar.png';
+
   // After a TrueMoney redirect, Omise returns to ?donation=<id>. Pick that up,
   // open the modal in "confirming" mode, and clear the param from the URL.
   const returnedDonationId = searchParams.get('donation');
@@ -496,11 +531,11 @@ function SupportPageInner() {
                 </div>
                 <p className="mb-4 text-xs text-muted">{t('youtubeSubtitle')}</p>
                 <div className="flex items-center gap-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <AvatarImg
                     src={ytAvatar}
+                    fallback="/youtube-avatar.jpg"
                     alt={ytTitle}
-                    className="h-12 w-12 shrink-0 rounded-full outline outline-1 outline-[rgba(255,255,255,0.1)]"
+                    className="h-12 w-12 shrink-0 rounded-full object-cover outline outline-1 outline-[rgba(255,255,255,0.1)]"
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-foreground">
@@ -532,13 +567,21 @@ function SupportPageInner() {
                 </div>
                 <p className="mb-4 text-xs text-muted">{t('discordSubtitle')}</p>
                 <div className="flex items-center gap-3">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#5865F2]/15 outline outline-1 outline-[rgba(255,255,255,0.1)]">
-                    <DiscordIcon className="h-6 w-6" />
-                  </span>
+                  <AvatarImg
+                    src={discordAvatar}
+                    fallback="/discord-avatar.png"
+                    alt={discordName}
+                    className="h-12 w-12 shrink-0 rounded-full object-cover outline outline-1 outline-[rgba(255,255,255,0.1)]"
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-foreground">
-                      {t('discordServerName')}
+                      {discordName}
                     </p>
+                    {discordServer?.memberCount != null && (
+                      <p className="text-xs text-muted">
+                        {t('memberCount', { count: discordServer.memberCount })}
+                      </p>
+                    )}
                   </div>
                   <a
                     href="https://discord.gg/sYCfyYAcdG"
@@ -568,6 +611,33 @@ function SupportPageInner() {
         />
       )}
     </main>
+  );
+}
+
+// Avatar image that survives ad-blockers: third-party hosts like
+// yt3.ggpht.com are commonly blocked, so on load failure we swap to a
+// self-hosted fallback. no-referrer avoids hotlink rejection too.
+function AvatarImg({
+  src,
+  fallback,
+  alt,
+  className,
+}: {
+  src: string;
+  fallback: string;
+  alt: string;
+  className: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={failed ? fallback : src}
+      alt={alt}
+      referrerPolicy="no-referrer"
+      onError={() => setFailed(true)}
+      className={className}
+    />
   );
 }
 

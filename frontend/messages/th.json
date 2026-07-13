@@ -669,6 +669,7 @@
     "discordServerName": "FLOKZ CHANNEL",
     "joinDiscord": "เข้าร่วม",
     "subscriberCount": "{count} ผู้ติดตาม",
+    "memberCount": "{count} สมาชิก",
     "toastThankYou": "ขอบคุณสำหรับการสนับสนุน! ❤️",
     "toastExpired": "QR หมดอายุแล้ว",
     "toastFailed": "ชำระเงินไม่สำเร็จ",
