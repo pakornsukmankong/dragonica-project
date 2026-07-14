@@ -40,7 +40,6 @@ interface TimerState {
   durationMode: 'manual' | 'timer';
   elapsedMs: number;
   runningSince: number | null;
-  timerFinalized: boolean;
 }
 
 function loadTimerState(): TimerState | null {
@@ -56,7 +55,6 @@ function loadTimerState(): TimerState | null {
         typeof s.elapsedMs === 'number' && s.elapsedMs >= 0 ? s.elapsedMs : 0,
       runningSince:
         typeof s.runningSince === 'number' ? s.runningSince : null,
-      timerFinalized: s.timerFinalized === true,
     };
   } catch {
     return null;
@@ -82,7 +80,6 @@ export default function GrindPage() {
   const [durationMode, setDurationMode] = useState<'manual' | 'timer'>('manual');
   const [elapsedMs, setElapsedMs] = useState(0);
   const [runningSince, setRunningSince] = useState<number | null>(null);
-  const [timerFinalized, setTimerFinalized] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -102,7 +99,6 @@ export default function GrindPage() {
     setDurationMode(s.durationMode);
     setElapsedMs(s.elapsedMs);
     setRunningSince(s.runningSince);
-    setTimerFinalized(s.timerFinalized);
     setNow(Date.now());
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
@@ -118,23 +114,19 @@ export default function GrindPage() {
     try {
       window.localStorage.setItem(
         TIMER_STORAGE_KEY,
-        JSON.stringify({ durationMode, elapsedMs, runningSince, timerFinalized }),
+        JSON.stringify({ durationMode, elapsedMs, runningSince }),
       );
     } catch {
       // storage unavailable (private mode/quota) — timer just won't persist.
     }
-  }, [durationMode, elapsedMs, runningSince, timerFinalized]);
+  }, [durationMode, elapsedMs, runningSince]);
 
   const liveMs = elapsedMs + (runningSince != null ? now - runningSince : 0);
   const isTimerRunning = runningSince != null;
 
   const startTimer = () => {
     if (isTimerRunning) return;
-    // Starting fresh after a Stop clears the previous total; resuming a pause keeps it.
-    if (timerFinalized) {
-      setElapsedMs(0);
-      setTimerFinalized(false);
-    }
+    // Fresh start (elapsedMs 0) or resume after a pause (elapsedMs kept).
     const t0 = Date.now();
     setNow(t0);
     setRunningSince(t0);
@@ -145,15 +137,21 @@ export default function GrindPage() {
     setRunningSince(null);
   };
   const stopTimer = () => {
-    // Freeze the total (it stays as the session's duration) and mark it final.
-    setElapsedMs((ms) => ms + (isTimerRunning ? Date.now() - runningSince : 0));
+    // Finish timing: drop the measured time into the manual hour/minute fields
+    // and switch to Manual so the user can review or tweak it before saving.
+    const totalMs =
+      elapsedMs + (runningSince != null ? Date.now() - runningSince : 0);
+    const totalMinutes = Math.round(totalMs / 60000);
+    setHours(Math.floor(totalMinutes / 60));
+    setMinutes(totalMinutes % 60);
+    setDurationMode('manual');
+    // The value now lives in the manual fields — clear the stopwatch.
+    setElapsedMs(0);
     setRunningSince(null);
-    setTimerFinalized(true);
   };
   const resetTimer = () => {
     setElapsedMs(0);
     setRunningSince(null);
-    setTimerFinalized(false);
   };
   const [drops, setDrops] = useState<DropEntry[]>([]);
   // Wallet gold before/after the run (in copper) — the currency picked up is
@@ -481,8 +479,8 @@ export default function GrindPage() {
                       <button
                         type="button"
                         onClick={startTimer}
-                        aria-label={timerFinalized || liveMs === 0 ? t('timerStart') : t('timerResume')}
-                        title={timerFinalized || liveMs === 0 ? t('timerStart') : t('timerResume')}
+                        aria-label={liveMs === 0 ? t('timerStart') : t('timerResume')}
+                        title={liveMs === 0 ? t('timerStart') : t('timerResume')}
                         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-base bg-[var(--success)] text-white transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--focus)]"
                       >
                         <Play className="h-4 w-4" />
