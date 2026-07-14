@@ -40,7 +40,17 @@ function SkillCell({
   const capped = maxPointsAtLevel(skill, charLevel);
   const maxed = cur >= skill.max_level;
   const prereqs = skill.prerequisites ?? [];
-  const lvl = skill.levels.find((l) => l.level === Math.max(1, cur));
+  // Per-level stats/power reflect the currently invested level (level 1 as a
+  // preview when the skill has no points yet).
+  const shownLevel = Math.max(1, cur);
+  const lvl = skill.levels.find((l) => l.level === shownLevel);
+  const power = lvl?.power?.trim();
+  // Once a point is invested and the skill isn't maxed, preview the next
+  // level's power so the "grows when you level it" is visible in the tooltip.
+  const nextPower =
+    cur > 0 && cur < skill.max_level
+      ? skill.levels.find((l) => l.level === shownLevel + 1)?.power?.trim()
+      : undefined;
 
   return (
     <div className="group relative select-none" style={{ width: ICON }}>
@@ -107,6 +117,18 @@ function SkillCell({
       <div className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden w-52 -translate-x-1/2 rounded-md border border-border bg-[var(--raised)] p-2.5 text-[11px] leading-relaxed text-muted shadow-xl group-hover:block group-focus-within:block">
         <div className="mb-1 font-semibold text-foreground">{skill.name}</div>
         {skill.description && <p className="mb-1">{skill.description}</p>}
+        {power && (
+          <p className="mb-1 text-[11px]">
+            <span className="text-[var(--dark-gray)]">Lv.{shownLevel} DMG </span>
+            <span className="font-semibold tabular-nums text-gold">{power}</span>
+            {nextPower && nextPower !== power && (
+              <span className="text-[var(--dark-gray)]">
+                {' → '}
+                <span className="tabular-nums">{nextPower}</span>
+              </span>
+            )}
+          </p>
+        )}
         <div className="mb-1 flex flex-wrap gap-x-3 text-[10px] text-[var(--dark-gray)]">
           <span>Req Lv.{skill.req_level}</span>
           {!!lvl?.mp && lvl.mp > 0 && <span>MP {lvl.mp}</span>}
