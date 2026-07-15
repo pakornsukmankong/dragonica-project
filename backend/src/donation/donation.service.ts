@@ -32,6 +32,13 @@ const MAX_BAHT: Record<DonationChannel, number> = {
   card: 150000,
 };
 
+// Placeholder payer email used only when a guest donates without giving one.
+// Some gateways require a syntactically-valid email on the charge (Stripe
+// PromptPay puts it on billing_details); they don't verify the mailbox, and we
+// don't set receipt_email, so nothing is ever sent to it — it just satisfies
+// the required field so guests can pay without typing anything.
+const GUEST_DONOR_EMAIL = 'guest@dgn-grind.dev';
+
 type DonationStatus = 'pending' | 'successful' | 'failed' | 'expired';
 
 export interface DonationRow {
@@ -85,12 +92,24 @@ export class DonationService {
     }
   }
 
-  /** Start a donation: record it, create the gateway charge, return payment info. */
-  async create(userId: string, userEmail: string, dto: CreateDonationDto) {
+  /**
+   * Start a donation: record it, create the gateway charge, return payment info.
+   * `userId`/`userEmail` come from the JWT for signed-in donors; both are null/
+   * undefined for guests, who supply their own payer email via the DTO.
+   */
+  async create(
+    userId: string | null,
+    userEmail: string | undefined,
+    dto: CreateDonationDto,
+  ) {
     this.assertAmountWithinLimits(dto);
 
     const amountSatang = dto.amount * 100;
     const displayName = dto.displayName.trim() || 'Anonymous';
+    // Prefer the account email, then a guest-provided one, then a placeholder so
+    // gateways that require a payer email still work when a guest gives none.
+    const payerEmail =
+      userEmail?.trim() || dto.email?.trim() || GUEST_DONOR_EMAIL;
 
     // 1. Record the pending donation first so we always have a row to reconcile
     //    against, even if the charge call fails midway.
@@ -120,7 +139,7 @@ export class DonationService {
         channel: dto.channel,
         amount: amountSatang,
         phoneNumber: dto.phoneNumber,
-        email: userEmail,
+        email: payerEmail,
         referenceId: donation.id,
         returnUrl: `${this.config.get('FRONTEND_URL') || 'http://localhost:3000'}/support?donation=${donation.id}`,
       });
@@ -355,6 +374,32 @@ export class DonationService {
       .select('*')
       .eq('id', id)
       .eq('user_id', userId)
+      .single();
+
+    if (error || !data)
+      throw new NotFoundException(this.i18n.t('errors.donation.not_found'));
+
+    let donation = data as DonationRow;
+    if (donation.status === 'pending' && donation.omise_charge_id) {
+      donation = await this.syncFromProvider(
+        donation.omise_charge_id,
+        donation,
+      );
+    }
+    return donation;
+  }
+
+  /**
+   * Look up a donation by id alone (no owner scope) so a guest — who has no
+   * session — can poll the payment modal forward. The id is an unguessable
+   * uuid, so possessing it is the capability. Like {@link findOneByUser}, a
+   * still-pending row is re-checked against the gateway.
+   */
+  async findOnePublic(id: string) {
+    const { data, error } = await this.supabase
+      .from('donations')
+      .select('*')
+      .eq('id', id)
       .single();
 
     if (error || !data)

@@ -92,7 +92,7 @@ export type Database = {
           paid_at: string | null;
           provider: string;
           status: string;
-          user_id: string;
+          user_id: string | null;
         };
         Insert: {
           amount: number;
@@ -108,7 +108,7 @@ export type Database = {
           paid_at?: string | null;
           provider?: string;
           status?: string;
-          user_id: string;
+          user_id?: string | null;
         };
         Update: {
           amount?: number;
@@ -124,7 +124,7 @@ export type Database = {
           paid_at?: string | null;
           provider?: string;
           status?: string;
-          user_id?: string;
+          user_id?: string | null;
         };
         Relationships: [
           {

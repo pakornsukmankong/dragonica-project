@@ -38,12 +38,13 @@ export async function middleware(request: NextRequest) {
   const user = session?.user;
 
   // Protect routes
+  // NB: /support is intentionally public — anyone can donate without an
+  // account (the donation API endpoints allow guests).
   const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') ||
     request.nextUrl.pathname.startsWith('/characters') ||
     request.nextUrl.pathname.startsWith('/sessions') ||
     request.nextUrl.pathname.startsWith('/grind') ||
     request.nextUrl.pathname.startsWith('/admin') ||
-    request.nextUrl.pathname.startsWith('/support') ||
     request.nextUrl.pathname.startsWith('/tickets') ||
     request.nextUrl.pathname.startsWith('/settings');
 
