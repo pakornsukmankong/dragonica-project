@@ -28,7 +28,9 @@
     "settings": "ตั้งค่า",
     "logout": "ออกจากระบบ",
     "signIn": "เข้าสู่ระบบ",
-    "language": "ภาษา"
+    "language": "ภาษา",
+    "openMenu": "เปิดเมนู",
+    "closeMenu": "ปิดเมนู"
   },
   "items": {
     "title": "ฐานข้อมูลไอเทม",

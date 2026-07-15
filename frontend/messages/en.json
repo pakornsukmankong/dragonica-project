@@ -28,7 +28,9 @@
     "settings": "Settings",
     "logout": "Logout",
     "signIn": "Sign In",
-    "language": "Language"
+    "language": "Language",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "items": {
     "title": "Item Database",
