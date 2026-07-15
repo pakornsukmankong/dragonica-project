@@ -17,6 +17,7 @@ import {
   Sparkles,
   Gem,
   Skull,
+  Layers,
   LogOut,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -40,6 +41,7 @@ const NAV: NavItem[] = [
   { href: '/skills', key: 'skills', icon: Sparkles },
   { href: '/items', key: 'items', icon: Gem },
   { href: '/monsters', key: 'monsters', icon: Skull },
+  { href: '/skill-cards', key: 'skillCards', icon: Layers },
   { href: '/admin', key: 'admin', icon: Shield, admin: true },
   { href: '/guide', key: 'guide', icon: BookOpen },
   { href: '/support', key: 'support', icon: Heart },

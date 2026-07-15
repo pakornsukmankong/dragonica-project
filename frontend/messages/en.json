@@ -21,6 +21,7 @@
     "skills": "Skills",
     "items": "Item Database",
     "monsters": "Monsters",
+    "skillCards": "Skill Cards",
     "admin": "Admin",
     "guide": "User Guide",
     "support": "Support",
@@ -191,6 +192,27 @@
     "sort": {
       "levelAsc": "Level: low → high",
       "levelDesc": "Level: high → low",
+      "nameAsc": "Name: A → Z"
+    }
+  },
+  "skillCards": {
+    "title": "Skill Cards",
+    "subtitle": "Monster cards that unlock class skills — which monster drops each card and the level you claim it from the Wanted quest.",
+    "searchPlaceholder": "Search monster or skill...",
+    "resultCount": "{count} cards",
+    "empty": "No skill cards match your filters.",
+    "level": "Lv.",
+    "dropFrom": "Wanted quest",
+    "foundIn": "Found in",
+    "classes": {
+      "all": "All",
+      "Warrior": "Warrior",
+      "Magician": "Magician",
+      "Archer": "Archer",
+      "Thief": "Thief"
+    },
+    "sort": {
+      "levelAsc": "Level: low → high",
       "nameAsc": "Name: A → Z"
     }
   },
@@ -846,6 +868,16 @@
           "Use “Copy link” to share your plan instantly, or sign in and hit Save to keep it on your account with a short share link.",
           "Tick “Share to community” when saving to publish your build in the public gallery.",
           "Browse Community Builds to search other players' builds by class, like and comment on them, or clone one to tweak your own version."
+        ]
+      },
+      "skillCards": {
+        "title": "Skill Card Database",
+        "steps": [
+          "Open Skill Cards to see which cards unlock a skill for each class — no sign-in needed.",
+          "Pick a class tab, or search by monster or skill name.",
+          "Each card shows the skill it unlocks, the monster that drops it, the level range to accept its Wanted quest, and the maps that monster spawns in.",
+          "In game: accept the Wanted quest at the listed level, hunt that monster to collect the card, then use the card to unlock the skill at your Class Master.",
+          "A card can unlock a skill for two job branches at once — the sub-job is tagged next to each skill."
         ]
       },
       "support": {
