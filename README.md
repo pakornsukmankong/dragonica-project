@@ -2,6 +2,8 @@
 
 Track your grinding sessions, gold, and item drops across Dragonica.
 
+> Updates are announced automatically in our Discord `#patch-notes` channel whenever a change ships to production.
+
 ## Project Structure
 
 ```
