@@ -1,0 +1,89 @@
+name: Discord Patch Notes
+
+# ทุกครั้งที่ PR ถูก merge เข้า master จะยิง patch-note เข้าห้อง Discord
+# ต้องตั้งค่า secret ชื่อ DISCORD_PATCH_WEBHOOK = Webhook URL ของห้องนั้น
+on:
+  pull_request:
+    branches: [master]
+    types: [closed]
+
+jobs:
+  patch-note:
+    name: Announce merge to Discord
+    runs-on: ubuntu-latest
+    # ยิงเฉพาะตอน "merged" จริง (ปิด PR เฉยๆ ไม่ยิง)
+    if: github.event.pull_request.merged == true
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_PATCH_WEBHOOK }}
+        with:
+          script: |
+            const webhook = process.env.DISCORD_WEBHOOK;
+            if (!webhook) {
+              core.setFailed('ยังไม่ได้ตั้งค่า secret DISCORD_PATCH_WEBHOOK');
+              return;
+            }
+
+            const pr = context.payload.pull_request;
+
+            // ตัด prefix แบบ conventional-commit (feat/fix/chore(scope): ) ออก ให้อ่านง่ายขึ้น
+            const humanize = (s) =>
+              (s || '')
+                .trim()
+                .replace(/^(feat|fix|chore|docs|refactor|perf|test|build|ci|style|revert)(\([^)]*\))?!?:\s*/i, '')
+                .replace(/^./, (c) => c.toUpperCase());
+
+            const headline = humanize(pr.title);
+
+            // ดึง commit ทั้งหมดใน PR มาทำเป็น bullet (ข้าม merge commit)
+            const commits = await github.paginate(
+              github.rest.pulls.listCommits,
+              { ...context.repo, pull_number: pr.number, per_page: 100 },
+            );
+
+            const seen = new Set();
+            const bullets = [];
+            for (const c of commits) {
+              const subject = (c.commit.message || '').split('\n')[0];
+              if (/^Merge\b/i.test(subject)) continue;
+              const line = humanize(subject);
+              if (!line || seen.has(line.toLowerCase())) continue;
+              seen.add(line.toLowerCase());
+              bullets.push(`• ${line}`);
+            }
+
+            // ถ้ามี PR description ที่คนเขียนไว้ ให้ขึ้นก่อน แล้วตามด้วยรายการการเปลี่ยนแปลง
+            const body = (pr.body || '').trim();
+            const parts = [];
+            if (body) parts.push(body);
+            if (bullets.length) {
+              parts.push('**การเปลี่ยนแปลงในรอบนี้**');
+              // จำกัดไม่ให้ยาวเกิน embed limit ของ Discord (4096 ตัวอักษร)
+              parts.push(bullets.slice(0, 25).join('\n'));
+            }
+            let description = parts.join('\n\n');
+            if (description.length > 4000) description = description.slice(0, 3990) + '\n…';
+
+            const payload = {
+              username: 'Dragonica Patch Notes',
+              embeds: [
+                {
+                  title: `🚀 ${headline}`.slice(0, 256),
+                  url: pr.html_url,
+                  description: description || 'อัปเดตใหม่ถูกปล่อยแล้ว',
+                  color: 0x5865f2,
+                  footer: { text: `PR #${pr.number} · โดย ${pr.user.login}` },
+                  timestamp: pr.merged_at,
+                },
+              ],
+            };
+
+            const res = await fetch(webhook, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+              core.setFailed(`Discord ตอบกลับ ${res.status}: ${await res.text()}`);
+            }
