@@ -1,7 +1,11 @@
 name: Discord Patch Notes
 
-# ทุกครั้งที่ PR ถูก merge เข้า master จะยิง patch-note เข้าห้อง Discord
-# ต้องตั้งค่า secret ชื่อ DISCORD_PATCH_WEBHOOK = Webhook URL ของห้องนั้น
+# ทุกครั้งที่ PR ถูก merge เข้า master จะให้ Claude (Sonnet 5) เขียน patch-note
+# ภาษาไทยอ่านง่าย แล้วยิงเข้าห้อง Discord
+#
+# ต้องตั้งค่า secret 2 ตัว:
+#   - DISCORD_PATCH_WEBHOOK  = Webhook URL ของห้อง #patch-notes
+#   - ANTHROPIC_API_KEY      = API key ของ Anthropic (Claude)
 on:
   pull_request:
     branches: [master]
@@ -17,45 +21,104 @@ jobs:
       - uses: actions/github-script@v7
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_PATCH_WEBHOOK }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         with:
           script: |
             const webhook = process.env.DISCORD_WEBHOOK;
+            const apiKey = process.env.ANTHROPIC_API_KEY;
             if (!webhook) {
               core.setFailed('ยังไม่ได้ตั้งค่า secret DISCORD_PATCH_WEBHOOK');
+              return;
+            }
+            if (!apiKey) {
+              core.setFailed('ยังไม่ได้ตั้งค่า secret ANTHROPIC_API_KEY');
               return;
             }
 
             const pr = context.payload.pull_request;
 
-            // ตัด prefix แบบ conventional-commit (feat/fix/chore(scope): ) ออก ให้อ่านง่ายขึ้น
-            const humanize = (s) =>
-              (s || '')
-                .trim()
-                .replace(/^(feat|fix|chore|docs|refactor|perf|test|build|ci|style|revert)(\([^)]*\))?!?:\s*/i, '')
-                .replace(/^./, (c) => c.toUpperCase());
-
-            const headline = humanize(pr.title);
-
-            // ดึง commit ทั้งหมดใน PR มาทำเป็น bullet (ข้าม merge commit)
+            // ดึง commit ทั้งหมดใน PR มาเป็นบริบทให้ Claude (ข้าม merge commit)
             const commits = await github.paginate(
               github.rest.pulls.listCommits,
               { ...context.repo, pull_number: pr.number, per_page: 100 },
             );
+            const commitLines = commits
+              .map((c) => (c.commit.message || '').split('\n')[0])
+              .filter((s) => s && !/^Merge\b/i.test(s));
 
-            const seen = new Set();
-            const bullets = [];
-            for (const c of commits) {
-              const subject = (c.commit.message || '').split('\n')[0];
-              if (/^Merge\b/i.test(subject)) continue;
-              const line = humanize(subject);
-              if (!line || seen.has(line.toLowerCase())) continue;
-              seen.add(line.toLowerCase());
-              bullets.push(`• ${line}`);
+            // บริบทที่ส่งให้ Claude — title + คำอธิบาย (body) + รายการ commit
+            const prBody = (pr.body || '').trim().slice(0, 4000);
+            const contextText = [
+              `PR title: ${pr.title}`,
+              prBody ? `PR description:\n${prBody}` : 'PR description: (ไม่มี)',
+              `Commits:\n${commitLines.map((l) => `- ${l}`).join('\n')}`,
+            ].join('\n\n');
+
+            const system =
+              'คุณเป็นคนเขียน patch note ภาษาไทยให้เว็บแอป DGN-GRIND ' +
+              '(เว็บติดตามการฟาร์ม/ไอเทม/สกิลของเกม Dragonica) สำหรับผู้เล่นทั่วไป ' +
+              'จากข้อมูล PR ที่ถูก merge ให้สรุปเป็นข่าวอัปเดตสั้นๆ ที่คนทั่วไป (ไม่ใช่โปรแกรมเมอร์) ' +
+              'เข้าใจว่ามีอะไรใหม่หรือแก้อะไรไป ' +
+              'กติกา: ใช้ภาษาไทยเป็นกันเอง กระชับ ไม่ใช้ศัพท์เทคนิค/ชื่อไฟล์/ชื่อ branch ' +
+              'ห้ามแต่งเรื่องเกินจากข้อมูลที่ให้มา ' +
+              'ตอบเป็น JSON เท่านั้น: title = หัวข้อสั้นๆ 1 บรรทัด (ใส่ emoji นำหน้าได้ 1 ตัว), ' +
+              'bullets = อาร์เรย์ของ bullet 1-6 ข้อ แต่ละข้อคือสิ่งที่เปลี่ยนไปแบบอ่านง่าย';
+
+            // เรียก Claude Sonnet 5 (ปิด thinking เพื่อความเร็ว/ประหยัด, บังคับ output เป็น JSON)
+            let title = pr.title;
+            let bullets = commitLines.slice(0, 6);
+            try {
+              const res = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                  'content-type': 'application/json',
+                  'x-api-key': apiKey,
+                  'anthropic-version': '2023-06-01',
+                },
+                body: JSON.stringify({
+                  model: 'claude-sonnet-5',
+                  max_tokens: 1024,
+                  thinking: { type: 'disabled' },
+                  system,
+                  output_config: {
+                    format: {
+                      type: 'json_schema',
+                      schema: {
+                        type: 'object',
+                        properties: {
+                          title: { type: 'string' },
+                          bullets: { type: 'array', items: { type: 'string' } },
+                        },
+                        required: ['title', 'bullets'],
+                        additionalProperties: false,
+                      },
+                    },
+                  },
+                  messages: [{ role: 'user', content: contextText }],
+                }),
+              });
+              if (!res.ok) {
+                throw new Error(`Anthropic ตอบกลับ ${res.status}: ${await res.text()}`);
+              }
+              const data = await res.json();
+              const text = (data.content || [])
+                .filter((b) => b.type === 'text')
+                .map((b) => b.text)
+                .join('');
+              const parsed = JSON.parse(text);
+              if (parsed.title) title = String(parsed.title).trim();
+              if (Array.isArray(parsed.bullets) && parsed.bullets.length) {
+                bullets = parsed.bullets.map((b) => String(b).trim()).filter(Boolean);
+              }
+            } catch (err) {
+              // ถ้า Claude ล้มเหลว ให้ fallback เป็น title + commit ดิบๆ แทน (ไม่ให้ workflow พัง)
+              core.warning(`เรียก Claude ไม่สำเร็จ ใช้ fallback แทน: ${err.message}`);
             }
 
-            // แสดงเฉพาะ bullet ของสิ่งที่แก้ไป (ไม่เอา PR description ทั้งก้อนมา)
-            // จำกัดไม่ให้ยาวเกิน embed limit ของ Discord (4096 ตัวอักษร)
-            let description = bullets.slice(0, 25).join('\n');
+            let description = bullets
+              .slice(0, 25)
+              .map((b) => `• ${b}`)
+              .join('\n');
             if (!description) description = '• อัปเดตใหม่ถูกปล่อยแล้ว';
             if (description.length > 4000) description = description.slice(0, 3990) + '\n…';
 
@@ -63,7 +126,7 @@ jobs:
               username: 'DGN-GRIND Patch Notes',
               embeds: [
                 {
-                  title: headline.slice(0, 256),
+                  title: title.slice(0, 256),
                   url: pr.html_url,
                   description,
                   color: 0x5865f2,
@@ -72,11 +135,11 @@ jobs:
               ],
             };
 
-            const res = await fetch(webhook, {
+            const dRes = await fetch(webhook, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
             });
-            if (!res.ok) {
-              core.setFailed(`Discord ตอบกลับ ${res.status}: ${await res.text()}`);
+            if (!dRes.ok) {
+              core.setFailed(`Discord ตอบกลับ ${dRes.status}: ${await dRes.text()}`);
             }
