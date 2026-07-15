@@ -688,8 +688,8 @@ function PaymentModal({
       : `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-sm rounded-base border border-border bg-surface p-6 text-center shadow-lg">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm">
+      <div className="relative my-auto max-h-[90dvh] w-full max-w-sm overflow-y-auto rounded-base border border-border bg-surface p-6 text-center shadow-lg">
         <button
           onClick={onClose}
           className="absolute right-3 top-3 text-muted hover:text-foreground"

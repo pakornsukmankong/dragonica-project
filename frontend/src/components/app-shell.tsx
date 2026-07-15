@@ -18,6 +18,8 @@ import {
   Gem,
   Skull,
   LogOut,
+  Menu,
+  X,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
@@ -160,11 +162,72 @@ function Brand() {
   );
 }
 
+function UserFooter({
+  isLoading,
+  user,
+  displayName,
+  handleLogout,
+  t,
+}: {
+  isLoading: boolean;
+  user: User | null;
+  displayName: string;
+  handleLogout: () => void;
+  t: ReturnType<typeof useTranslations<'nav'>>;
+}) {
+  if (isLoading) {
+    return <div className="h-9 animate-pulse rounded-base bg-raised" />;
+  }
+  if (user) {
+    return (
+      <div className="space-y-2">
+        <div
+          className="truncate px-2 text-xs font-medium text-foreground"
+          title={user.email ?? ''}
+        >
+          {displayName}
+        </div>
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-2 rounded-base border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-[var(--border-danger)] hover:text-[var(--fg-danger)]"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          {t('logout')}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <Link
+      href="/login"
+      className="block rounded-base bg-[var(--blue)] px-3 py-2 text-center text-xs font-semibold text-[#1b1407] shadow-button hover:opacity-90"
+    >
+      {t('signIn')}
+    </Link>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations('nav');
   const { user, isAdmin, isLoading } = useAuthNav();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  // Lock body scroll while the drawer is open so the page behind it stays put.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [menuOpen]);
 
   // Display name (falls back to email when unset). Shared cache with Settings.
   const { data: me } = useQuery<{ username: string | null; email: string }>({
@@ -220,37 +283,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           />
         </nav>
         <div className="space-y-2 border-t border-border p-3">
-          {isLoading ? (
-            <div className="h-9 animate-pulse rounded-base bg-raised" />
-          ) : user ? (
-            <div className="space-y-2">
-              <div
-                className="truncate px-2 text-xs font-medium text-foreground"
-                title={user.email ?? ''}
-              >
-                {displayName}
-              </div>
-              <button
-                onClick={handleLogout}
-                className="flex w-full items-center gap-2 rounded-base border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-[var(--border-danger)] hover:text-[var(--fg-danger)]"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                {t('logout')}
-              </button>
-            </div>
-          ) : (
-            <Link
-              href="/login"
-              className="block rounded-base bg-[var(--blue)] px-3 py-2 text-center text-xs font-semibold text-[#1b1407] shadow-button hover:opacity-90"
-            >
-              {t('signIn')}
-            </Link>
-          )}
+          <UserFooter
+            isLoading={isLoading}
+            user={user}
+            displayName={displayName}
+            handleLogout={handleLogout}
+            t={t}
+          />
         </div>
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 backdrop-blur-sm lg:hidden">
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-2 backdrop-blur-sm lg:hidden">
+        <button
+          onClick={() => setMenuOpen(true)}
+          className="flex h-10 w-10 items-center justify-center rounded-base text-muted hover:bg-raised hover:text-foreground"
+          aria-label={t('openMenu')}
+          aria-expanded={menuOpen}
+        >
+          <Menu className="h-5 w-5" />
+        </button>
         <Link href="/dashboard" className="flex items-center">
           <Image
             src="/logo.png"
@@ -261,21 +313,76 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="h-8 w-auto object-contain"
           />
         </Link>
-        {user && (
+        {user ? (
           <button
             onClick={handleLogout}
-            className="rounded-base border border-border p-1.5 text-muted hover:text-[var(--fg-danger)]"
+            className="flex h-10 w-10 items-center justify-center rounded-base text-muted hover:text-[var(--fg-danger)]"
             aria-label={t('logout')}
           >
             <LogOut className="h-4 w-4" />
           </button>
+        ) : (
+          <span className="h-10 w-10" />
         )}
       </header>
 
-      {/* Mobile horizontal nav */}
-      <nav className="sticky top-14 z-30 flex gap-1 overflow-x-auto border-b border-border bg-surface/95 px-2 py-2 backdrop-blur-sm lg:hidden">
-        <NavLinks items={items} pathname={pathname} t={t} badgeFor={badgeFor} />
-      </nav>
+      {/* Mobile drawer */}
+      <div
+        className={`fixed inset-0 z-50 lg:hidden ${
+          menuOpen ? '' : 'pointer-events-none'
+        }`}
+        aria-hidden={!menuOpen}
+      >
+        {/* Backdrop */}
+        <div
+          onClick={() => setMenuOpen(false)}
+          className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${
+            menuOpen ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+        {/* Panel */}
+        <aside
+          className={`absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col border-r border-border bg-surface shadow-card transition-transform duration-200 ease-out ${
+            menuOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <div className="flex h-16 items-center justify-between border-b border-border pl-4 pr-2">
+            <Image
+              src="/logo.png"
+              alt={t('brand')}
+              width={866}
+              height={288}
+              priority
+              className="h-8 w-auto object-contain"
+            />
+            <button
+              onClick={() => setMenuOpen(false)}
+              className="flex h-10 w-10 items-center justify-center rounded-base text-muted hover:bg-raised hover:text-foreground"
+              aria-label={t('closeMenu')}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+            <NavLinks
+              items={items}
+              pathname={pathname}
+              t={t}
+              badgeFor={badgeFor}
+              onNavigate={() => setMenuOpen(false)}
+            />
+          </nav>
+          <div className="space-y-2 border-t border-border p-3">
+            <UserFooter
+              isLoading={isLoading}
+              user={user}
+              displayName={displayName}
+              handleLogout={handleLogout}
+              t={t}
+            />
+          </div>
+        </aside>
+      </div>
 
       {children}
     </div>
