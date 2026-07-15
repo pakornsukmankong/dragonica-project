@@ -14,8 +14,10 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -36,17 +38,26 @@ export class DonationController {
     private readonly stripe: StripeService,
   ) {}
 
+  // Public: anyone can donate, with or without an account. A signed-in donor is
+  // attributed (OptionalJwtAuthGuard attaches the user); a guest stores
+  // user_id = null and supplies their own payer email via the DTO. Tighter
+  // rate limit than the global default since this is an unauthenticated write
+  // that provisions a gateway charge.
   @Post()
-  @UseGuards(JwtAuthGuard)
-  create(@Body() dto: CreateDonationDto, @CurrentUser() user: JwtPayload) {
-    return this.donationService.create(user.sub, user.email, dto);
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @UseGuards(OptionalJwtAuthGuard)
+  create(
+    @Body() dto: CreateDonationDto,
+    @CurrentUser() user: JwtPayload | undefined,
+  ) {
+    return this.donationService.create(user?.sub ?? null, user?.email, dto);
   }
 
   // Manual mode only: render the PromptPay QR without recording anything. The
   // pending donation row is created only once the donor confirms the transfer
-  // (a normal POST /donations), so unpaid QRs never clutter the ledger.
+  // (a normal POST /donations), so unpaid QRs never clutter the ledger. Public.
   @Post('preview')
-  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   preview(@Body() dto: CreateDonationDto) {
     return this.donationService.preview(dto);
   }
@@ -99,8 +110,9 @@ export class DonationController {
 
   // Which payment provider is active, so the frontend can render the matching
   // flow (e.g. manual PromptPay + admin confirmation vs. a live gateway).
+  // Public: the frontend needs the active provider/channels/min before the
+  // donor is (or isn't) signed in.
   @Get('config')
-  @UseGuards(JwtAuthGuard)
   config() {
     return this.donationService.getConfig();
   }
@@ -148,8 +160,9 @@ export class DonationController {
     return this.donationService.remove(id);
   }
 
+  // Public: the thank-you wall is shown to everyone (it already only exposes
+  // successful, non-withheld entries with amounts masked server-side).
   @Get('wall')
-  @UseGuards(JwtAuthGuard)
   wall() {
     return this.donationService.wall();
   }
@@ -160,9 +173,11 @@ export class DonationController {
     return this.donationService.findAllByUser(user.sub);
   }
 
+  // Public: the payment modal polls its own donation by id (an unguessable
+  // uuid) to drive the status forward. A guest has no session, so this cannot
+  // be scoped to a user — the id itself is the capability.
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.donationService.findOneByUser(id, user.sub);
+  findOne(@Param('id') id: string) {
+    return this.donationService.findOnePublic(id);
   }
 }

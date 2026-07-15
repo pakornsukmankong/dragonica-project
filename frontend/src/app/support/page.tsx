@@ -17,6 +17,7 @@ import {
   PlaySquare,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/toast';
 import { NumericInput } from '@/components/numeric-input';
 import { Select } from '@/components/select';
@@ -87,6 +88,7 @@ function SupportPageInner() {
   const [channel, setChannel] = useState<DonationChannel>('promptpay');
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [hideAmount, setHideAmount] = useState(true);
   const [nameTouched, setNameTouched] = useState(false);
@@ -96,10 +98,22 @@ function SupportPageInner() {
   const [charge, setCharge] = useState<DonationCharge | null>(null);
   const notified = useRef(false);
 
-  // Prefill the display name from the user's profile.
+  // The Support page is public: a visitor may or may not be signed in. `null`
+  // while we're still resolving the session (avoids flashing the guest-only
+  // email field before we know).
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  useEffect(() => {
+    createClient()
+      .auth.getSession()
+      .then(({ data }) => setIsAuthed(!!data.session));
+  }, []);
+
+  // Prefill the display name from the user's profile — signed-in donors only
+  // (the endpoint requires a JWT; a guest would just 401).
   const { data: me } = useQuery<{ username: string | null; email: string }>({
     queryKey: ['me'],
     queryFn: () => api.get('/auth/me'),
+    enabled: isAuthed === true,
   });
   // (state adjusted during render — React bails out when the value is unchanged)
   if (me && !nameTouched && !displayName) {
@@ -228,6 +242,7 @@ function SupportPageInner() {
     amount: Number(amount),
     channel,
     displayName: displayName.trim() || 'Anonymous',
+    email: email.trim() || undefined,
     message: message.trim() || undefined,
     phoneNumber: channel === 'truemoney' ? phone.trim() : undefined,
     hideAmount,
@@ -304,9 +319,15 @@ function SupportPageInner() {
     isManual ? previewMut.mutate() : createMut.mutate();
 
   const phoneValid = /^0\d{9}$/.test(phone.trim());
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  // Guests may optionally add a payer email (a signed-in donor's account email
+  // is used automatically). It's never required — the backend falls back to a
+  // placeholder for gateways that need one — but if given it must be valid.
+  const showEmailField = isAuthed === false && !isManual;
   const canSubmit =
     Number(amount) >= minAmount &&
     (channel !== 'truemoney' || phoneValid) &&
+    (!email.trim() || emailValid) &&
     // Wait for the provider to be known so we pick the right flow. This only
     // gates the initial load; if the config request fails, `configLoading`
     // still clears and we fall back to the gateway path (createMut) unchanged.
@@ -416,6 +437,31 @@ function SupportPageInner() {
                   {phone && !phoneValid && (
                     <p className="mt-1 text-xs text-[var(--fg-danger)]">
                       {t('phoneError')}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Payer email — optional, guests only (signed-in donors use
+                  their account email). Left blank → backend uses a placeholder. */}
+              {showEmailField && (
+                <div className="mb-5">
+                  <label className="block text-xs font-medium text-muted mb-2">
+                    {t('emailLabel')}
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    inputMode="email"
+                    autoComplete="email"
+                    maxLength={254}
+                    placeholder={t('emailPlaceholder')}
+                    className="w-full rounded-base border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-[var(--focus)]"
+                  />
+                  {email && !emailValid && (
+                    <p className="mt-1 text-xs text-[var(--fg-danger)]">
+                      {t('emailError')}
                     </p>
                   )}
                 </div>
@@ -751,6 +797,13 @@ function PaymentModal({
                 className="h-full w-full"
               />
             </div>
+            {/* Gateway (Stripe) QR: the payee shown in the banking app is the
+                Stripe entity, not us — reassure the donor it's expected. */}
+            {!isManual && (
+              <p className="mb-3 rounded-base bg-raised px-3 py-2 text-[11px] leading-relaxed text-muted">
+                {t('modalRecipientNote')}
+              </p>
+            )}
             {isManual ? (
               // No gateway: the donor confirms they've transferred, then waits
               // for an admin to verify and publish the donation.
