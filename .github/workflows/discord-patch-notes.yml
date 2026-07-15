@@ -53,28 +53,22 @@ jobs:
               bullets.push(`• ${line}`);
             }
 
-            // ถ้ามี PR description ที่คนเขียนไว้ ให้ขึ้นก่อน แล้วตามด้วยรายการการเปลี่ยนแปลง
-            const body = (pr.body || '').trim();
-            const parts = [];
-            if (body) parts.push(body);
-            if (bullets.length) {
-              parts.push('**การเปลี่ยนแปลงในรอบนี้**');
-              // จำกัดไม่ให้ยาวเกิน embed limit ของ Discord (4096 ตัวอักษร)
-              parts.push(bullets.slice(0, 25).join('\n'));
-            }
-            let description = parts.join('\n\n');
+            // แสดงเฉพาะ bullet ของสิ่งที่แก้ไป (ไม่เอา PR description ทั้งก้อนมา)
+            // จำกัดไม่ให้ยาวเกิน embed limit ของ Discord (4096 ตัวอักษร)
+            let description = bullets.slice(0, 25).join('\n');
+            if (!description) description = '• อัปเดตใหม่ถูกปล่อยแล้ว';
             if (description.length > 4000) description = description.slice(0, 3990) + '\n…';
 
             const payload = {
               username: 'Dragonica Patch Notes',
               embeds: [
                 {
-                  title: `🚀 ${headline}`.slice(0, 256),
+                  title: headline.slice(0, 256),
                   url: pr.html_url,
-                  description: description || 'อัปเดตใหม่ถูกปล่อยแล้ว',
+                  description,
                   color: 0x5865f2,
                   footer: { text: `PR #${pr.number} · โดย ${pr.user.login}` },
-                  timestamp: pr.merged_at,
+                  timestamp: pr.merged_at, // Discord แสดงเป็นวันที่ท้าย embed ให้อัตโนมัติ
                 },
               ],
             };
