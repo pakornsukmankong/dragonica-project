@@ -60,7 +60,7 @@ jobs:
             if (description.length > 4000) description = description.slice(0, 3990) + '\n…';
 
             const payload = {
-              username: 'Dragonica Patch Notes',
+              username: 'DGN-GRIND Patch Notes',
               embeds: [
                 {
                   title: headline.slice(0, 256),
