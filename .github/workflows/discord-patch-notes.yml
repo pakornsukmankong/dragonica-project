@@ -67,7 +67,6 @@ jobs:
                   url: pr.html_url,
                   description,
                   color: 0x5865f2,
-                  footer: { text: `PR #${pr.number} · โดย ${pr.user.login}` },
                   timestamp: pr.merged_at, // Discord แสดงเป็นวันที่ท้าย embed ให้อัตโนมัติ
                 },
               ],
