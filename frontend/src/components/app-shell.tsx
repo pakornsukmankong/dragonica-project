@@ -32,38 +32,33 @@ type NavItem = {
   key: string;
   icon: typeof LayoutDashboard;
   admin?: boolean;
+  // Middleware bounces guests off these to /login, so they are hidden from the
+  // nav rather than offered as links that go nowhere. Keep in sync with the
+  // protected-route list in middleware.ts.
+  auth?: boolean;
 };
 
 const NAV: NavItem[] = [
-  { href: '/dashboard', key: 'dashboard', icon: LayoutDashboard },
-  { href: '/grind', key: 'grind', icon: Swords },
-  { href: '/characters', key: 'characters', icon: Users },
-  { href: '/sessions', key: 'sessions', icon: ScrollText },
+  { href: '/dashboard', key: 'dashboard', icon: LayoutDashboard, auth: true },
+  { href: '/grind', key: 'grind', icon: Swords, auth: true },
+  { href: '/characters', key: 'characters', icon: Users, auth: true },
+  { href: '/sessions', key: 'sessions', icon: ScrollText, auth: true },
   { href: '/skills', key: 'skills', icon: Sparkles },
   { href: '/items', key: 'items', icon: Gem },
   { href: '/monsters', key: 'monsters', icon: Skull },
-  { href: '/admin', key: 'admin', icon: Shield, admin: true },
+  { href: '/admin', key: 'admin', icon: Shield, admin: true, auth: true },
   { href: '/guide', key: 'guide', icon: BookOpen },
   { href: '/support', key: 'support', icon: Heart },
-  { href: '/tickets', key: 'tickets', icon: LifeBuoy },
-  { href: '/settings', key: 'settings', icon: Settings },
+  { href: '/tickets', key: 'tickets', icon: LifeBuoy, auth: true },
+  { href: '/settings', key: 'settings', icon: Settings, auth: true },
 ];
 
 // Routes that render full-bleed without the app chrome.
 const BARE_ROUTES = ['/', '/login'];
 
-// Kept in sync with the protected-route list in middleware.ts — signing out
-// while on one of these would be bounced to /login anyway, so we go there
-// ourselves; anywhere else the guest can keep reading the page.
-const PROTECTED_ROUTES = [
-  '/dashboard',
-  '/characters',
-  '/sessions',
-  '/grind',
-  '/admin',
-  '/tickets',
-  '/settings',
-];
+// Signing out while on one of these would be bounced to /login anyway, so we go
+// there ourselves; anywhere else the guest can keep reading the page.
+const PROTECTED_ROUTES = NAV.filter((i) => i.auth).map((i) => i.href);
 
 function useAuthNav() {
   const [user, setUser] = useState<User | null>(null);
@@ -78,18 +73,21 @@ function useAuthNav() {
     // every page load. The middleware already gate-keeps protected routes, so
     // for nav display (name + admin toggle) the local session is enough and
     // makes the sidebar appear without waiting on a network call.
-    supabase.auth.getSession().then(async ({ data }) => {
+    // The nav is gated on `user`, so settle that from the local session first
+    // and let the (networked) admin lookup resolve on its own — otherwise the
+    // member links would wait on the profiles round-trip before appearing.
+    supabase.auth.getSession().then(({ data }) => {
       const currentUser = data.session?.user ?? null;
       setUser(currentUser);
+      setIsLoading(false);
       if (currentUser) {
-        const { data: profile } = await supabase
+        supabase
           .from('profiles')
           .select('role')
           .eq('id', currentUser.id)
-          .single();
-        setIsAdmin(profile?.role === 'admin');
+          .single()
+          .then(({ data: profile }) => setIsAdmin(profile?.role === 'admin'));
       }
-      setIsLoading(false);
     });
 
     const {
@@ -284,7 +282,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  const items = NAV.filter((i) => !i.admin || isAdmin);
+  const items = NAV.filter(
+    (i) => (!i.admin || isAdmin) && (!i.auth || Boolean(user)),
+  );
 
   return (
     <div className="min-h-screen lg:pl-60">
