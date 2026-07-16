@@ -52,6 +52,19 @@ const NAV: NavItem[] = [
 // Routes that render full-bleed without the app chrome.
 const BARE_ROUTES = ['/', '/login'];
 
+// Kept in sync with the protected-route list in middleware.ts — signing out
+// while on one of these would be bounced to /login anyway, so we go there
+// ourselves; anywhere else the guest can keep reading the page.
+const PROTECTED_ROUTES = [
+  '/dashboard',
+  '/characters',
+  '/sessions',
+  '/grind',
+  '/admin',
+  '/tickets',
+  '/settings',
+];
+
 function useAuthNav() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -260,7 +273,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push('/login');
+    if (PROTECTED_ROUTES.some((route) => pathname.startsWith(route))) {
+      router.push('/login');
+    } else {
+      router.refresh();
+    }
   };
 
   if (BARE_ROUTES.includes(pathname)) {
