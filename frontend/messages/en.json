@@ -838,6 +838,8 @@
   "guide": {
     "title": "User Guide",
     "subtitle": "A step-by-step walkthrough of everything you can do — from your first character to tracking every grind.",
+    "videoTitle": "Site introduction video",
+    "videoCaption": "Prefer to watch? Here's a quick tour of the site.",
     "footer": "That's the whole flow. Log a few sessions and your dashboard will start telling you where the best gold is.",
     "sections": {
       "gettingStarted": {

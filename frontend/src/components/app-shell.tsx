@@ -25,6 +25,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { LoginModal } from '@/components/login-modal';
 import { LoginPromptProvider } from '@/components/login-prompt';
 import { api } from '@/lib/api';
@@ -222,12 +223,17 @@ function UserFooter({
     );
   }
   return (
-    <button
-      onClick={onSignIn}
-      className="block w-full rounded-base bg-[var(--blue)] px-3 py-2 text-center text-xs font-semibold text-[#1b1407] shadow-button hover:opacity-90"
-    >
-      {t('signIn')}
-    </button>
+    <div className="space-y-2">
+      {/* Settings is members-only, so for a guest this is the only way to switch
+          language without going back to the landing page. */}
+      <LanguageSwitcher compact />
+      <button
+        onClick={onSignIn}
+        className="block w-full rounded-base bg-[var(--blue)] px-3 py-2 text-center text-xs font-semibold text-[#1b1407] shadow-button hover:opacity-90"
+      >
+        {t('signIn')}
+      </button>
+    </div>
   );
 }
 
