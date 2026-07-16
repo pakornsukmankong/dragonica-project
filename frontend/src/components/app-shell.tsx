@@ -186,12 +186,14 @@ function UserFooter({
   user,
   displayName,
   handleLogout,
+  onSignIn,
   t,
 }: {
   isLoading: boolean;
   user: User | null;
   displayName: string;
   handleLogout: () => void;
+  onSignIn: () => void;
   t: ReturnType<typeof useTranslations<'nav'>>;
 }) {
   if (isLoading) {
@@ -217,12 +219,12 @@ function UserFooter({
     );
   }
   return (
-    <Link
-      href="/login"
-      className="block rounded-base bg-[var(--blue)] px-3 py-2 text-center text-xs font-semibold text-[#1b1407] shadow-button hover:opacity-90"
+    <button
+      onClick={onSignIn}
+      className="block w-full rounded-base bg-[var(--blue)] px-3 py-2 text-center text-xs font-semibold text-[#1b1407] shadow-button hover:opacity-90"
     >
       {t('signIn')}
-    </Link>
+    </button>
   );
 }
 
@@ -304,6 +306,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return true;
   };
 
+  // The footer button names no destination, so signing in through it keeps the
+  // guest where they already were rather than shipping them off to /dashboard.
+  const openSignIn = () => setLoginNext(pathname);
+
   return (
     <div className="min-h-screen lg:pl-60">
       {/* Desktop sidebar */}
@@ -324,6 +330,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             user={user}
             displayName={displayName}
             handleLogout={handleLogout}
+            onSignIn={openSignIn}
             t={t}
           />
         </div>
@@ -415,6 +422,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               user={user}
               displayName={displayName}
               handleLogout={handleLogout}
+              onSignIn={() => {
+                setMenuOpen(false);
+                openSignIn();
+              }}
               t={t}
             />
           </div>
