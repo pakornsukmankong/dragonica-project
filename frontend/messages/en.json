@@ -204,6 +204,7 @@
     "level": "Lv.",
     "dropFrom": "Wanted quest",
     "foundIn": "Found in",
+    "cardNamed": "card: {name}",
     "classes": {
       "all": "All",
       "Warrior": "Warrior",

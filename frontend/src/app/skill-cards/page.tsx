@@ -10,6 +10,8 @@ type SkillCardMap = { n: string; l: number };
 type SkillCard = {
   id: number;
   monster: string;
+  /** In-game card item name, only set when it differs from the monster's name. */
+  cardName: string | null;
   monsterId: number | null;
   class: 'Warrior' | 'Magician' | 'Archer' | 'Thief';
   levels: string[];
@@ -59,8 +61,11 @@ export default function SkillCardsPage() {
       if (cls && c.class !== cls) return false;
       if (q) {
         const inMonster = c.monster.toLowerCase().includes(q);
+        // also match the card's in-game name — that's what players read off
+        // their inventory, and for a few cards it differs from the monster's
+        const inCard = !!c.cardName?.toLowerCase().includes(q);
         const inSkill = c.skills.some((s) => s.name.toLowerCase().includes(q));
-        if (!inMonster && !inSkill) return false;
+        if (!inMonster && !inCard && !inSkill) return false;
       }
       return true;
     });
@@ -161,6 +166,11 @@ export default function SkillCardsPage() {
                     <span className="text-sm font-medium text-foreground">
                       {c.monster}
                     </span>
+                    {c.cardName && (
+                      <span className="text-[11px] text-muted">
+                        {t('cardNamed', { name: c.cardName })}
+                      </span>
+                    )}
                   </div>
 
                   {/* Skills granted */}

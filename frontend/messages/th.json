@@ -204,6 +204,7 @@
     "level": "Lv.",
     "dropFrom": "เควส Wanted",
     "foundIn": "พบในแมพ",
+    "cardNamed": "ชื่อการ์ด: {name}",
     "classes": {
       "all": "ทั้งหมด",
       "Warrior": "นักรบ",
