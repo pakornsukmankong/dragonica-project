@@ -17,6 +17,9 @@ import {
   ChevronDown,
 } from 'lucide-react';
 
+// "ผมได้สร้างเว็บไซต์ให้เพื่อนๆชาว Dragonica ทุกคน" — the site's intro video.
+const VIDEO_ID = '4I4TUapiCiU';
+
 const SECTIONS = [
   { key: 'gettingStarted', icon: LogIn },
   { key: 'characters', icon: Users },
@@ -57,6 +60,22 @@ export default function GuidePage() {
               </h1>
               <p className="text-sm text-muted mt-1">{t('subtitle')}</p>
             </div>
+          </div>
+
+          {/* Intro video. youtube-nocookie + lazy so the guide doesn't pull in
+              YouTube's player (or its cookies) until the reader scrolls to it. */}
+          <div className="mb-8">
+            <div className="relative aspect-video overflow-hidden rounded-base bg-surface outline outline-1 outline-[rgba(255,255,255,0.08)]">
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${VIDEO_ID}`}
+                title={t('videoTitle')}
+                loading="lazy"
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="absolute inset-0 h-full w-full border-0"
+              />
+            </div>
+            <p className="mt-2 text-xs text-muted">{t('videoCaption')}</p>
           </div>
 
           {/* Collapsible sections */}
