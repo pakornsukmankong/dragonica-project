@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Varela_Round, Noto_Sans_Thai } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { AppShell } from '@/components/app-shell';
@@ -108,6 +109,9 @@ export default async function RootLayout({
             <AppShell>{children}</AppShell>
           </Providers>
         </NextIntlClientProvider>
+        {/* Vercel Analytics — page views + visitors. Injects its own script
+            and is a no-op outside Vercel deploys, so local dev stays clean. */}
+        <Analytics />
       </body>
     </html>
   );
