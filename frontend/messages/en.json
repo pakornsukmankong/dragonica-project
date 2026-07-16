@@ -9,7 +9,13 @@
     "edit": "Edit",
     "delete": "Delete",
     "none": "None",
-    "all": "All"
+    "all": "All",
+    "loadErrorTitle": "Couldn't load this",
+    "loadErrorDesc": "The data failed to load — this is usually a connection hiccup, not lost data.",
+    "retry": "Retry",
+    "retrying": "Retrying...",
+    "offlineTitle": "Can't reach the server",
+    "offlineDesc": "You look offline. Nothing is lost — reconnect and try again."
   },
   "nav": {
     "brand": "Dragonica",
@@ -165,7 +171,8 @@
       "atkRangePct": "Range",
       "moveSpeedFlat": "Move Speed",
       "dmgReduce": "Damage Reduction"
-    }
+    },
+    "filters": "Filters"
   },
   "monsters": {
     "title": "Monster Database",

@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useToast } from '@/components/toast';
 import { Select } from '@/components/select';
 import { NumericInput } from '@/components/numeric-input';
+import { QueryError } from '@/components/query-error';
 import type { Character, GameClass } from '@/types';
 
 export default function CharactersPage() {
@@ -17,7 +18,14 @@ export default function CharactersPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [editingChar, setEditingChar] = useState<Character | null>(null);
 
-  const { data: characters, isLoading } = useQuery<Character[]>({
+  const {
+    data: characters,
+    isLoading,
+    isError,
+    isFetching,
+    isPaused,
+    refetch,
+  } = useQuery<Character[]>({
     queryKey: ['characters'],
     queryFn: () => api.get('/characters'),
   });
@@ -88,7 +96,13 @@ export default function CharactersPage() {
             />
           )}
 
-          {characters && characters.length === 0 ? (
+          {isError || isPaused ? (
+            <QueryError
+              offline={isPaused}
+              onRetry={() => refetch()}
+              isRetrying={isFetching}
+            />
+          ) : characters && characters.length === 0 ? (
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-10 text-center">
               <p className="text-sm text-muted">
                 {t('empty')}

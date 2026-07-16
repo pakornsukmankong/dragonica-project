@@ -10,6 +10,7 @@ import { useToast } from '@/components/toast';
 import { useDateFormatter } from '@/lib/i18n';
 import { ImageUpload } from '@/components/image-upload';
 import { TicketStatusBadge } from '@/components/ticket-status';
+import { QueryError } from '@/components/query-error';
 import type { Ticket } from '@/types';
 
 export default function TicketsPage() {
@@ -23,7 +24,14 @@ export default function TicketsPage() {
   const [body, setBody] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
-  const { data: tickets, isLoading } = useQuery<Ticket[]>({
+  const {
+    data: tickets,
+    isLoading,
+    isError,
+    isFetching,
+    isPaused,
+    refetch,
+  } = useQuery<Ticket[]>({
     queryKey: ['tickets'],
     queryFn: () => api.get('/tickets'),
   });
@@ -145,6 +153,12 @@ export default function TicketsPage() {
           {/* Ticket list */}
           {isLoading ? (
             <p className="text-sm text-muted">{t('loading')}</p>
+          ) : isError || isPaused ? (
+            <QueryError
+              offline={isPaused}
+              onRetry={() => refetch()}
+              isRetrying={isFetching}
+            />
           ) : !tickets || tickets.length === 0 ? (
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-10 text-center">
               <p className="text-sm text-muted">{t('empty')}</p>

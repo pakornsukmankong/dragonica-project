@@ -21,6 +21,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/toast';
 import { NumericInput } from '@/components/numeric-input';
 import { Select } from '@/components/select';
+import { QueryError } from '@/components/query-error';
 import type {
   Donation,
   DonationChannel,
@@ -129,7 +130,13 @@ function SupportPageInner() {
   }
 
   // Thank-you wall.
-  const { data: wall } = useQuery<DonationWallEntry[]>({
+  const {
+    data: wall,
+    isError: isWallError,
+    isFetching: isWallFetching,
+    isPaused: isWallPaused,
+    refetch: refetchWall,
+  } = useQuery<DonationWallEntry[]>({
     queryKey: ['donations', 'wall'],
     queryFn: () => api.get('/donations/wall'),
   });
@@ -541,7 +548,14 @@ function SupportPageInner() {
                     {t('recentSupporters')}
                   </h2>
                 </div>
-                {!wall || wall.length === 0 ? (
+                {isWallError || isWallPaused ? (
+                  <QueryError
+                    compact
+                    offline={isWallPaused}
+                    onRetry={() => refetchWall()}
+                    isRetrying={isWallFetching}
+                  />
+                ) : !wall || wall.length === 0 ? (
                   <p className="text-xs text-muted">{t('noSupporters')}</p>
                 ) : (
                   <ul className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
@@ -583,7 +597,10 @@ function SupportPageInner() {
                     className="h-12 w-12 shrink-0 rounded-full object-cover outline outline-1 outline-[rgba(255,255,255,0.1)]"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-foreground">
+                    <p
+                      className="line-clamp-2 text-sm font-semibold leading-snug text-foreground"
+                      title={ytTitle}
+                    >
                       {ytTitle}
                     </p>
                     <p className="text-xs text-muted">
@@ -618,7 +635,10 @@ function SupportPageInner() {
                     className="h-12 w-12 shrink-0 rounded-full object-cover outline outline-1 outline-[rgba(255,255,255,0.1)]"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-foreground">
+                    <p
+                      className="line-clamp-2 text-sm font-semibold leading-snug text-foreground"
+                      title={discordName}
+                    >
                       {discordName}
                     </p>
                     {discordServer?.memberCount != null && (

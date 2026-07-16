@@ -49,8 +49,14 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/settings');
 
   if (isProtectedRoute && !user) {
+    // Carry the requested path in ?next= so signing in lands where the user was
+    // headed instead of dumping everyone on /dashboard. Drop the original query
+    // string from the login URL itself — it belongs to the target route.
+    const next = request.nextUrl.pathname + request.nextUrl.search;
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    url.search = '';
+    url.searchParams.set('next', next);
     return NextResponse.redirect(url);
   }
 

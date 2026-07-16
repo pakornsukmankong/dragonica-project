@@ -12,6 +12,7 @@ import { Currency, CurrencyInput } from '@/components/currency';
 import { Select } from '@/components/select';
 import { ItemThumb } from '@/components/item-icon';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { QueryError } from '@/components/query-error';
 import { formatGoldShort, toParts } from '@/lib/currency';
 import type { Session, Character, Dungeon, Item } from '@/types';
 
@@ -60,7 +61,14 @@ export default function SessionsPage() {
     if (sortBy !== 'date') p.set('sortBy', sortBy);
     return p.toString();
   };
-  const { data: sessionPage, isLoading } = useQuery<{
+  const {
+    data: sessionPage,
+    isLoading,
+    isError,
+    isFetching,
+    isPaused,
+    refetch,
+  } = useQuery<{
     data: Session[];
     total: number;
   }>({
@@ -416,7 +424,13 @@ export default function SessionsPage() {
             />
           )}
 
-          {pagedSessions.length === 0 ? (
+          {isError || isPaused ? (
+            <QueryError
+              offline={isPaused}
+              onRetry={() => refetch()}
+              isRetrying={isFetching}
+            />
+          ) : pagedSessions.length === 0 ? (
             <div className="bg-surface rounded-base outline outline-1 outline-[rgba(255,255,255,0.08)] p-10 text-center">
               <p className="text-sm text-muted">
                 {t('empty')}

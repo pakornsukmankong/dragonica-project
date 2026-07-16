@@ -3,7 +3,7 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Loader2, Search, X } from 'lucide-react';
+import { Loader2, Search, SlidersHorizontal, X } from 'lucide-react';
 import { Currency } from '@/components/currency';
 import { ItemIcon } from '@/components/item-icon';
 import { Pagination } from '@/components/pagination';
@@ -210,6 +210,10 @@ export default function ItemsPage() {
   const [rarity, setRarity] = useState('');
   const [sort, setSort] = useState('levelAsc');
   const [page, setPage] = useState(1);
+  // Mobile only: the filter stack is taller than the viewport, so it starts
+  // collapsed and the results sit right under the search box. From sm up every
+  // control is always visible and this flag is ignored.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   /** Expanded detail panel: item id + which panel */
   const [openPanel, setOpenPanel] = useState<{
     id: number;
@@ -284,6 +288,18 @@ export default function ItemsPage() {
     maxLevel !== '' ||
     rarity !== '' ||
     sort !== 'levelAsc';
+
+  // Badge on the mobile toggle, so collapsed filters can't silently narrow the
+  // list. Search is excluded — its box stays visible next to the toggle.
+  const activeFilterCount = [
+    subcat !== 'all',
+    slot !== '',
+    weapon !== '',
+    branch !== '',
+    minLevel !== '' || maxLevel !== '',
+    rarity !== '',
+    sort !== 'levelAsc',
+  ].filter(Boolean).length;
 
   const resetFilters = () => {
     setSearch('');
@@ -432,97 +448,117 @@ export default function ItemsPage() {
             className="w-full rounded-base border border-border bg-surface py-2 pl-8 pr-3 text-sm text-foreground placeholder:text-muted outline-none focus:border-[var(--focus)]"
           />
         </div>
-        {slotted && (
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          aria-expanded={filtersOpen}
+          className="inline-flex items-center gap-1.5 rounded-base border border-border px-2.5 py-2 text-sm text-muted transition-colors hover:border-gold/50 hover:text-foreground sm:hidden"
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          {t('filters')}
+          {activeFilterCount > 0 && (
+            <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-gold-soft px-1 text-[10px] font-bold text-gold tabular-nums">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+        {/* sm:contents dissolves this wrapper on desktop, so the controls stay
+            direct children of the filter row and lay out exactly as before. */}
+        <div
+          className={`${filtersOpen ? 'flex w-full' : 'hidden'} flex-wrap items-center gap-2 sm:contents`}
+        >
+          {slotted && (
+            <Select
+              value={slot}
+              onChange={withPageReset(setSlot)}
+              options={slotOptions}
+              className="w-40"
+            />
+          )}
+          {slotted && (subcat === 'weapon' || slot === 'weapon') && (
+            <Select
+              value={weapon}
+              onChange={withPageReset(setWeapon)}
+              options={[
+                { value: '', label: t('allWeapons') },
+                ...WEAPON_TYPES.map((w) => ({
+                  value: w,
+                  label: t(`weapons.${w}`),
+                })),
+              ]}
+              className="w-44"
+            />
+          )}
+          {slotted && (
+            <Select
+              value={branch}
+              onChange={withPageReset(setBranch)}
+              options={[
+                { value: '', label: t('allClasses') },
+                ...BRANCH_IDS.map((id) => ({
+                  value: String(id),
+                  label: t(`branches.${id}`),
+                  icon: `/class-icons/${BRANCH_ICON[id]}.webp`,
+                })),
+              ]}
+              className="w-44"
+            />
+          )}
           <Select
-            value={slot}
-            onChange={withPageReset(setSlot)}
-            options={slotOptions}
+            value={rarity}
+            onChange={withPageReset(setRarity)}
+            options={[
+              { value: '', label: t('allRarities') },
+              ...RARITY_ORDER.map((r) => ({
+                value: r,
+                label: t(`rarities.${r}`),
+              })),
+            ]}
             className="w-40"
           />
-        )}
-        {slotted && (subcat === 'weapon' || slot === 'weapon') && (
+          <div className="flex items-center gap-1.5">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={minLevel}
+              onChange={(e) =>
+                withPageReset(setMinLevel)(e.target.value.replace(/[^0-9]/g, ''))
+              }
+              placeholder={t('levelMin')}
+              className={levelField}
+              aria-label={t('levelMin')}
+            />
+            <span className="text-xs text-muted">–</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={maxLevel}
+              onChange={(e) =>
+                withPageReset(setMaxLevel)(e.target.value.replace(/[^0-9]/g, ''))
+              }
+              placeholder={t('levelMax')}
+              className={levelField}
+              aria-label={t('levelMax')}
+            />
+          </div>
           <Select
-            value={weapon}
-            onChange={withPageReset(setWeapon)}
-            options={[
-              { value: '', label: t('allWeapons') },
-              ...WEAPON_TYPES.map((w) => ({
-                value: w,
-                label: t(`weapons.${w}`),
-              })),
-            ]}
+            value={sort}
+            onChange={withPageReset(setSort)}
+            options={['levelAsc', 'levelDesc', 'nameAsc', 'priceDesc'].map(
+              (s) => ({ value: s, label: t(`sort.${s}`) }),
+            )}
             className="w-44"
           />
-        )}
-        {slotted && (
-          <Select
-            value={branch}
-            onChange={withPageReset(setBranch)}
-            options={[
-              { value: '', label: t('allClasses') },
-              ...BRANCH_IDS.map((id) => ({
-                value: String(id),
-                label: t(`branches.${id}`),
-                icon: `/class-icons/${BRANCH_ICON[id]}.webp`,
-              })),
-            ]}
-            className="w-44"
-          />
-        )}
-        <Select
-          value={rarity}
-          onChange={withPageReset(setRarity)}
-          options={[
-            { value: '', label: t('allRarities') },
-            ...RARITY_ORDER.map((r) => ({
-              value: r,
-              label: t(`rarities.${r}`),
-            })),
-          ]}
-          className="w-40"
-        />
-        <div className="flex items-center gap-1.5">
-          <input
-            type="text"
-            inputMode="numeric"
-            value={minLevel}
-            onChange={(e) =>
-              withPageReset(setMinLevel)(e.target.value.replace(/[^0-9]/g, ''))
-            }
-            placeholder={t('levelMin')}
-            className={levelField}
-            aria-label={t('levelMin')}
-          />
-          <span className="text-xs text-muted">–</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={maxLevel}
-            onChange={(e) =>
-              withPageReset(setMaxLevel)(e.target.value.replace(/[^0-9]/g, ''))
-            }
-            placeholder={t('levelMax')}
-            className={levelField}
-            aria-label={t('levelMax')}
-          />
-        </div>
-        <Select
-          value={sort}
-          onChange={withPageReset(setSort)}
-          options={['levelAsc', 'levelDesc', 'nameAsc', 'priceDesc'].map(
-            (s) => ({ value: s, label: t(`sort.${s}`) }),
+          {filtersActive && (
+            <button
+              onClick={resetFilters}
+              className="inline-flex items-center gap-1 rounded-base border border-border px-2.5 py-2 text-sm text-muted transition-colors hover:border-gold/50 hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+              {t('resetFilters')}
+            </button>
           )}
-          className="w-44"
-        />
-        {filtersActive && (
-          <button
-            onClick={resetFilters}
-            className="inline-flex items-center gap-1 rounded-base border border-border px-2.5 py-2 text-sm text-muted transition-colors hover:border-gold/50 hover:text-foreground"
-          >
-            <X className="h-3.5 w-3.5" />
-            {t('resetFilters')}
-          </button>
-        )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -648,6 +684,14 @@ export default function ItemsPage() {
                               draggable={false}
                             />
                           ))}
+                          {/* The dump registers one row per class, so several
+                              rows share a name and differ only by this icon.
+                              Name the class outright when there is just one. */}
+                          {item.classes.length === 1 && (
+                            <span className="text-[10px] text-muted">
+                              {t(`branches.${item.classes[0]}`)}
+                            </span>
+                          )}
                         </span>
                       ) : (
                         slotted && (
