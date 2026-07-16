@@ -91,7 +91,7 @@ export class StripeProvider implements PaymentProvider {
     const qr = pi.next_action?.promptpay_display_qr_code;
     return {
       providerChargeId: pi.id,
-      status: this.mapStatus(pi.status),
+      status: this.mapStatus(pi),
       qrImageUri: qr?.image_url_png ?? null,
       authorizeUri: null,
       // Stripe's PromptPay QR object doesn't expose an expiry; the frontend
@@ -100,16 +100,22 @@ export class StripeProvider implements PaymentProvider {
     };
   }
 
-  private mapStatus(
-    status: Stripe.PaymentIntent.Status,
-  ): NormalizedChargeStatus {
-    switch (status) {
+  private mapStatus(pi: Stripe.PaymentIntent): NormalizedChargeStatus {
+    switch (pi.status) {
       case 'succeeded':
         return 'successful';
       case 'canceled':
         return 'failed';
-      // requires_payment_method / requires_confirmation / requires_action /
-      // processing / requires_capture → still awaiting the shopper.
+      case 'requires_payment_method':
+        // We always create the PromptPay intent with confirm:true, so it never
+        // rests in the pre-confirmation requires_payment_method state — landing
+        // back here means the async payment attempt failed, which for PromptPay
+        // is overwhelmingly the QR expiring unpaid. Without this the donation
+        // would sit pending forever. (A guard on last_payment_error keeps a
+        // freshly-created, not-yet-actioned intent classed as pending.)
+        return pi.last_payment_error ? 'expired' : 'pending';
+      // requires_confirmation / requires_action / processing / requires_capture
+      // → still awaiting the shopper.
       default:
         return 'pending';
     }
