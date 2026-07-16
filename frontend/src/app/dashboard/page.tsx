@@ -14,6 +14,7 @@ import { DungeonStats } from '@/components/dungeon-stats';
 import { Currency } from '@/components/currency';
 import { CountUp, CountUpCurrency } from '@/components/count-up';
 import { Skeleton } from '@/components/skeleton';
+import { QueryError } from '@/components/query-error';
 import {
   computeCharacterStats,
   computeDungeonStats,
@@ -27,7 +28,14 @@ export default function DashboardPage() {
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
 
-  const { data: sessions, isLoading: isSessionsLoading } = useQuery<Session[]>({
+  const {
+    data: sessions,
+    isLoading: isSessionsLoading,
+    isError: isSessionsError,
+    isFetching: isSessionsFetching,
+    isPaused: isSessionsPaused,
+    refetch: refetchSessions,
+  } = useQuery<Session[]>({
     queryKey: ['sessions'],
     queryFn: () => api.get('/sessions'),
   });
@@ -96,6 +104,33 @@ export default function DashboardPage() {
               ))}
             </div>
             <Skeleton className="h-[280px] w-full" />
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  // Bail out before the stat blocks: every number below is derived from
+  // `sessions`, so a failed fetch would render a dashboard full of zeroes that
+  // reads as "you have no gold" rather than "this didn't load".
+  if (isSessionsError || isSessionsPaused) {
+    return (
+      <main className="min-h-screen bg-root">
+        <section className="py-[60px] laptop:py-[90px]">
+          <div className="mx-auto max-w-container px-4 sm:px-7">
+            <div className="mb-10">
+              <h1 className="text-xl laptop:text-2xl font-medium text-foreground">
+                {t('title')}
+              </h1>
+              <p className="text-sm text-muted mt-2">
+                {t('subtitle')}
+              </p>
+            </div>
+            <QueryError
+              offline={isSessionsPaused}
+              onRetry={() => refetchSessions()}
+              isRetrying={isSessionsFetching}
+            />
           </div>
         </section>
       </main>

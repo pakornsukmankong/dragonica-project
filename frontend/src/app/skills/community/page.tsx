@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Skeleton } from '@/components/skeleton';
+import { QueryError } from '@/components/query-error';
 import type { CommunityBuildList, SkillClass } from '@/types';
 
 function CommunityInner() {
@@ -33,7 +34,7 @@ function CommunityInner() {
     staleTime: Infinity,
   });
 
-  const { data, isLoading } = useQuery<CommunityBuildList>({
+  const { data, isLoading, isError, isFetching, isPaused, refetch } = useQuery<CommunityBuildList>({
     queryKey: ['skills', 'community', query, classId, sort, page],
     queryFn: () => {
       const p = new URLSearchParams();
@@ -129,6 +130,12 @@ function CommunityInner() {
             </div>
           ))}
         </div>
+      ) : isError || isPaused ? (
+        <QueryError
+          offline={isPaused}
+          onRetry={() => refetch()}
+          isRetrying={isFetching}
+        />
       ) : builds.length === 0 ? (
         <div className="rounded-base border border-border bg-raised py-16 text-center text-sm text-muted">
           {t('noPublicBuilds')}

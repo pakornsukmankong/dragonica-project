@@ -114,6 +114,34 @@ describe('StripeProvider', () => {
     expect((await provider.getCharge('pi_1')).status).toBe('successful');
   });
 
+  it('maps an expired PromptPay intent (failed attempt) to expired', async () => {
+    // The QR expired unpaid: Stripe drops the confirmed intent back to
+    // requires_payment_method and sets last_payment_error.
+    const stripe = stripeMock({
+      retrieveIntent: jest.fn().mockResolvedValue({
+        id: 'pi_1',
+        status: 'requires_payment_method',
+        last_payment_error: { code: 'payment_intent_authentication_failure' },
+      }),
+    });
+    const provider = new StripeProvider(stripe);
+
+    expect((await provider.getCharge('pi_1')).status).toBe('expired');
+  });
+
+  it('keeps a fresh requires_payment_method intent (no error) pending', async () => {
+    const stripe = stripeMock({
+      retrieveIntent: jest.fn().mockResolvedValue({
+        id: 'pi_1',
+        status: 'requires_payment_method',
+        last_payment_error: null,
+      }),
+    });
+    const provider = new StripeProvider(stripe);
+
+    expect((await provider.getCharge('pi_1')).status).toBe('pending');
+  });
+
   it('extracts the PaymentIntent id from a webhook event', () => {
     const provider = new StripeProvider(stripeMock());
     const id = provider.extractChargeId({

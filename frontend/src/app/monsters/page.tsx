@@ -58,6 +58,9 @@ export default function MonstersPage() {
     const max = Number(maxLevel) || Infinity;
 
     const result = monsters.filter((m) => {
+      // The dump carries a few nameless placeholder rows (e.g. "."), which read
+      // as broken entries in the list.
+      if (!/[\p{L}\p{N}]/u.test(m.name)) return false;
       if (q && !m.name.toLowerCase().includes(q)) return false;
       if (grade && m.grade !== grade) return false;
       const top = m.lvMax ?? m.lv;
@@ -229,8 +232,9 @@ export default function MonstersPage() {
                         )}
                         {m.atk && (
                           <span className="whitespace-nowrap">
-                            {t('atk')} {m.atk[0].toLocaleString()}–
-                            {m.atk[1].toLocaleString()}
+                            {t('atk')} {m.atk[0].toLocaleString()}
+                            {m.atk[1] !== m.atk[0] &&
+                              `–${m.atk[1].toLocaleString()}`}
                           </span>
                         )}
                         {m.def != null && (

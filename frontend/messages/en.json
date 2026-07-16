@@ -9,7 +9,13 @@
     "edit": "Edit",
     "delete": "Delete",
     "none": "None",
-    "all": "All"
+    "all": "All",
+    "loadErrorTitle": "Couldn't load this",
+    "loadErrorDesc": "The data failed to load — this is usually a connection hiccup, not lost data.",
+    "retry": "Retry",
+    "retrying": "Retrying...",
+    "offlineTitle": "Can't reach the server",
+    "offlineDesc": "You look offline. Nothing is lost — reconnect and try again."
   },
   "nav": {
     "brand": "Dragonica",
@@ -29,7 +35,9 @@
     "settings": "Settings",
     "logout": "Logout",
     "signIn": "Sign In",
-    "language": "Language"
+    "language": "Language",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "items": {
     "title": "Item Database",
@@ -164,7 +172,8 @@
       "atkRangePct": "Range",
       "moveSpeedFlat": "Move Speed",
       "dmgReduce": "Damage Reduction"
-    }
+    },
+    "filters": "Filters"
   },
   "monsters": {
     "title": "Monster Database",
@@ -265,6 +274,8 @@
     "sortPopular": "Popular",
     "views": "Views",
     "likes": "Likes",
+    "like": "Like",
+    "liked": "Liked",
     "comments": "Comments",
     "noComments": "No comments yet. Be the first!",
     "commentPlaceholder": "Write a comment...",
@@ -365,7 +376,8 @@
     "signUpLink": "Sign up",
     "signInLink": "Sign in",
     "confirmPassword": "Confirm password",
-    "passwordMismatch": "Passwords do not match."
+    "passwordMismatch": "Passwords do not match.",
+    "close": "Close"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -403,6 +415,13 @@
     "duration": "Duration",
     "hourShort": "h",
     "minuteShort": "m",
+    "durationManual": "Manual",
+    "durationTimer": "Timer",
+    "timerStart": "Start",
+    "timerResume": "Resume",
+    "timerPause": "Pause",
+    "timerStop": "Stop",
+    "timerReset": "Reset",
     "goldDrop": "Gold Drop",
     "goldDropHint": "(end − start)",
     "goldStart": "Gold at start",
@@ -672,6 +691,9 @@
     "phoneLabel": "TrueMoney phone number",
     "phonePlaceholder": "0812345678",
     "phoneError": "Enter a 10-digit number starting with 0.",
+    "emailLabel": "Email (optional)",
+    "emailPlaceholder": "you@example.com",
+    "emailError": "Enter a valid email address.",
     "displayNameLabel": "Display name (shown on the wall)",
     "displayNamePlaceholder": "Anonymous",
     "messageLabel": "Message (optional)",
@@ -705,6 +727,7 @@
     "modalClose": "Close",
     "modalScanTitle": "Scan to pay {amount}",
     "modalScanHint": "Open your banking app and scan this PromptPay QR.",
+    "modalRecipientNote": "The payee shown in your banking app will be “Stripe Payments (Thailand) Limited” — our secure payment processor, not the project name. This is expected.",
     "modalWaiting": "Waiting for payment",
     "modalExpiresIn": "· expires in {time}",
     "modalConfirming": "Confirming your payment...",

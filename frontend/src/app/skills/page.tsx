@@ -18,6 +18,7 @@ import {
 import { api } from '@/lib/api';
 import { useToast } from '@/components/toast';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { QueryError } from '@/components/query-error';
 import { useHasSession } from '@/hooks/use-session';
 import type { SkillClass, SkillBuild } from '@/types';
 
@@ -32,7 +33,14 @@ export default function SkillsPage() {
   const { toast } = useToast();
   const [pendingDelete, setPendingDelete] = useState<SkillBuild | null>(null);
 
-  const { data: classes, isLoading } = useQuery<SkillClass[]>({
+  const {
+    data: classes,
+    isLoading,
+    isError,
+    isFetching,
+    isPaused,
+    refetch,
+  } = useQuery<SkillClass[]>({
     queryKey: ['skills', 'classes'],
     queryFn: () => api.get('/skills/classes'),
     staleTime: Infinity,
@@ -92,6 +100,12 @@ export default function SkillsPage() {
         <div className="flex justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-muted" />
         </div>
+      ) : isError || isPaused ? (
+        <QueryError
+          offline={isPaused}
+          onRetry={() => refetch()}
+          isRetrying={isFetching}
+        />
       ) : (
         <div className="space-y-8">
           {Object.entries(grouped).map(([base, list]) => (

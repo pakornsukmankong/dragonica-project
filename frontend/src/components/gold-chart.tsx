@@ -124,40 +124,50 @@ export function GoldChart({ sessions }: GoldChartProps) {
   );
 }
 
-// Hover card: per-character gold breakdown plus the bucket total. Shown via the
-// parent column's `group-hover` (pointer-events off so it never blocks hovering).
-function ChartTooltip({ datum }: { datum: ChartDatum }) {
+// The styled hover card itself: per-character gold breakdown plus the bucket
+// total (and an optional share-of-total percentage for the pie chart). Shared by
+// all three chart types so the hover detail looks identical everywhere.
+function TooltipCard({ datum, percent }: { datum: ChartDatum; percent?: number }) {
   const t = useTranslations('goldChart');
   return (
-    <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 group-hover:block">
-      <div className="w-max min-w-[140px] max-w-[220px] rounded-base border border-border bg-surface px-3 py-2 shadow-card">
-        <p className="mb-1.5 whitespace-nowrap text-[11px] font-medium text-foreground">
-          {datum.label}
-        </p>
-        {datum.breakdown.length > 0 ? (
-          <div className="space-y-1">
-            {datum.breakdown.map((b) => (
-              <div
-                key={b.name}
-                className="flex items-center justify-between gap-3 text-[11px]"
-              >
-                <span className="truncate text-muted">{b.name}</span>
-                <span className="whitespace-nowrap tabular-nums text-foreground">
-                  {formatCoins(b.gold)}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-[11px] text-muted">{t('noData')}</p>
-        )}
-        <div className="mt-1.5 flex items-center justify-between gap-3 border-t border-[rgba(255,255,255,0.08)] pt-1.5 text-[11px]">
-          <span className="text-muted">{t('total')}</span>
-          <span className="whitespace-nowrap font-semibold tabular-nums text-gold">
-            {formatCoins(datum.value)}
-          </span>
+    <div className="w-max min-w-[140px] max-w-[220px] rounded-base border border-border bg-surface px-3 py-2 shadow-card">
+      <p className="mb-1.5 whitespace-nowrap text-[11px] font-medium text-foreground">
+        {datum.label}
+      </p>
+      {datum.breakdown.length > 0 ? (
+        <div className="space-y-1">
+          {datum.breakdown.map((b) => (
+            <div
+              key={b.name}
+              className="flex items-center justify-between gap-3 text-[11px]"
+            >
+              <span className="truncate text-muted">{b.name}</span>
+              <span className="whitespace-nowrap tabular-nums text-foreground">
+                {formatCoins(b.gold)}
+              </span>
+            </div>
+          ))}
         </div>
+      ) : percent == null ? (
+        <p className="text-[11px] text-muted">{t('noData')}</p>
+      ) : null}
+      <div className="mt-1.5 flex items-center justify-between gap-3 border-t border-[rgba(255,255,255,0.08)] pt-1.5 text-[11px]">
+        <span className="text-muted">{t('total')}</span>
+        <span className="whitespace-nowrap font-semibold tabular-nums text-gold">
+          {formatCoins(datum.value)}
+          {percent != null ? ` (${percent}%)` : ''}
+        </span>
       </div>
+    </div>
+  );
+}
+
+// Bar-chart tooltip: positioned above its column via the parent's `group-hover`
+// (pointer-events off so it never blocks hovering).
+function ChartTooltip({ datum }: { datum: ChartDatum }) {
+  return (
+    <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 group-hover:block">
+      <TooltipCard datum={datum} />
     </div>
   );
 }
@@ -206,7 +216,7 @@ function BarChart({ data, maxValue }: { data: ChartDatum[]; maxValue: number }) 
 
 // ===== LINE CHART =====
 function LineChart({ data, maxValue }: { data: ChartDatum[]; maxValue: number }) {
-  const t = useTranslations('goldChart');
+  const [hover, setHover] = useState<number | null>(null);
   const width = 600;
   const height = 160;
   const padding = 20;
@@ -223,31 +233,52 @@ function LineChart({ data, maxValue }: { data: ChartDatum[]; maxValue: number })
 
   const areaPath = `${linePath} L ${points[points.length - 1]?.x ?? 0} ${height - padding} L ${padding} ${height - padding} Z`;
 
+  const active = hover != null ? points[hover] : null;
+
   return (
-    <div className="h-[180px] overflow-hidden">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full" preserveAspectRatio="none">
-        {/* Area fill */}
-        <path d={areaPath} fill="var(--blue)" opacity="0.1" />
-        {/* Line */}
-        <path d={linePath} fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        {/* Dots (larger transparent hit area so the tooltip is easy to trigger) */}
-        {points.map((p, i) => (
-          <g key={i}>
-            <circle
-              cx={p.x}
-              cy={p.y}
-              r="3"
-              fill="var(--blue)"
-              opacity={p.datum.value > 0 ? 1 : 0.3}
-            />
-            <circle cx={p.x} cy={p.y} r="10" fill="transparent">
-              <title>{tooltipText(p.datum, t('total'))}</title>
-            </circle>
-          </g>
-        ))}
-      </svg>
+    <div className="h-[180px]">
+      {/* Plot area — relative so the hover card can be positioned over a point */}
+      <div className="relative h-[160px]">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full" preserveAspectRatio="none">
+          {/* Area fill */}
+          <path d={areaPath} fill="var(--blue)" opacity="0.1" />
+          {/* Line */}
+          <path d={linePath} fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Dots (larger transparent hit area so the tooltip is easy to trigger) */}
+          {points.map((p, i) => (
+            <g key={i}>
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={hover === i ? 4.5 : 3}
+                fill="var(--blue)"
+                opacity={p.datum.value > 0 ? 1 : 0.3}
+                className="transition-[r]"
+              />
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r="12"
+                fill="transparent"
+                style={{ cursor: 'pointer' }}
+                onMouseEnter={() => setHover(i)}
+                onMouseLeave={() => setHover(null)}
+              />
+            </g>
+          ))}
+        </svg>
+        {/* Hover card, positioned above the active point */}
+        {active && active.datum.value > 0 && (
+          <div
+            className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full pb-2"
+            style={{ left: `${(active.x / width) * 100}%`, top: `${(active.y / height) * 100}%` }}
+          >
+            <TooltipCard datum={active.datum} />
+          </div>
+        )}
+      </div>
       {/* X-axis labels */}
-      <div className="flex justify-between px-5 -mt-2">
+      <div className="flex justify-between px-5 mt-1">
         {data.length <= 15 ? (
           data.map((d, i) => (
             <span key={i} className="text-[9px] text-muted">{d.label}</span>
@@ -267,11 +298,13 @@ function LineChart({ data, maxValue }: { data: ChartDatum[]; maxValue: number })
 // ===== PIE CHART =====
 function PieChart({ data, total }: { data: ChartDatum[]; total: number }) {
   const t = useTranslations('goldChart');
+  const [hover, setHover] = useState<number | null>(null);
   const filtered = data.filter((d) => d.value > 0).sort((a, b) => b.value - a.value);
   // Group small slices
   const topItems = filtered.slice(0, 6);
   const otherValue = filtered.slice(6).reduce((sum, d) => sum + d.value, 0);
-  const slices = otherValue > 0 ? [...topItems, { label: t('other'), value: otherValue }] : topItems;
+  const slices: Array<{ label: string; value: number; breakdown?: CharacterGold[] }> =
+    otherValue > 0 ? [...topItems, { label: t('other'), value: otherValue }] : topItems;
 
   const colors = [
     'var(--blue)',
@@ -285,7 +318,14 @@ function PieChart({ data, total }: { data: ChartDatum[]; total: number }) {
 
   // Calculate pie slices (each slice starts where the previous one ended)
   const pieSlices = slices.reduce<
-    Array<{ label: string; value: number; startAngle: number; angle: number; color: string }>
+    Array<{
+      label: string;
+      value: number;
+      breakdown?: CharacterGold[];
+      startAngle: number;
+      angle: number;
+      color: string;
+    }>
   >((acc, s, i) => {
     const angle = total > 0 ? (s.value / total) * 360 : 0;
     const prev = acc[acc.length - 1];
@@ -294,10 +334,21 @@ function PieChart({ data, total }: { data: ChartDatum[]; total: number }) {
     return acc;
   }, []);
 
+  const pct = (v: number) => (total > 0 ? Math.round((v / total) * 100) : 0);
+  const active = hover != null ? pieSlices[hover] : null;
+  // Position the hover card along the active slice's mid-angle, partway out from
+  // the centre of the 160px pie box (expressed as a percentage of that box).
+  const cardPos = active
+    ? (() => {
+        const mid = ((active.startAngle + active.angle / 2 - 90) * Math.PI) / 180;
+        return { left: `${50 + 30 * Math.cos(mid)}%`, top: `${50 + 30 * Math.sin(mid)}%` };
+      })()
+    : null;
+
   return (
     <div className="flex items-center gap-6 h-[180px]">
       {/* SVG Pie */}
-      <div className="w-[160px] h-[160px] flex-shrink-0">
+      <div className="relative w-[160px] h-[160px] flex-shrink-0">
         <svg viewBox="0 0 100 100" className="w-full h-full">
           {pieSlices.map((slice, i) => {
             if (slice.angle === 0) return null;
@@ -308,11 +359,26 @@ function PieChart({ data, total }: { data: ChartDatum[]; total: number }) {
             const y1 = 50 + 40 * Math.sin(startRad);
             const x2 = 50 + 40 * Math.cos(endRad);
             const y2 = 50 + 40 * Math.sin(endRad);
+            const hovered = hover === i;
+            const hoverStyle = {
+              cursor: 'pointer',
+              filter: hovered ? 'brightness(1.15)' : undefined,
+              transition: 'filter 150ms',
+            };
 
             // Full circle case
             if (slice.angle >= 359.9) {
               return (
-                <circle key={i} cx="50" cy="50" r="40" fill={slice.color} />
+                <circle
+                  key={i}
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill={slice.color}
+                  style={hoverStyle}
+                  onMouseEnter={() => setHover(i)}
+                  onMouseLeave={() => setHover(null)}
+                />
               );
             }
 
@@ -321,22 +387,42 @@ function PieChart({ data, total }: { data: ChartDatum[]; total: number }) {
                 key={i}
                 d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
                 fill={slice.color}
-              >
-                <title>{`${slice.label}: ${formatCoins(slice.value)} (${total > 0 ? Math.round((slice.value / total) * 100) : 0}%)`}</title>
-              </path>
+                style={hoverStyle}
+                onMouseEnter={() => setHover(i)}
+                onMouseLeave={() => setHover(null)}
+              />
             );
           })}
         </svg>
+        {/* Hover card, positioned toward the active slice */}
+        {active && cardPos && (
+          <div
+            className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full pb-1"
+            style={cardPos}
+          >
+            <TooltipCard
+              datum={{ label: active.label, value: active.value, breakdown: active.breakdown ?? [] }}
+              percent={pct(active.value)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Legend */}
       <div className="flex flex-col gap-1.5 overflow-auto flex-1">
         {pieSlices.map((slice, i) => (
-          <div key={i} className="flex items-center gap-2">
+          <div
+            key={i}
+            className="flex items-center gap-2 cursor-pointer"
+            onMouseEnter={() => setHover(i)}
+            onMouseLeave={() => setHover(null)}
+          >
             <div className="w-3 h-3 rounded-xs flex-shrink-0" style={{ backgroundColor: slice.color }} />
-            <span className="text-xs text-foreground truncate">{slice.label}</span>
+            <span className={`text-xs truncate ${hover === i ? 'text-gold' : 'text-foreground'}`}>
+              {slice.label}
+            </span>
             <span className="text-xs text-muted ml-auto flex-shrink-0">
-              {formatGold(slice.value)} ({total > 0 ? Math.round((slice.value / total) * 100) : 0}%)
+              {formatGold(slice.value)} ({pct(slice.value)}%)
             </span>
           </div>
         ))}
@@ -428,14 +514,6 @@ function getPerSessionData(sessions: Session[], unknownLabel: string): ChartDatu
       breakdown: gold > 0 ? [{ name, gold }] : [],
     };
   });
-}
-
-// Multi-line text for the native SVG tooltip (line chart): each character's
-// gold, then the total.
-function tooltipText(d: ChartDatum, totalLabel: string): string {
-  const lines = d.breakdown.map((b) => `${b.name}: ${formatCoins(b.gold)}`);
-  lines.push(`${totalLabel}: ${formatCoins(d.value)}`);
-  return `${d.label}\n${lines.join('\n')}`;
 }
 
 // Bar/pie labels show gold-major (e.g. "12g", "1.2Kg") since values are copper.

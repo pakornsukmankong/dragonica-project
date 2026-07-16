@@ -9,7 +9,13 @@
     "edit": "แก้ไข",
     "delete": "ลบ",
     "none": "ไม่มี",
-    "all": "ทั้งหมด"
+    "all": "ทั้งหมด",
+    "loadErrorTitle": "โหลดข้อมูลไม่สำเร็จ",
+    "loadErrorDesc": "ดึงข้อมูลไม่ได้ — ส่วนใหญ่เป็นปัญหาการเชื่อมต่อ ไม่ใช่ข้อมูลหาย",
+    "retry": "ลองใหม่",
+    "retrying": "กำลังลองใหม่...",
+    "offlineTitle": "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้",
+    "offlineDesc": "เหมือนเน็ตจะหลุด ข้อมูลไม่ได้หายไปไหน ต่อเน็ตแล้วลองใหม่ได้เลย"
   },
   "nav": {
     "brand": "Dragonica",
@@ -29,7 +35,9 @@
     "settings": "ตั้งค่า",
     "logout": "ออกจากระบบ",
     "signIn": "เข้าสู่ระบบ",
-    "language": "ภาษา"
+    "language": "ภาษา",
+    "openMenu": "เปิดเมนู",
+    "closeMenu": "ปิดเมนู"
   },
   "items": {
     "title": "ฐานข้อมูลไอเทม",
@@ -164,7 +172,8 @@
       "atkRangePct": "ระยะโจมตี",
       "moveSpeedFlat": "ความเร็วเคลื่อนที่",
       "dmgReduce": "ลดดาเมจ"
-    }
+    },
+    "filters": "ตัวกรอง"
   },
   "monsters": {
     "title": "ฐานข้อมูลมอนสเตอร์",
@@ -265,6 +274,8 @@
     "sortPopular": "ยอดนิยม",
     "views": "ยอดวิว",
     "likes": "ไลก์",
+    "like": "ไลก์",
+    "liked": "ไลก์แล้ว",
     "comments": "คอมเมนต์",
     "noComments": "ยังไม่มีคอมเมนต์ มาเป็นคนแรกสิ!",
     "commentPlaceholder": "เขียนคอมเมนต์...",
@@ -365,7 +376,8 @@
     "signUpLink": "สมัครสมาชิก",
     "signInLink": "เข้าสู่ระบบ",
     "confirmPassword": "ยืนยันรหัสผ่าน",
-    "passwordMismatch": "รหัสผ่านไม่ตรงกัน"
+    "passwordMismatch": "รหัสผ่านไม่ตรงกัน",
+    "close": "ปิด"
   },
   "dashboard": {
     "title": "แดชบอร์ด",
@@ -403,6 +415,13 @@
     "duration": "ระยะเวลา",
     "hourShort": "ชม.",
     "minuteShort": "น.",
+    "durationManual": "กรอกเอง",
+    "durationTimer": "จับเวลา",
+    "timerStart": "เริ่ม",
+    "timerResume": "เริ่มต่อ",
+    "timerPause": "พัก",
+    "timerStop": "หยุด",
+    "timerReset": "รีเซ็ต",
     "goldDrop": "ทองที่ได้",
     "goldDropHint": "(ส่วนต่าง จบ − เริ่ม)",
     "goldStart": "เงินตอนเริ่ม",
@@ -672,6 +691,9 @@
     "phoneLabel": "เบอร์ทรูมันนี่",
     "phonePlaceholder": "0812345678",
     "phoneError": "กรอกเบอร์ 10 หลักที่ขึ้นต้นด้วย 0",
+    "emailLabel": "อีเมล (ไม่บังคับ)",
+    "emailPlaceholder": "you@example.com",
+    "emailError": "กรอกอีเมลให้ถูกต้อง",
     "displayNameLabel": "ชื่อที่แสดง (โชวบนบอร์ด)",
     "displayNamePlaceholder": "ไม่ระบุชื่อ",
     "messageLabel": "ข้อความ (ไม่บังคับ)",
@@ -705,6 +727,7 @@
     "modalClose": "ปิด",
     "modalScanTitle": "สแกนเพื่อจ่าย {amount}",
     "modalScanHint": "เปิดแอปธนาคารแล้วสแกน QR พร้อมเพย์นี้",
+    "modalRecipientNote": "ชื่อผู้รับที่ขึ้นในแอปธนาคารจะเป็น “บริษัท สไตรพ์ เพย์เม้นส์ (ประเทศไทย) จำกัด” ซึ่งเป็นผู้ให้บริการรับชำระเงินของเรา ไม่ใช่ชื่อโปรเจกต์ ถือเป็นเรื่องปกติ",
     "modalWaiting": "กำลังรอการชำระเงิน",
     "modalExpiresIn": "· หมดอายุใน {time}",
     "modalConfirming": "กำลังยืนยันการชำระเงิน...",

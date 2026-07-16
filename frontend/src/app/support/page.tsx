@@ -17,9 +17,11 @@ import {
   PlaySquare,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/toast';
 import { NumericInput } from '@/components/numeric-input';
 import { Select } from '@/components/select';
+import { QueryError } from '@/components/query-error';
 import type {
   Donation,
   DonationChannel,
@@ -87,6 +89,7 @@ function SupportPageInner() {
   const [channel, setChannel] = useState<DonationChannel>('promptpay');
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [hideAmount, setHideAmount] = useState(true);
   const [nameTouched, setNameTouched] = useState(false);
@@ -96,10 +99,22 @@ function SupportPageInner() {
   const [charge, setCharge] = useState<DonationCharge | null>(null);
   const notified = useRef(false);
 
-  // Prefill the display name from the user's profile.
+  // The Support page is public: a visitor may or may not be signed in. `null`
+  // while we're still resolving the session (avoids flashing the guest-only
+  // email field before we know).
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  useEffect(() => {
+    createClient()
+      .auth.getSession()
+      .then(({ data }) => setIsAuthed(!!data.session));
+  }, []);
+
+  // Prefill the display name from the user's profile — signed-in donors only
+  // (the endpoint requires a JWT; a guest would just 401).
   const { data: me } = useQuery<{ username: string | null; email: string }>({
     queryKey: ['me'],
     queryFn: () => api.get('/auth/me'),
+    enabled: isAuthed === true,
   });
   // (state adjusted during render — React bails out when the value is unchanged)
   if (me && !nameTouched && !displayName) {
@@ -115,7 +130,13 @@ function SupportPageInner() {
   }
 
   // Thank-you wall.
-  const { data: wall } = useQuery<DonationWallEntry[]>({
+  const {
+    data: wall,
+    isError: isWallError,
+    isFetching: isWallFetching,
+    isPaused: isWallPaused,
+    refetch: refetchWall,
+  } = useQuery<DonationWallEntry[]>({
     queryKey: ['donations', 'wall'],
     queryFn: () => api.get('/donations/wall'),
   });
@@ -228,6 +249,7 @@ function SupportPageInner() {
     amount: Number(amount),
     channel,
     displayName: displayName.trim() || 'Anonymous',
+    email: email.trim() || undefined,
     message: message.trim() || undefined,
     phoneNumber: channel === 'truemoney' ? phone.trim() : undefined,
     hideAmount,
@@ -304,9 +326,15 @@ function SupportPageInner() {
     isManual ? previewMut.mutate() : createMut.mutate();
 
   const phoneValid = /^0\d{9}$/.test(phone.trim());
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  // Guests may optionally add a payer email (a signed-in donor's account email
+  // is used automatically). It's never required — the backend falls back to a
+  // placeholder for gateways that need one — but if given it must be valid.
+  const showEmailField = isAuthed === false && !isManual;
   const canSubmit =
     Number(amount) >= minAmount &&
     (channel !== 'truemoney' || phoneValid) &&
+    (!email.trim() || emailValid) &&
     // Wait for the provider to be known so we pick the right flow. This only
     // gates the initial load; if the config request fails, `configLoading`
     // still clears and we fall back to the gateway path (createMut) unchanged.
@@ -421,6 +449,31 @@ function SupportPageInner() {
                 </div>
               )}
 
+              {/* Payer email — optional, guests only (signed-in donors use
+                  their account email). Left blank → backend uses a placeholder. */}
+              {showEmailField && (
+                <div className="mb-5">
+                  <label className="block text-xs font-medium text-muted mb-2">
+                    {t('emailLabel')}
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    inputMode="email"
+                    autoComplete="email"
+                    maxLength={254}
+                    placeholder={t('emailPlaceholder')}
+                    className="w-full rounded-base border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-[var(--focus)]"
+                  />
+                  {email && !emailValid && (
+                    <p className="mt-1 text-xs text-[var(--fg-danger)]">
+                      {t('emailError')}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Display name */}
               <label className="block text-xs font-medium text-muted mb-2">
                 {t('displayNameLabel')}
@@ -495,7 +548,14 @@ function SupportPageInner() {
                     {t('recentSupporters')}
                   </h2>
                 </div>
-                {!wall || wall.length === 0 ? (
+                {isWallError || isWallPaused ? (
+                  <QueryError
+                    compact
+                    offline={isWallPaused}
+                    onRetry={() => refetchWall()}
+                    isRetrying={isWallFetching}
+                  />
+                ) : !wall || wall.length === 0 ? (
                   <p className="text-xs text-muted">{t('noSupporters')}</p>
                 ) : (
                   <ul className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
@@ -537,7 +597,10 @@ function SupportPageInner() {
                     className="h-12 w-12 shrink-0 rounded-full object-cover outline outline-1 outline-[rgba(255,255,255,0.1)]"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-foreground">
+                    <p
+                      className="line-clamp-2 text-sm font-semibold leading-snug text-foreground"
+                      title={ytTitle}
+                    >
                       {ytTitle}
                     </p>
                     <p className="text-xs text-muted">
@@ -572,7 +635,10 @@ function SupportPageInner() {
                     className="h-12 w-12 shrink-0 rounded-full object-cover outline outline-1 outline-[rgba(255,255,255,0.1)]"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-foreground">
+                    <p
+                      className="line-clamp-2 text-sm font-semibold leading-snug text-foreground"
+                      title={discordName}
+                    >
                       {discordName}
                     </p>
                     {discordServer?.memberCount != null && (
@@ -688,8 +754,8 @@ function PaymentModal({
       : `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-sm rounded-base border border-border bg-surface p-6 text-center shadow-lg">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm">
+      <div className="relative my-auto max-h-[90dvh] w-full max-w-sm overflow-y-auto rounded-base border border-border bg-surface p-6 text-center shadow-lg">
         <button
           onClick={onClose}
           className="absolute right-3 top-3 text-muted hover:text-foreground"
@@ -751,6 +817,13 @@ function PaymentModal({
                 className="h-full w-full"
               />
             </div>
+            {/* Gateway (Stripe) QR: the payee shown in the banking app is the
+                Stripe entity, not us — reassure the donor it's expected. */}
+            {!isManual && (
+              <p className="mb-3 rounded-base bg-raised px-3 py-2 text-[11px] leading-relaxed text-muted">
+                {t('modalRecipientNote')}
+              </p>
+            )}
             {isManual ? (
               // No gateway: the donor confirms they've transferred, then waits
               // for an admin to verify and publish the donation.

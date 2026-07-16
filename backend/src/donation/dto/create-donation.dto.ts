@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsEmail,
   IsIn,
   IsInt,
   IsOptional,
@@ -46,6 +47,14 @@ export class CreateDonationDto {
   @IsString()
   @MaxLength(60)
   displayName: string;
+
+  // Payer email. Logged-in donors are charged against their account email, so
+  // this is optional there. Guests must supply one for gateways that require a
+  // payer email (Stripe PromptPay puts it on billing_details).
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(254)
+  email?: string;
 
   @IsOptional()
   @IsString()

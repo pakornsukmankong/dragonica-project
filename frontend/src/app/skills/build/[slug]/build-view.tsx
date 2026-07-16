@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { m } from 'motion/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
@@ -11,6 +11,7 @@ import { api } from '@/lib/api';
 import { useToast } from '@/components/toast';
 import { SkillTree } from '@/components/skill-tree';
 import { BuildComments } from '@/components/build-comments';
+import { useLoginPrompt } from '@/components/login-prompt';
 import {
   availableSkillPoints,
   encodeBuild,
@@ -22,11 +23,11 @@ import type { SkillBuild, SkillClassTree } from '@/types';
 export function BuildView() {
   const t = useTranslations('skills');
   const params = useParams();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const promptLogin = useLoginPrompt();
   const slug = String(params.slug);
-  const loginNext = `/login?next=${encodeURIComponent(`/skills/build/${slug}`)}`;
+  const buildPath = `/skills/build/${slug}`;
 
   const { data: build, isLoading, isError } = useQuery<SkillBuild>({
     queryKey: ['skills', 'build', slug],
@@ -145,20 +146,24 @@ export function BuildView() {
               {build.description}
             </p>
           )}
-          {/* social stats */}
-          <div className="mt-3 flex items-center gap-3 text-sm text-muted">
+          {/* The like button sits beside two read-only counters that share its
+              icon-and-number shape, so it carries a verb and a raised surface —
+              without them it reads as a third statistic rather than a control. */}
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
             <m.button
-              // guests are sent to login and come straight back here after
-              onClick={() => (me ? likeMut.mutate() : router.push(loginNext))}
+              // guests get the login modal over the build rather than a trip
+              // to /login, so the build they were reading stays behind it
+              onClick={() => (me ? likeMut.mutate() : promptLogin(buildPath))}
               disabled={likeMut.isPending}
               title={me ? undefined : t('loginToLike')}
+              aria-pressed={liked}
               whileHover={{ scale: 1.05, y: -1 }}
               whileTap={{ scale: 0.9 }}
               transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-              className={`inline-flex items-center gap-1.5 rounded-base border px-3 py-1.5 transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded-base border px-3.5 py-2 font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus)] disabled:opacity-50 ${
                 liked
-                  ? 'border-gold/40 bg-gold-soft text-gold'
-                  : 'border-border text-muted hover:text-foreground'
+                  ? 'border-gold/40 bg-gold-soft text-gold hover:bg-gold/25'
+                  : 'border-border bg-raised text-foreground hover:border-gold/40 hover:bg-gold-soft hover:text-gold'
               }`}
             >
               {/* re-mounts on toggle so the heart pops both ways */}
@@ -170,16 +175,21 @@ export function BuildView() {
               >
                 <Heart className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} />
               </m.span>
-              <span className="tabular-nums">{build.like_count ?? 0}</span>
+              {liked ? t('liked') : t('like')}
+              <span className="tabular-nums opacity-70">
+                {build.like_count ?? 0}
+              </span>
             </m.button>
-            <span className="inline-flex items-center gap-1.5">
-              <Eye className="h-4 w-4" />
-              <span className="tabular-nums">{build.view_count ?? 0}</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <MessageSquare className="h-4 w-4" />
-              <span className="tabular-nums">{build.comment_count ?? 0}</span>
-            </span>
+            <div className="flex items-center gap-3 text-muted">
+              <span className="inline-flex items-center gap-1.5">
+                <Eye className="h-4 w-4" />
+                <span className="tabular-nums">{build.view_count ?? 0}</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <MessageSquare className="h-4 w-4" />
+                <span className="tabular-nums">{build.comment_count ?? 0}</span>
+              </span>
+            </div>
           </div>
         </div>
         <Link
