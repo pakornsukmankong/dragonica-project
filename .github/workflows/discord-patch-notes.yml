@@ -135,12 +135,13 @@ jobs:
             if (!description) description = '• อัปเดตใหม่ถูกปล่อยแล้ว';
             if (description.length > 4000) description = description.slice(0, 3990) + '\n…';
 
+            // ไม่ใส่ `url` ใน embed โดยตั้งใจ — จะทำให้หัวข้อกลายเป็นลิงก์ไป PR
+            // ซึ่ง patch note นี้ทำมาให้ผู้เล่นอ่าน ไม่ใช่นักพัฒนา (repo ก็ไม่ได้เปิด public)
             const payload = {
               username: 'DGN-GRIND Patch Notes',
               embeds: [
                 {
                   title: title.slice(0, 256),
-                  url: pr.html_url,
                   description,
                   color: 0x5865f2,
                   timestamp: pr.merged_at, // Discord แสดงเป็นวันที่ท้าย embed ให้อัตโนมัติ
