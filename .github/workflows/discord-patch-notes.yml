@@ -1,7 +1,11 @@
 name: Discord Patch Notes
 
-# ทุกครั้งที่ PR ถูก merge เข้า master จะให้ Claude (Sonnet 5) เขียน patch-note
-# ภาษาไทยอ่านง่าย แล้วยิงเข้าห้อง Discord
+# PR ที่ merge เข้า master "และติดป้าย patch-note ไว้" จะให้ Claude (Sonnet 5)
+# เขียน patch-note ภาษาไทยอ่านง่าย แล้วยิงเข้าห้อง Discord
+#
+# ห้องนี้ผู้เล่นอ่าน ไม่ใช่นักพัฒนา — งานหลายอย่างที่ merge (refactor, แก้ CI,
+# ขยับ config) ผู้เล่นไม่เห็นและไม่สนใจ ถ้ายิงหมดข่าวจริงจะจมไปกับ noise
+# เลยเลือกให้เงียบเป็นค่าเริ่มต้น แล้วติดป้ายเฉพาะอันที่อยากประกาศ
 #
 # ต้องตั้งค่า secret 2 ตัว:
 #   - DISCORD_PATCH_WEBHOOK  = Webhook URL ของห้อง #patch-notes
@@ -20,8 +24,12 @@ jobs:
   patch-note:
     name: Announce merge to Discord
     runs-on: ubuntu-latest
-    # ยิงเฉพาะตอน "merged" จริง (ปิด PR เฉยๆ ไม่ยิง)
-    if: github.event.pull_request.merged == true
+    # ยิงเฉพาะตอน "merged" จริง (ปิด PR เฉยๆ ไม่ยิง) และต้องติดป้าย patch-note
+    # ไว้ "ก่อน" merge — payload ของ event closed อ่าน label ณ วินาทีที่ปิด
+    # ติดย้อนหลังไม่ทำให้ workflow รันใหม่
+    if: >-
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'patch-note')
     steps:
       - uses: actions/github-script@v7
         env:

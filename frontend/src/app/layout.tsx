@@ -9,6 +9,7 @@ import { AppShell } from '@/components/app-shell';
 import { Clarity } from '@/components/clarity';
 import { GoogleAnalytics } from '@/components/google-analytics';
 import { JsonLd } from '@/components/json-ld';
+import { SiteVisit } from '@/components/site-visit';
 import { siteUrl } from '@/lib/site-url';
 
 // Latin text. Varela Round ships a single weight (400); bolder text is
@@ -104,6 +105,9 @@ export default async function RootLayout({
         />
         <Clarity />
         <GoogleAnalytics />
+        {/* Counts the visit on whichever page the reader landed on, so search
+            traffic straight to /items or /skills is not missed. */}
+        <SiteVisit />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <AppShell>{children}</AppShell>
