@@ -251,6 +251,8 @@
     "sortPopular": "Popular",
     "views": "Views",
     "likes": "Likes",
+    "like": "Like",
+    "liked": "Liked",
     "comments": "Comments",
     "noComments": "No comments yet. Be the first!",
     "commentPlaceholder": "Write a comment...",
