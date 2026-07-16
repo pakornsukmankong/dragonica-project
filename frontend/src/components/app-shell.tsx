@@ -24,6 +24,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { LoginModal } from '@/components/login-modal';
 import { api } from '@/lib/api';
 import type { User } from '@supabase/supabase-js';
 
@@ -109,22 +110,29 @@ function NavLinks({
   t,
   badgeFor,
   onNavigate,
+  interceptAuth,
 }: {
   items: NavItem[];
   pathname: string;
   t: ReturnType<typeof useTranslations<'nav'>>;
   badgeFor: (key: string) => number;
   onNavigate?: () => void;
+  /** Returns true when the click was handled (guest sent to the login modal). */
+  interceptAuth?: (item: NavItem) => boolean;
 }) {
   return (
     <>
-      {items.map(({ href, key, icon: Icon }) => {
+      {items.map((item) => {
+        const { href, key, icon: Icon } = item;
         const active = pathname === href || pathname.startsWith(href + '/');
         return (
           <Link
             key={href}
             href={href}
-            onClick={onNavigate}
+            onClick={(e) => {
+              if (interceptAuth?.(item)) e.preventDefault();
+              onNavigate?.();
+            }}
             className={`group relative flex items-center gap-3 rounded-base px-3 py-2 text-sm font-medium transition-colors duration-150 ${
               active
                 ? 'bg-gold-soft text-gold'
@@ -224,6 +232,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const t = useTranslations('nav');
   const { user, isAdmin, isLoading } = useAuthNav();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Set to the members-only href a guest just picked; drives the login modal.
+  const [loginNext, setLoginNext] = useState<string | null>(null);
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => {
@@ -282,9 +292,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  const items = NAV.filter(
-    (i) => (!i.admin || isAdmin) && (!i.auth || Boolean(user)),
-  );
+  // Guests still see every members-only entry — the point is to advertise what
+  // an account gets you — but picking one opens the login modal instead of
+  // navigating into a middleware bounce. While the session is still resolving,
+  // let the click through rather than flash the modal at a signed-in user.
+  const items = NAV.filter((i) => !i.admin || isAdmin);
+
+  const interceptAuth = (item: NavItem) => {
+    if (!item.auth || user || isLoading) return false;
+    setLoginNext(item.href);
+    return true;
+  };
 
   return (
     <div className="min-h-screen lg:pl-60">
@@ -297,6 +315,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             pathname={pathname}
             t={t}
             badgeFor={badgeFor}
+            interceptAuth={interceptAuth}
           />
         </nav>
         <div className="space-y-2 border-t border-border p-3">
@@ -387,6 +406,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               t={t}
               badgeFor={badgeFor}
               onNavigate={() => setMenuOpen(false)}
+              interceptAuth={interceptAuth}
             />
           </nav>
           <div className="space-y-2 border-t border-border p-3">
@@ -400,6 +420,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
       </div>
+
+      <LoginModal
+        open={loginNext !== null}
+        onOpenChange={(open) => !open && setLoginNext(null)}
+        next={loginNext ?? '/dashboard'}
+      />
 
       {children}
     </div>

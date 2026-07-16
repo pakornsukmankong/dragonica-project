@@ -351,7 +351,8 @@
     "signUpLink": "สมัครสมาชิก",
     "signInLink": "เข้าสู่ระบบ",
     "confirmPassword": "ยืนยันรหัสผ่าน",
-    "passwordMismatch": "รหัสผ่านไม่ตรงกัน"
+    "passwordMismatch": "รหัสผ่านไม่ตรงกัน",
+    "close": "ปิด"
   },
   "dashboard": {
     "title": "แดชบอร์ด",
