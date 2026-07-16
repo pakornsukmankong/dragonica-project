@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -25,6 +25,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { LoginModal } from '@/components/login-modal';
+import { LoginPromptProvider } from '@/components/login-prompt';
 import { api } from '@/lib/api';
 import type { User } from '@supabase/supabase-js';
 
@@ -237,6 +238,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Set to the members-only href a guest just picked; drives the login modal.
   const [loginNext, setLoginNext] = useState<string | null>(null);
 
+  // Handed to the tree so anything gated on an account can raise the same
+  // modal. Declared up here because the bare-route return below is conditional
+  // and hooks are not. useCallback keeps consumers off a new identity per
+  // render.
+  const promptLogin = useCallback((next: string) => setLoginNext(next), []);
+
   // Close the mobile drawer whenever the route changes.
   useEffect(() => {
     setMenuOpen(false);
@@ -438,7 +445,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         next={loginNext ?? '/dashboard'}
       />
 
-      {children}
+      {/* Only the page needs the prompt — the nav gates itself through
+          interceptAuth, which already has setLoginNext in scope. */}
+      <LoginPromptProvider value={promptLogin}>{children}</LoginPromptProvider>
     </div>
   );
 }

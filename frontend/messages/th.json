@@ -251,6 +251,8 @@
     "sortPopular": "ยอดนิยม",
     "views": "ยอดวิว",
     "likes": "ไลก์",
+    "like": "ไลก์",
+    "liked": "ไลก์แล้ว",
     "comments": "คอมเมนต์",
     "noComments": "ยังไม่มีคอมเมนต์ มาเป็นคนแรกสิ!",
     "commentPlaceholder": "เขียนคอมเมนต์...",
