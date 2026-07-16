@@ -41,9 +41,12 @@ export function LoginModal({
           <Dialog.Title className="sr-only">
             {mode === 'signin' ? t('signIn') : t('createAccount')}
           </Dialog.Title>
+          {/* Radix autofocuses this on open because it is the first tabbable
+              child, so the ring must be focus-visible — plain focus: would draw
+              it on every mouse-opened dialog, where it reads as stuck hover. */}
           <Dialog.Close
             aria-label={t('close')}
-            className="absolute right-3 top-3 rounded-base p-1.5 text-muted transition-colors hover:bg-raised hover:text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--focus)]"
+            className="absolute right-3 top-3 rounded-base p-1.5 text-muted outline-none transition-colors hover:bg-raised hover:text-foreground focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
           >
             <X className="h-4 w-4" />
           </Dialog.Close>
