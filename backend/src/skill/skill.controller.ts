@@ -18,6 +18,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { SkillService } from './skill.service';
 import { SaveBuildDto } from './dto/save-build.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { UpdateVisibilityDto } from './dto/update-visibility.dto';
 
 @Controller('skills')
 export class SkillController {
@@ -125,6 +126,16 @@ export class SkillController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.skillService.updateBuild(id, user.sub, dto);
+  }
+
+  @Patch('builds/:id/visibility')
+  @UseGuards(JwtAuthGuard)
+  setVisibility(
+    @Param('id') id: string,
+    @Body() dto: UpdateVisibilityDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.skillService.setBuildVisibility(id, user.sub, dto.visibility);
   }
 
   @Delete('builds/:id')
