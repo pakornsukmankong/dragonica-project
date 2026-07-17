@@ -96,6 +96,21 @@ function SimulatorInner() {
     retry: false,
   });
 
+  // Grow the description box to fit what it holds — a build write-up runs to
+  // several lines and re-reading it through a 2-row window is miserable. Height
+  // resets to `auto` first so the box shrinks back too, and `auto` resolves to
+  // the `rows` minimum, which keeps an empty box the size it is today.
+  //
+  // The box is tracked as state rather than a ref because the panel only mounts
+  // once the tree query lands, which can be after the description it is meant to
+  // fit: a ref would leave the effect nothing to measure and never re-run.
+  const [descEl, setDescEl] = useState<HTMLTextAreaElement | null>(null);
+  useEffect(() => {
+    if (!descEl) return;
+    descEl.style.height = 'auto';
+    descEl.style.height = `${descEl.scrollHeight}px`;
+  }, [descEl, description]);
+
   // Only the owner gets in-place editing; opening someone else's ?edit= link
   // degrades to a clone (the form still seeds, but saving creates a new build).
   const isEditMode = !!editing && !!me && me.id === editing.user_id;
@@ -369,12 +384,13 @@ function SimulatorInner() {
         </div>
         {me && (
           <textarea
+            ref={setDescEl}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder={t('descriptionPlaceholder')}
             maxLength={2000}
             rows={2}
-            className="w-full rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-gold/50"
+            className="w-full resize-none overflow-hidden rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-gold/50"
           />
         )}
       </div>
