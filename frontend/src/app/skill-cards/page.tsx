@@ -4,6 +4,8 @@ import { useDeferredValue, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Loader2, MapPin, Search, Swords } from 'lucide-react';
+import { ItemIcon } from '@/components/item-icon';
+import type { GameItemIcon } from '@/lib/items';
 
 type SkillCardSkill = { no: number; name: string; job: string | null };
 type SkillCardMap = { n: string; l: number };
@@ -12,6 +14,8 @@ type SkillCard = {
   monster: string;
   /** In-game card item name, only set when it differs from the monster's name. */
   cardName: string | null;
+  /** Sprite for the card item itself (`id` is its game item id). */
+  icon: GameItemIcon;
   monsterId: number | null;
   class: 'Warrior' | 'Magician' | 'Archer' | 'Thief';
   levels: string[];
@@ -158,6 +162,11 @@ export default function SkillCardsPage() {
                 >
                   {/* Monster (source) + class */}
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <ItemIcon
+                      icon={c.icon}
+                      size={28}
+                      className="rounded-[4px] border border-border bg-surface"
+                    />
                     <span
                       className={`rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${CLASS_CLASS[c.class]}`}
                     >
