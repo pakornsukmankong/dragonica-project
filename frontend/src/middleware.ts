@@ -72,6 +72,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(target, request.url));
   }
 
+  // The landing page sells the product to visitors who don't have it yet, so
+  // members skip it and go straight to their dashboard. Crawlers carry no auth
+  // cookie, so the public page they index is unaffected.
+  if (request.nextUrl.pathname === '/' && user) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
   return supabaseResponse;
 }
 
