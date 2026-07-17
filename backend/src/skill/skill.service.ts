@@ -180,6 +180,26 @@ export class SkillService {
     return data;
   }
 
+  // Listing a build from the build list, where the client holds no allocations
+  // to send back: updateBuild's full payload would make the caller re-fetch and
+  // rewrite the whole build just to flip one flag.
+  async setBuildVisibility(
+    id: string,
+    userId: string,
+    visibility: 'public' | 'unlisted',
+  ) {
+    await this.assertOwned(id, userId);
+    const { data, error } = await this.supabase
+      .from('skill_builds')
+      .update({ visibility, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select('*')
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
   async deleteBuild(id: string, userId: string) {
     await this.assertOwned(id, userId);
     const { error } = await this.supabase

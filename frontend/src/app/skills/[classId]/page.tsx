@@ -21,6 +21,7 @@ import { api } from '@/lib/api';
 import { useToast } from '@/components/toast';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { SkillTree } from '@/components/skill-tree';
+import { Switch } from '@/components/switch';
 import {
   availableSkillPoints,
   decodeBuild,
@@ -321,22 +322,13 @@ function SimulatorInner() {
           />
           {me ? (
             <>
-              <label
-                className={`ml-auto flex cursor-pointer items-center gap-2 rounded-base border px-3 py-2 text-xs transition-colors ${
-                  isPublic
-                    ? 'border-gold/40 bg-gold-soft text-gold'
-                    : 'border-border text-muted'
-                }`}
+              <Switch
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
                 title={t('shareToCommunityHint')}
-              >
-                <input
-                  type="checkbox"
-                  checked={isPublic}
-                  onChange={(e) => setIsPublic(e.target.checked)}
-                  className="accent-[var(--gold)]"
-                />
-                {isPublic ? t('sharedToCommunity') : t('shareToCommunity')}
-              </label>
+                label={t('shareToCommunity')}
+                className="ml-auto border border-border px-3 py-2"
+              />
               <m.button
                 onClick={() => saveMut.mutate()}
                 disabled={saveMut.isPending || !validation.valid || spUsed === 0}
