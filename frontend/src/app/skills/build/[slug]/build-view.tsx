@@ -135,10 +135,18 @@ export function BuildView() {
           <h1 className="text-xl font-medium text-foreground laptop:text-2xl">
             {build.name}
           </h1>
+          {/* Everything here must keep its width from the first paint: this line
+              wraps on a phone, so a late-filled class name or a spent-SP count
+              that grows from 0 to 895 re-wraps it and shoves the page down
+              (CLS 0.65). The name rides the build's own join instead of the tree
+              query that lands a second later, and the count holds its digits. */}
           <p className="mt-1 text-sm text-muted">
-            {tree?.class.name ?? ''} · {t('charLevel')} {build.char_level} ·{' '}
-            {spUsed}/
-            {availableSkillPoints(build.char_level, spBase, build.bonus_sp ?? 0)}{' '}
+            {build.skill_classes?.name ?? tree?.class.name ?? ''} ·{' '}
+            {t('charLevel')} {build.char_level} ·{' '}
+            <span className="inline-block min-w-[3ch] text-right tabular-nums">
+              {tree ? spUsed : ''}
+            </span>
+            /{availableSkillPoints(build.char_level, spBase, build.bonus_sp ?? 0)}{' '}
             {t('spUsed')}
           </p>
           {build.description && (
