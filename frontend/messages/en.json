@@ -25,8 +25,7 @@
     "characters": "Characters",
     "sessions": "Sessions",
     "skills": "Skills",
-    "items": "Item Database",
-    "monsters": "Monsters",
+    "items": "Game Database",
     "skillCards": "Skill Cards",
     "admin": "Admin",
     "guide": "User Guide",
@@ -40,8 +39,8 @@
     "closeMenu": "Close menu"
   },
   "items": {
-    "title": "Item Database",
-    "subtitle": "Browse every item in the game — equipment, costumes, consumables, materials, and more.",
+    "title": "Game Database",
+    "subtitle": "Browse every item and monster in the game — equipment, costumes, consumables, materials, and the monsters that drop them.",
     "searchPlaceholder": "Search item name...",
     "allSlots": "All slots",
     "allClasses": "All classes",
@@ -75,7 +74,8 @@
       "material": "Materials",
       "quest": "Quest",
       "pet": "Pets",
-      "etc": "Etc"
+      "etc": "Etc",
+      "monsters": "Monsters"
     },
     "subcats": {
       "all": "All",

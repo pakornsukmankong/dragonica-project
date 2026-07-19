@@ -20,7 +20,12 @@ const GRADE_CLASS: Record<number, string> = {
   4: 'border-[var(--border-danger)] text-[var(--fg-danger)]',
 };
 
-export default function MonstersPage() {
+/**
+ * The monster half of the Game Database — its own data, filters and card, shown
+ * when the Monsters tab is picked on the items page. Self-contained so the
+ * items page only decides which panel to render, not how each one works.
+ */
+export function MonstersPanel() {
   const t = useTranslations('monsters');
 
   const { data: monsters, isLoading } = useQuery<GameMonster[]>({
@@ -88,14 +93,7 @@ export default function MonstersPage() {
     'w-16 rounded-base border border-border bg-surface px-2 py-2 text-sm text-foreground text-center placeholder:text-muted outline-none focus:border-[var(--focus)]';
 
   return (
-    <main className="mx-auto max-w-container px-4 py-8 sm:px-7">
-      <header className="mb-6">
-        <h1 className="text-xl font-medium text-foreground laptop:text-2xl">
-          {t('title')}
-        </h1>
-        <p className="mt-2 text-sm text-muted">{t('subtitle')}</p>
-      </header>
-
+    <>
       {/* Grade tabs */}
       <div className="mb-4 flex flex-wrap gap-2">
         {[0, ...MONSTER_GRADES].map((g) => (
@@ -317,6 +315,6 @@ export default function MonstersPage() {
           <Pagination page={page} pageCount={pageCount} onChange={setPage} />
         </>
       )}
-    </main>
+    </>
   );
 }
