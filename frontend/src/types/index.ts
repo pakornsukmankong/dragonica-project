@@ -174,6 +174,7 @@ export interface SkillClass {
 export interface SkillLevelRow {
   level: number;
   reqLevel: number; // character level required for this skill level
+  description?: string | null; // per-rank text (varies as the skill levels up)
   sp?: number; // skill points this level costs (spidpex model)
   mp?: number;
   cooldown?: number; // ms
