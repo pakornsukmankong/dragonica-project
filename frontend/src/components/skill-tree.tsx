@@ -130,7 +130,14 @@ function SkillCell({
           </p>
         )}
         <div className="mb-1 flex flex-wrap gap-x-3 text-[10px] text-[var(--dark-gray)]">
-          <span>Req Lv.{skill.req_level}</span>
+          {/* Requirement to reach the next rank (each rank unlocks at a higher
+              character level); falls back to the top rank once maxed. */}
+          <span>
+            Req Lv.
+            {cur < skill.max_level
+              ? (skill.levels[cur]?.reqLevel ?? skill.req_level)
+              : (skill.levels[skill.max_level - 1]?.reqLevel ?? skill.req_level)}
+          </span>
           {!!lvl?.mp && lvl.mp > 0 && <span>MP {lvl.mp}</span>}
           {!!lvl?.cooldown && lvl.cooldown > 0 && (
             <span>CD {(lvl.cooldown / 1000).toFixed(1)}s</span>
