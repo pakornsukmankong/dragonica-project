@@ -3,11 +3,12 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Loader2, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Loader2, Search, SlidersHorizontal, Skull, X } from 'lucide-react';
 import { Currency } from '@/components/currency';
 import { ItemIcon } from '@/components/item-icon';
 import { Pagination } from '@/components/pagination';
 import { Select } from '@/components/select';
+import { MonstersPanel } from '@/components/monsters-panel';
 import {
   BRANCH_ICON,
   BRANCH_IDS,
@@ -199,7 +200,14 @@ function DropsPanel({
 export default function ItemsPage() {
   const t = useTranslations('items');
 
-  const [category, setCategory] = useState<ItemCategory>('equipment');
+  // The tab bar is item categories plus one Monsters tab. Monsters is a whole
+  // separate view (own data, filters and card), so it swaps out the item body
+  // rather than adding to it. `category` still drives every item control; when
+  // Monsters is active it falls back to a category the item query is told to
+  // skip, so nothing item-side runs while it is showing.
+  const [tab, setTab] = useState<ItemCategory | 'monsters'>('equipment');
+  const isMonsters = tab === 'monsters';
+  const category: ItemCategory = isMonsters ? 'equipment' : tab;
   const [search, setSearch] = useState('');
   const [subcat, setSubcat] = useState<Subcat>('all');
   const [slot, setSlot] = useState('');
@@ -228,6 +236,7 @@ export default function ItemsPage() {
       return res.json();
     },
     staleTime: Infinity,
+    enabled: !isMonsters,
   });
 
   // Set/drop details load once, on the first expanded panel of each kind.
@@ -269,7 +278,7 @@ export default function ItemsPage() {
     };
 
   const selectCategory = (c: ItemCategory) => {
-    setCategory(c);
+    setTab(c);
     setSubcat('all');
     setSlot('');
     setWeapon('');
@@ -395,14 +404,14 @@ export default function ItemsPage() {
         <p className="mt-2 text-sm text-muted">{t('subtitle')}</p>
       </header>
 
-      {/* Category tabs */}
+      {/* Category tabs, then Monsters — the other half of the database */}
       <div className="mb-4 flex flex-wrap gap-2">
         {ITEM_CATEGORIES.map((c) => (
           <button
             key={c}
             onClick={() => selectCategory(c)}
             className={`rounded-base border px-3 py-1.5 text-sm transition-colors ${
-              category === c
+              tab === c
                 ? 'border-gold/60 bg-gold-soft font-medium text-gold'
                 : 'border-border text-muted hover:border-gold/40 hover:text-foreground'
             }`}
@@ -410,10 +419,23 @@ export default function ItemsPage() {
             {t(`categories.${c}`)}
           </button>
         ))}
+        <button
+          onClick={() => setTab('monsters')}
+          className={`inline-flex items-center gap-1.5 rounded-base border px-3 py-1.5 text-sm transition-colors ${
+            isMonsters
+              ? 'border-gold/60 bg-gold-soft font-medium text-gold'
+              : 'border-border text-muted hover:border-gold/40 hover:text-foreground'
+          }`}
+        >
+          <Skull className="h-3.5 w-3.5" />
+          {t('categories.monsters')}
+        </button>
       </div>
 
+      {isMonsters && <MonstersPanel />}
+
       {/* Sub-category chips (wearables only) */}
-      {slotted && (
+      {!isMonsters && slotted && (
         <div className="mb-4 flex flex-wrap gap-2">
           {SUBCATS.map((c) => (
             <button
@@ -436,6 +458,8 @@ export default function ItemsPage() {
         </div>
       )}
 
+      {!isMonsters && (
+        <>
       {/* Filters */}
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
@@ -745,6 +769,8 @@ export default function ItemsPage() {
           )}
 
           <Pagination page={page} pageCount={pageCount} onChange={setPage} />
+        </>
+      )}
         </>
       )}
     </main>
