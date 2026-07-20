@@ -32,5 +32,11 @@
     "comment_not_found": "Comment not found",
     "comment_empty": "Comment cannot be empty",
     "nothing_to_update": "Nothing to update"
+  },
+  "itemCode": {
+    "required": "Item Code is required.",
+    "duplicate": "This Item Code already exists.",
+    "date_order": "Start Date cannot be later than Expire Date.",
+    "not_found": "Item Code not found"
   }
 }

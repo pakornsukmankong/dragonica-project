@@ -15,6 +15,7 @@ import { Currency } from '@/components/currency';
 import { CountUp, CountUpCurrency } from '@/components/count-up';
 import { Skeleton } from '@/components/skeleton';
 import { QueryError } from '@/components/query-error';
+import { DatePicker } from '@/components/date-picker';
 import {
   computeCharacterStats,
   computeDungeonStats,
@@ -213,22 +214,23 @@ export default function DashboardPage() {
               </div>
               {dateRange === 'custom' && (
                 <div className="flex items-center gap-2">
-                  <input
-                    type="date"
-                    value={customFrom}
-                    max={customTo || maxDate}
-                    onChange={(e) => setCustomFrom(e.target.value)}
-                    className="rounded-base border border-border bg-surface px-2 py-1.5 text-xs text-foreground outline-none focus:border-[var(--focus)]"
-                  />
+                  {/* Fixed-width wrappers: the trigger itself is w-full. */}
+                  <div className="w-44">
+                    <DatePicker
+                      value={customFrom}
+                      max={customTo || maxDate}
+                      onChange={setCustomFrom}
+                    />
+                  </div>
                   <span className="text-xs text-muted">—</span>
-                  <input
-                    type="date"
-                    value={customTo}
-                    min={customFrom || undefined}
-                    max={maxDate}
-                    onChange={(e) => setCustomTo(e.target.value)}
-                    className="rounded-base border border-border bg-surface px-2 py-1.5 text-xs text-foreground outline-none focus:border-[var(--focus)]"
-                  />
+                  <div className="w-44">
+                    <DatePicker
+                      value={customTo}
+                      min={customFrom || undefined}
+                      max={maxDate}
+                      onChange={setCustomTo}
+                    />
+                  </div>
                 </div>
               )}
             </div>

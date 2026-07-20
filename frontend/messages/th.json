@@ -17,6 +17,13 @@
     "offlineTitle": "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้",
     "offlineDesc": "เหมือนเน็ตจะหลุด ข้อมูลไม่ได้หายไปไหน ต่อเน็ตแล้วลองใหม่ได้เลย"
   },
+  "datePicker": {
+    "placeholder": "เลือกวันที่",
+    "today": "วันนี้",
+    "clear": "ล้าง",
+    "prevMonth": "เดือนก่อนหน้า",
+    "nextMonth": "เดือนถัดไป"
+  },
   "nav": {
     "brand": "Dragonica",
     "brandSubtitle": "Grind Tracker",
@@ -27,6 +34,7 @@
     "skills": "สกิล",
     "items": "ฐานข้อมูลเกม",
     "skillCards": "การ์ดสกิล",
+    "codes": "โค้ดไอเทม",
     "admin": "แอดมิน",
     "guide": "คู่มือการใช้งาน",
     "support": "สนับสนุน",
@@ -225,6 +233,55 @@
       "levelAsc": "เลเวล: น้อย → มาก",
       "nameAsc": "ชื่อ: A → Z"
     }
+  },
+  "codes": {
+    "title": "โค้ดไอเทม",
+    "searchPlaceholder": "ค้นหาโค้ดหรือรายละเอียด...",
+    "noResults": "ไม่มีโค้ดที่ตรงกับตัวกรอง",
+    "filter": {
+      "all": "ทั้งหมด",
+      "active": "ใช้งานได้",
+      "expired": "หมดอายุ",
+      "scheduled": "ยังไม่เริ่ม"
+    },
+    "add": "เพิ่มโค้ดไอเทม",
+    "cancel": "ยกเลิก",
+    "submit": "บันทึกโค้ด",
+    "added": "เพิ่มโค้ดไอเทมแล้ว",
+    "copy": "คัดลอก",
+    "copied": "คัดลอกแล้ว!",
+    "copyFailed": "คัดลอกไปยังคลิปบอร์ดไม่สำเร็จ",
+    "empty": "ยังไม่มีโค้ดไอเทม — มาเป็นคนแรกที่เพิ่มกันเถอะ",
+    "loginToAdd": "เข้าสู่ระบบเพื่อเพิ่มโค้ด",
+    "immediate": "ทันที",
+    "noExpiry": "ไม่มีวันหมดอายุ",
+    "status": {
+      "active": "ใช้งานได้",
+      "expired": "หมดอายุ",
+      "scheduled": "ยังไม่เริ่ม"
+    },
+    "fields": {
+      "code": "โค้ดไอเทม",
+      "codePlaceholder": "เช่น DRAGONICA2026",
+      "description": "รายละเอียด",
+      "descriptionPlaceholder": "โค้ดนี้ได้อะไรบ้าง? (ไม่บังคับ)",
+      "startDate": "วันเริ่ม",
+      "expireDate": "วันหมดอายุ"
+    },
+    "errors": {
+      "required": "กรุณากรอกโค้ดไอเทม",
+      "duplicate": "โค้ดไอเทมนี้มีอยู่แล้ว",
+      "dateOrder": "วันเริ่มต้องไม่เกินวันหมดอายุ"
+    },
+    "addTitle": "เพิ่มโค้ดไอเทม",
+    "editTitle": "แก้ไขโค้ดไอเทม",
+    "saveChanges": "บันทึกการแก้ไข",
+    "updated": "แก้ไขโค้ดไอเทมแล้ว",
+    "deleted": "ลบโค้ดไอเทมแล้ว",
+    "deleteError": "ลบโค้ดไม่สำเร็จ",
+    "deleteTitle": "ลบโค้ดไอเทม",
+    "deleteConfirm": "ลบ \"{code}\" ใช่ไหม? การกระทำนี้ย้อนกลับไม่ได้",
+    "capNotice": "แสดงโค้ดล่าสุด {count} รายการ"
   },
   "skills": {
     "title": "จำลองสกิล",
@@ -638,6 +695,7 @@
     "deleteSessionTitle": "ลบเซสชันนี้?",
     "deleteSessionDesc": "การลบจะลบเซสชันและไอเทมที่ดรอปทั้งหมดอย่างถาวร ไม่สามารถกู้คืนได้",
     "tabSkillBuilds": "สกิลบิลด์",
+    "tabItemCodes": "โค้ดไอเทม",
     "buildsTotal": "บิลด์ทั้งหมด",
     "buildsPublic": "เผยแพร่ในคอมมูนิตี้",
     "buildsNone": "ยังไม่มีสกิลบิลด์",
@@ -661,7 +719,23 @@
     "deleteBuildTitle": "ลบบิลด์นี้?",
     "deleteBuildDesc": "การลบ \"{name}\" จะลบทั้งไลก์และคอมเมนต์ของบิลด์อย่างถาวร ไม่สามารถกู้คืนได้",
     "deleteBuildCommentTitle": "ลบคอมเมนต์นี้?",
-    "deleteBuildCommentDesc": "คอมเมนต์จะถูกลบอย่างถาวร ไม่สามารถกู้คืนได้"
+    "deleteBuildCommentDesc": "คอมเมนต์จะถูกลบอย่างถาวร ไม่สามารถกู้คืนได้",
+    "codesTotal": "โค้ดทั้งหมด",
+    "codeSearchPlaceholder": "ค้นหาโค้ดไอเทม...",
+    "codesNone": "ไม่พบโค้ดไอเทม",
+    "colCode": "โค้ด",
+    "colDescription": "รายละเอียด",
+    "colStart": "วันเริ่ม",
+    "colExpire": "วันหมดอายุ",
+    "codeActive": "ใช้งานได้",
+    "codeExpired": "หมดอายุ",
+    "codeUpdated": "แก้ไขโค้ดไอเทมแล้ว",
+    "codeUpdateError": "แก้ไขโค้ดไม่สำเร็จ",
+    "codeDeleted": "ลบโค้ดไอเทมแล้ว",
+    "codeDeleteError": "ลบโค้ดไม่สำเร็จ",
+    "deleteCodeTitle": "ลบโค้ดไอเทม",
+    "deleteCodeDesc": "ลบ \"{code}\" ใช่ไหม? การกระทำนี้ย้อนกลับไม่ได้",
+    "codeScheduled": "ยังไม่เริ่ม"
   },
   "errorPages": {
     "notFoundTitle": "ไม่พบหน้านี้",

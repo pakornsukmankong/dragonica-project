@@ -16,6 +16,8 @@ import { SessionService } from '../session/session.service';
 import { CharacterService } from '../character/character.service';
 import { SkillService } from '../skill/skill.service';
 import { AdminUpdateBuildDto } from '../skill/dto/admin-update-build.dto';
+import { ItemCodeService } from '../item-code/item-code.service';
+import { CreateItemCodeDto } from '../item-code/dto/create-item-code.dto';
 import { UpdateSessionDto } from '../session/dto/update-session.dto';
 import { CreateDropDto } from '../session/dto/create-drop.dto';
 import { UpdateDropDto } from '../session/dto/update-drop.dto';
@@ -33,6 +35,7 @@ export class AdminController {
     private readonly sessionService: SessionService,
     private readonly characterService: CharacterService,
     private readonly skillService: SkillService,
+    private readonly itemCodeService: ItemCodeService,
   ) {}
 
   // Users
@@ -106,6 +109,25 @@ export class AdminController {
   @Delete('skill-builds/:id')
   deleteSkillBuild(@Param('id') id: string) {
     return this.skillService.deleteBuildAsAdmin(id);
+  }
+
+  // Community item codes (moderation: list all with author, edit, delete any).
+  @Get('item-codes')
+  getItemCodes(@Query('search') search?: string, @Query('page') page?: string) {
+    return this.itemCodeService.listAllAsAdmin({
+      search: search || undefined,
+      page: page ? Number(page) : 1,
+    });
+  }
+
+  @Patch('item-codes/:id')
+  updateItemCode(@Param('id') id: string, @Body() dto: CreateItemCodeDto) {
+    return this.itemCodeService.updateAsAdmin(id, dto);
+  }
+
+  @Delete('item-codes/:id')
+  deleteItemCode(@Param('id') id: string) {
+    return this.itemCodeService.removeAsAdmin(id);
   }
 
   // Dungeons

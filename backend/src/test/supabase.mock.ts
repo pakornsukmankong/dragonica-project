@@ -35,6 +35,9 @@ export function createSupabaseMock(results: QueryResult[]): {
       'eq',
       'order',
       'limit',
+      'ilike',
+      'or',
+      'range',
     ]) {
       qb[method] = jest.fn(() => qb);
     }
