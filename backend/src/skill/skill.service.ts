@@ -22,7 +22,14 @@ interface SkillRow {
   req_level: number;
   prerequisites: { id: number; level: number }[] | null;
   class_bits: number[];
-  levels: { level: number; reqLevel: number; sp?: number }[] | null;
+  levels:
+    | {
+        level: number;
+        reqLevel: number;
+        sp?: number;
+        description?: string | null;
+      }[]
+    | null;
 }
 
 @Injectable()

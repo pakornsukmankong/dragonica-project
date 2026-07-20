@@ -116,7 +116,11 @@ function SkillCell({
       {/* hover / keyboard-focus detail */}
       <div className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden w-52 -translate-x-1/2 rounded-md border border-border bg-[var(--raised)] p-2.5 text-[11px] leading-relaxed text-muted shadow-xl group-hover:block group-focus-within:block">
         <div className="mb-1 font-semibold text-foreground">{skill.name}</div>
-        {skill.description && <p className="mb-1">{skill.description}</p>}
+        {/* Description follows the shown rank (each rank has its own text), with
+            the skill's base description as a fallback for skills without one. */}
+        {(lvl?.description ?? skill.description) && (
+          <p className="mb-1">{lvl?.description ?? skill.description}</p>
+        )}
         {power && (
           <p className="mb-1 text-[11px]">
             <span className="text-[var(--dark-gray)]">Lv.{shownLevel} DMG </span>
