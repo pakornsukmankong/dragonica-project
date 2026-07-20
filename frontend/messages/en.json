@@ -17,6 +17,13 @@
     "offlineTitle": "Can't reach the server",
     "offlineDesc": "You look offline. Nothing is lost — reconnect and try again."
   },
+  "datePicker": {
+    "placeholder": "Select a date",
+    "today": "Today",
+    "clear": "Clear",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
+  },
   "nav": {
     "brand": "Dragonica",
     "brandSubtitle": "Grind Tracker",
@@ -27,6 +34,7 @@
     "skills": "Skills",
     "items": "Game Database",
     "skillCards": "Skill Cards",
+    "codes": "Item Codes",
     "admin": "Admin",
     "guide": "User Guide",
     "support": "Support",
@@ -225,6 +233,55 @@
       "levelAsc": "Level: low → high",
       "nameAsc": "Name: A → Z"
     }
+  },
+  "codes": {
+    "title": "Item Codes",
+    "searchPlaceholder": "Search code or description...",
+    "noResults": "No codes match your filters.",
+    "filter": {
+      "all": "All",
+      "active": "Active",
+      "expired": "Expired",
+      "scheduled": "Scheduled"
+    },
+    "add": "Add Item Code",
+    "cancel": "Cancel",
+    "submit": "Save Code",
+    "added": "Item Code added",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "copyFailed": "Couldn't copy to clipboard",
+    "empty": "No item codes yet — be the first to add one.",
+    "loginToAdd": "Log in to add a code",
+    "immediate": "Immediately",
+    "noExpiry": "No expiry",
+    "status": {
+      "active": "Active",
+      "expired": "Expired",
+      "scheduled": "Scheduled"
+    },
+    "fields": {
+      "code": "Item Code",
+      "codePlaceholder": "e.g. DRAGONICA2026",
+      "description": "Description",
+      "descriptionPlaceholder": "What does this code give? (optional)",
+      "startDate": "Start Date",
+      "expireDate": "Expire Date"
+    },
+    "errors": {
+      "required": "Item Code is required.",
+      "duplicate": "This Item Code already exists.",
+      "dateOrder": "Start Date cannot be later than Expire Date."
+    },
+    "addTitle": "Add Item Code",
+    "editTitle": "Edit Item Code",
+    "saveChanges": "Save Changes",
+    "updated": "Item Code updated",
+    "deleted": "Item Code deleted",
+    "deleteError": "Couldn't delete the code",
+    "deleteTitle": "Delete Item Code",
+    "deleteConfirm": "Delete \"{code}\"? This cannot be undone.",
+    "capNotice": "Showing the {count} most recent codes."
   },
   "skills": {
     "title": "Skill Simulator",
@@ -638,6 +695,7 @@
     "deleteSessionTitle": "Delete this session?",
     "deleteSessionDesc": "This permanently removes the session and its drops. This cannot be undone.",
     "tabSkillBuilds": "Skill Builds",
+    "tabItemCodes": "Item Codes",
     "buildsTotal": "Total builds",
     "buildsPublic": "Public in community",
     "buildsNone": "No skill builds yet.",
@@ -661,7 +719,23 @@
     "deleteBuildTitle": "Delete this build?",
     "deleteBuildDesc": "This permanently removes \"{name}\" including its likes and comments. This cannot be undone.",
     "deleteBuildCommentTitle": "Delete this comment?",
-    "deleteBuildCommentDesc": "This permanently removes the comment. This cannot be undone."
+    "deleteBuildCommentDesc": "This permanently removes the comment. This cannot be undone.",
+    "codesTotal": "Total codes",
+    "codeSearchPlaceholder": "Search item code...",
+    "codesNone": "No item codes found.",
+    "colCode": "Code",
+    "colDescription": "Description",
+    "colStart": "Start",
+    "colExpire": "Expire",
+    "codeActive": "Active",
+    "codeExpired": "Expired",
+    "codeUpdated": "Item code updated",
+    "codeUpdateError": "Could not update the code",
+    "codeDeleted": "Item code deleted",
+    "codeDeleteError": "Could not delete the code",
+    "deleteCodeTitle": "Delete item code",
+    "deleteCodeDesc": "Delete \"{code}\"? This cannot be undone.",
+    "codeScheduled": "Scheduled"
   },
   "errorPages": {
     "notFoundTitle": "Page not found",

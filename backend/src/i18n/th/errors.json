@@ -32,5 +32,11 @@
     "comment_not_found": "ไม่พบคอมเมนต์",
     "comment_empty": "คอมเมนต์ต้องไม่ว่างเปล่า",
     "nothing_to_update": "ไม่มีข้อมูลให้แก้ไข"
+  },
+  "itemCode": {
+    "required": "กรุณากรอก Item Code",
+    "duplicate": "Item Code นี้มีอยู่แล้ว",
+    "date_order": "วันเริ่มต้องไม่เกินวันหมดอายุ",
+    "not_found": "ไม่พบ Item Code"
   }
 }

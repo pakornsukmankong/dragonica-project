@@ -190,6 +190,47 @@ export type Database = {
         };
         Relationships: [];
       };
+      item_codes: {
+        Row: {
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          description: string | null;
+          expire_date: string | null;
+          id: string;
+          start_date: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          expire_date?: string | null;
+          id?: string;
+          start_date?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          expire_date?: string | null;
+          id?: string;
+          start_date?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'item_codes_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       items: {
         Row: {
           default_price: number | null;

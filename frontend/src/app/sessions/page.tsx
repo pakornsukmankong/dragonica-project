@@ -12,6 +12,7 @@ import { Currency, CurrencyInput } from '@/components/currency';
 import { Select } from '@/components/select';
 import { ItemThumb } from '@/components/item-icon';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { DatePicker } from '@/components/date-picker';
 import { QueryError } from '@/components/query-error';
 import { formatGoldShort, toParts } from '@/lib/currency';
 import type { Session, Character, Dungeon, Item } from '@/types';
@@ -365,23 +366,19 @@ export default function SessionsPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted">{t('from')}</label>
-                <input
-                  type="date"
+                <DatePicker
                   value={filterDateFrom}
                   max={filterDateTo || maxDate}
-                  onChange={(e) => setFilterDateFrom(e.target.value)}
-                  className="w-full rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
+                  onChange={setFilterDateFrom}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted">{t('to')}</label>
-                <input
-                  type="date"
+                <DatePicker
                   value={filterDateTo}
                   min={filterDateFrom || undefined}
                   max={maxDate}
-                  onChange={(e) => setFilterDateTo(e.target.value)}
-                  className="w-full rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
+                  onChange={setFilterDateTo}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
