@@ -1,4 +1,4 @@
--- 008_skill_reqlevel_fix.sql
+-- 014_skill_reqlevel_fix.sql
 -- Correct the per-level character-level requirement (reqLevel) for every skill.
 --
 -- The original spidpex import (006) stored a single flat tier value (1/20/40/60)

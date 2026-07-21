@@ -1,4 +1,4 @@
--- 009_skill_level_desc.sql
+-- 015_skill_level_desc.sql
 -- Add a per-level skill description so the simulator's tooltip reflects the rank
 -- being viewed. Each rank of a skill has its own in-game text (e.g. Blow hits
 -- 5/6/7/8/9 enemies as it levels), but 006 stored only a single description per
