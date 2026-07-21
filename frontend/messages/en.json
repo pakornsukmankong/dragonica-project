@@ -75,6 +75,7 @@
     "dropBadge": "Drops ({count})",
     "dropMonsters": "Dropped by monsters",
     "dropMaps": "Field drops in maps",
+    "dropDungeons": "Dungeon rank 1 reward",
     "categories": {
       "equipment": "Equipment",
       "costume": "Costumes",

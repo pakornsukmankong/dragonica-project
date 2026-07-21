@@ -191,6 +191,25 @@ function DropsPanel({
               </ul>
             </div>
           )}
+          {drops.dgn && drops.dgn.length > 0 && (
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+                {t('dropDungeons')}
+              </div>
+              <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                {drops.dgn.map((m) => (
+                  <li key={m.n} className="text-xs text-foreground">
+                    {m.n}
+                    {m.l ? (
+                      <span className="ml-1 text-muted tabular-nums">
+                        Lv. {m.l}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </div>
