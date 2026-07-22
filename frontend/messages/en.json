@@ -44,7 +44,18 @@
     "signIn": "Sign In",
     "language": "Language",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "footerNote": "© {year} FLOKZ CHANNEL. All rights reserved.",
+    "privacyLink": "Privacy Policy",
+    "footerTagline": "A fan-made grind tracker and game database for Dragonica. Log what a run costs you in stamina, and find out which dungeon pays for it.",
+    "footerDatabase": "Game Database",
+    "footerItems": "Items",
+    "footerTracker": "Tracker",
+    "footerHelp": "Help",
+    "footerDiscord": "Join the Discord",
+    "footerYouTube": "FLOKZ CHANNEL on YouTube",
+    "footerDisclaimer": "Fan project. Not affiliated with Dragonica.",
+    "footerAnalytics": "We use analytics tools to improve this site."
   },
   "items": {
     "title": "Game Database",
@@ -361,7 +372,7 @@
     "trustLine": "Sign in with Google or Discord · No install",
     "previewLabel": "dashboard",
     "previewTotalGold": "Total gold",
-    "previewGoldHour": "Gold / hour",
+    "previewGoldHour": "Value / 20 sta",
     "previewSessions": "Sessions",
     "previewTopDungeon": "Top dungeon",
     "previewDungeonName": "Ancient Ruins",
@@ -412,7 +423,8 @@
     "previewYesterday": "Yesterday",
     "previewDaysAgo": "2 days ago",
     "previewDrops": "{count} drops",
-    "previewStamina": "40 stamina"
+    "previewStamina": "{count} stamina",
+    "privacyLink": "Read our Privacy Policy"
   },
   "login": {
     "brandSubtitle": "Hunt · Farm · Profit",
@@ -1002,6 +1014,99 @@
           "Switch the language between English and ไทย at any time — your choice is remembered."
         ]
       }
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated {date}",
+    "lastUpdatedDate": "22 July 2026",
+    "sections": {
+      "intro": {
+        "title": "Who we are",
+        "body": [
+          "dgn-grind.dev is a fan-made grind tracker and game database for Dragonica, run by FLOKZ CHANNEL. It is not affiliated with, endorsed by, or operated by the publishers of Dragonica.",
+          "This policy explains what we collect, why, and what you can do about it. It covers the website at dgn-grind.dev and its API at api.dgn-grind.dev."
+        ]
+      },
+      "dataCollected": {
+        "title": "What we collect",
+        "body": [
+          "Account data: when you sign up we store your email address, and — if you sign in with Google or Discord — the name and avatar those services return. Authentication itself is handled by Supabase Auth; we never see or store your password.",
+          "Content you create: characters, grind sessions, item drops, item codes, skill builds, comments, and support tickets. This is yours; it is shown only to you unless you publish it (a shared skill build, a public item code, a donation on the thank-you wall).",
+          "Technical data: your browser sends an IP address and user-agent with every request. Our host and analytics tools process these to serve pages and to measure traffic.",
+          "We do not ask for, and you should never send us, your Dragonica game account credentials."
+        ]
+      },
+      "cookies": {
+        "title": "Cookies and analytics",
+        "body": [
+          "A login cookie keeps you signed in. It is required for the site to work and cannot be turned off while you are logged in.",
+          "We use Google Analytics 4 and Microsoft Clarity to understand which pages get used and where people get stuck. Clarity records anonymised interaction data such as clicks and scrolling. Neither is used to identify you personally.",
+          "You can block these with your browser settings or the Google Analytics opt-out add-on linked below."
+        ]
+      },
+      "advertising": {
+        "title": "Advertising",
+        "body": [
+          "We show ads served by Google AdSense to cover hosting costs. Google and its partners use cookies to serve ads based on your prior visits to this and other websites.",
+          "Google's use of advertising cookies lets it and its partners serve ads to you based on your visit to our site and other sites on the internet. Third-party vendors may also place cookies of their own.",
+          "You can turn off personalised advertising, or opt out of third-party vendor cookies entirely, using these controls:"
+        ]
+      },
+      "payments": {
+        "title": "Donations and payments",
+        "body": [
+          "Donations are processed by our payment provider (Stripe, with PromptPay and card). Your card or banking details go directly to the provider — they never touch our servers and we never store them.",
+          "We keep a record of the donation amount, method, status, and the display name and message you chose to show. You can hide your amount, or hide the entry from the public thank-you wall, when you donate."
+        ]
+      },
+      "sharing": {
+        "title": "Who we share it with",
+        "body": [
+          "We do not sell your personal data.",
+          "We share only what each service needs to run the site: Supabase (database and authentication), Vercel and Railway (hosting), Google (analytics and advertising), Microsoft (Clarity), and our payment provider.",
+          "We may disclose data if the law requires it, or to protect the site and its users from abuse."
+        ]
+      },
+      "retention": {
+        "title": "How long we keep it",
+        "body": [
+          "Account and grind data are kept while your account exists. Delete a session and it is removed immediately, along with its drops.",
+          "Donation records are kept as long as needed for accounting and dispute handling, even after an account is deleted.",
+          "Analytics data follows each provider's own retention settings."
+        ]
+      },
+      "rights": {
+        "title": "Your choices",
+        "body": [
+          "You can edit or delete your characters and grind sessions at any time from the app, and clear every session at once from the Sessions page.",
+          "To get a copy of your data, or to have your account and its data deleted, contact us and we will act on it within a reasonable time.",
+          "Depending on where you live you may have additional rights over your data, such as correction, portability, or objection to processing."
+        ]
+      },
+      "children": {
+        "title": "Children",
+        "body": [
+          "This site is not directed at children under 13, and we do not knowingly collect their personal data. If you believe a child has given us data, contact us and we will delete it."
+        ]
+      },
+      "changes": {
+        "title": "Changes to this policy",
+        "body": [
+          "We may update this policy as the site changes. The date at the top always reflects the current version, and material changes will be announced on our Discord."
+        ]
+      },
+      "contact": {
+        "title": "Contact",
+        "body": [
+          "Questions about this policy, or a request about your data? Open a support ticket from your account, or reach us on the FLOKZ CHANNEL Discord."
+        ]
+      }
+    },
+    "optOut": {
+      "googleAds": "Google Ad Settings — manage or turn off personalised ads",
+      "aboutAds": "aboutads.info — opt out of third-party vendor cookies",
+      "gaOptOut": "Google Analytics opt-out browser add-on"
     }
   }
 }
