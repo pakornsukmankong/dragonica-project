@@ -8,7 +8,8 @@ import { getVisits } from '@/lib/stats';
 /**
  * Shows the running site-visit total. Display only — SiteVisit in the root
  * layout does the counting. Best-effort: renders nothing until the count
- * arrives and stays silent if the API fails.
+ * arrives and stays silent if the API fails. Inherits size and colour from the
+ * footer's fine print, so it reads as another line of it.
  */
 export function VisitorCounter() {
   const t = useTranslations('landing');
@@ -30,7 +31,7 @@ export function VisitorCounter() {
   if (total === null) return null;
 
   return (
-    <p className="mt-2 flex items-center justify-center gap-1.5 text-xs text-muted">
+    <p className="flex items-center gap-1.5">
       <Eye className="h-3.5 w-3.5" />
       {t('visitorCount', { count: total.toLocaleString() })}
     </p>

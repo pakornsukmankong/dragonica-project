@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { VisitorCounter } from '@/components/visitor-counter';
+import { SiteFooter } from '@/components/site-footer';
 import { Reveal } from '@/components/reveal';
 import { ArrowRight, Package, ChevronDown, Check, Sparkles } from 'lucide-react';
 
@@ -107,17 +108,9 @@ export default function HomePage() {
       </section>
 
       {/* ===== FOOTER ===== */}
-      <section className="relative z-10 mx-auto max-w-container px-4 pb-16 pt-6 sm:px-7">
-        <Reveal>
-          <p className="text-center text-xs text-muted">
-            {t('footerNote', { year: new Date().getFullYear() })}
-          </p>
-          <p className="mt-2 text-center text-[11px] text-muted/80">
-            {t('privacyNote')}
-          </p>
-          <VisitorCounter />
-        </Reveal>
-      </section>
+      <SiteFooter>
+        <VisitorCounter />
+      </SiteFooter>
     </main>
   );
 }
@@ -236,7 +229,7 @@ function GrindPreview() {
           </div>
           <div>
             <p className={label}>{g('stamina')}</p>
-            <div className={field}>{t('previewStamina')}</div>
+            <div className={field}>{t('previewStamina', { count: 20 })}</div>
           </div>
           <div>
             <p className={label}>{g('goldDrop')}</p>
@@ -435,7 +428,7 @@ function SessionsPreview() {
       char: t('previewCharacterName'),
       gold: '1,240',
       when: t('previewToday'),
-      dur: '1h 20m',
+      dur: t('previewStamina', { count: 40 }),
       drops: 2,
     },
     {
@@ -443,7 +436,7 @@ function SessionsPreview() {
       char: t('previewCharacter2'),
       gold: '860',
       when: t('previewYesterday'),
-      dur: '55m',
+      dur: t('previewStamina', { count: 20 }),
       drops: 1,
     },
     {
@@ -451,7 +444,7 @@ function SessionsPreview() {
       char: t('previewCharacterName'),
       gold: '1,050',
       when: t('previewDaysAgo'),
-      dur: '1h 05m',
+      dur: t('previewStamina', { count: 60 }),
       drops: 3,
     },
   ];
