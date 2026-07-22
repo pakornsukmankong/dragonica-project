@@ -7,6 +7,7 @@ import './globals.css';
 import { Providers } from '@/components/providers';
 import { AppShell } from '@/components/app-shell';
 import { Clarity } from '@/components/clarity';
+import { GoogleAdsense } from '@/components/google-adsense';
 import { GoogleAnalytics } from '@/components/google-analytics';
 import { JsonLd } from '@/components/json-ld';
 import { SiteVisit } from '@/components/site-visit';
@@ -104,6 +105,7 @@ export default async function RootLayout({
           }}
         />
         <Clarity />
+        <GoogleAdsense />
         <GoogleAnalytics />
         {/* Counts the visit on whichever page the reader landed on, so search
             traffic straight to /items or /skills is not missed. */}
