@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { m } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
@@ -19,7 +19,7 @@ import {
 } from '@/lib/items';
 import { rarityStyle } from '@/lib/rarity';
 import { useToast } from '@/components/toast';
-import { X, Play, Pause, Square, RotateCcw } from 'lucide-react';
+import { X, Minus, Plus } from 'lucide-react';
 import type { Character, Dungeon, Item } from '@/types';
 
 interface DropEntry {
@@ -31,35 +31,8 @@ interface DropEntry {
   icon?: GameItemIcon;
 }
 
-// The stopwatch survives a page refresh/navigation (a grind run can last an
-// hour) by persisting to localStorage. `runningSince` is an absolute wall-clock
-// timestamp, so a restored running timer correctly keeps counting.
-const TIMER_STORAGE_KEY = 'dgn-grind-timer';
-
-interface TimerState {
-  durationMode: 'manual' | 'timer';
-  elapsedMs: number;
-  runningSince: number | null;
-}
-
-function loadTimerState(): TimerState | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(TIMER_STORAGE_KEY);
-    if (!raw) return null;
-    const s = JSON.parse(raw) as Partial<TimerState>;
-    if (s.durationMode !== 'manual' && s.durationMode !== 'timer') return null;
-    return {
-      durationMode: s.durationMode,
-      elapsedMs:
-        typeof s.elapsedMs === 'number' && s.elapsedMs >= 0 ? s.elapsedMs : 0,
-      runningSince:
-        typeof s.runningSince === 'number' ? s.runningSince : null,
-    };
-  } catch {
-    return null;
-  }
-}
+// One dungeon run costs this much stamina — the unit the rate is quoted in.
+const STAMINA_UNIT = 20;
 
 export default function GrindPage() {
   const t = useTranslations('grind');
@@ -69,90 +42,11 @@ export default function GrindPage() {
 
   const [selectedDungeonId, setSelectedDungeonId] = useState('');
   const [selectedCharacterId, setSelectedCharacterId] = useState('');
-  const [hours, setHours] = useState(1);
-  const [minutes, setMinutes] = useState(0);
   const [note, setNote] = useState('');
 
-  // Duration can be typed in by hand ("manual") or measured with a built-in
-  // stopwatch ("timer"). The timer keeps a running total in `elapsedMs`
-  // (accumulated across pauses) plus `runningSince` (when the current segment
-  // started, or null while paused/stopped). `now` re-renders it every second.
-  const [durationMode, setDurationMode] = useState<'manual' | 'timer'>('manual');
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [runningSince, setRunningSince] = useState<number | null>(null);
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (runningSince == null) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [runningSince]);
-
-  // Restore any timer left running/paused before a refresh. This must be an
-  // effect, not lazy init: reading localStorage during render would make the
-  // client's first paint differ from the server's and mismatch hydration. A
-  // one-shot mount sync is exactly that exception to set-state-in-effect.
-  useEffect(() => {
-    const s = loadTimerState();
-    if (!s) return;
-    /* eslint-disable react-hooks/set-state-in-effect */
-    setDurationMode(s.durationMode);
-    setElapsedMs(s.elapsedMs);
-    setRunningSince(s.runningSince);
-    setNow(Date.now());
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, []);
-
-  // Persist on every change. Skip the first run so the mount write doesn't
-  // clobber saved state with the defaults before the restore effect applies.
-  const timerHydrated = useRef(false);
-  useEffect(() => {
-    if (!timerHydrated.current) {
-      timerHydrated.current = true;
-      return;
-    }
-    try {
-      window.localStorage.setItem(
-        TIMER_STORAGE_KEY,
-        JSON.stringify({ durationMode, elapsedMs, runningSince }),
-      );
-    } catch {
-      // storage unavailable (private mode/quota) — timer just won't persist.
-    }
-  }, [durationMode, elapsedMs, runningSince]);
-
-  const liveMs = elapsedMs + (runningSince != null ? now - runningSince : 0);
-  const isTimerRunning = runningSince != null;
-
-  const startTimer = () => {
-    if (isTimerRunning) return;
-    // Fresh start (elapsedMs 0) or resume after a pause (elapsedMs kept).
-    const t0 = Date.now();
-    setNow(t0);
-    setRunningSince(t0);
-  };
-  const pauseTimer = () => {
-    if (!isTimerRunning) return;
-    setElapsedMs((ms) => ms + (Date.now() - runningSince));
-    setRunningSince(null);
-  };
-  const stopTimer = () => {
-    // Finish timing: drop the measured time into the manual hour/minute fields
-    // and switch to Manual so the user can review or tweak it before saving.
-    const totalMs =
-      elapsedMs + (runningSince != null ? Date.now() - runningSince : 0);
-    const totalMinutes = Math.round(totalMs / 60000);
-    setHours(Math.floor(totalMinutes / 60));
-    setMinutes(totalMinutes % 60);
-    setDurationMode('manual');
-    // The value now lives in the manual fields — clear the stopwatch.
-    setElapsedMs(0);
-    setRunningSince(null);
-  };
-  const resetTimer = () => {
-    setElapsedMs(0);
-    setRunningSince(null);
-  };
+  // A run is measured by the stamina it burned — stamina is what the game
+  // rations, so it's the only cost worth comparing dungeons by.
+  const [stamina, setStamina] = useState(STAMINA_UNIT);
   const [drops, setDrops] = useState<DropEntry[]>([]);
   // Wallet gold before/after the run (in copper) — the currency picked up is
   // their difference. Ending below the start (repairs, potions) counts as 0
@@ -229,26 +123,10 @@ export default function GrindPage() {
   }, [drops]);
   const totalGold = dropsValue + goldDropped;
 
-  // Exact (fractional) minutes drive the rate math; the rounded integer is
-  // what we display and store. Rounding first made a sub-minute timer run read
-  // as 0 gold/hr.
-  const durationMinutesExact =
-    durationMode === 'timer' ? liveMs / 60000 : hours * 60 + minutes;
-  const durationMinutes = Math.round(durationMinutesExact);
-  const goldPerHour =
-    durationMinutesExact > 0
-      ? Math.round((totalGold / durationMinutesExact) * 60)
-      : 0;
-  // Duration shown in the summary — unified across both input modes.
-  const displayHours = Math.floor(durationMinutes / 60);
-  const displayMinutes = durationMinutes % 60;
-  // The live stopwatch read-out (HH:MM:SS).
-  const timerClock = (() => {
-    const s = Math.floor(liveMs / 1000);
-    return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
-      .map((n) => String(n).padStart(2, '0'))
-      .join(':');
-  })();
+  // Gold is rated per 20 stamina — one dungeon run — so the number reads as
+  // "what a run is worth" instead of a per-point figure nobody thinks in.
+  const goldPerStamina =
+    stamina > 0 ? Math.round((totalGold / stamina) * STAMINA_UNIT) : 0;
 
   // Picking a game item: find-or-create its `items` row (drops reference the
   // row by uuid), then append an entry. Only the game id is sent — the server
@@ -308,7 +186,7 @@ export default function GrindPage() {
       const session = await api.post<{ id: string }>('/sessions', {
         characterId: selectedCharacterId,
         dungeonId: selectedDungeonId || undefined,
-        durationMinutes: durationMinutes || undefined,
+        staminaUsed: stamina || undefined,
         goldEarned: totalGold,
         goldDropped: goldDropped || undefined,
         note: note.trim() || undefined,
@@ -334,10 +212,7 @@ export default function GrindPage() {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setDrops([]);
-      setHours(1);
-      setMinutes(0);
-      resetTimer();
-      setDurationMode('manual'); // back to the default input after a clean save
+      setStamina(STAMINA_UNIT); // back to one run's worth after a clean save
       setNote('');
       setGoldStart(0);
       setGoldEnd(0);
@@ -394,7 +269,7 @@ export default function GrindPage() {
                 />
               </div>
             )}
-            {/* Two rows on laptop: dungeon/character/duration/gold-start,
+            {/* Two rows on laptop: dungeon/character/stamina/gold-start,
                 then the note (3 cols) beside gold-end */}
             <div className="grid grid-cols-1 sm:grid-cols-2 laptop:grid-cols-4 gap-4 items-start">
               {/* Dungeon — searchable: the seeded list is hundreds of names */}
@@ -426,99 +301,45 @@ export default function GrindPage() {
                 />
               </div>
 
-              {/* Duration — typed in by hand, or measured with the stopwatch */}
+              {/* Stamina the run burned — the cost every rate is measured in */}
               <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <label className="text-xs font-medium text-muted">{t('duration')}</label>
-                  {/* Mode toggle: manual vs timer */}
-                  <div className="flex items-center gap-0.5 rounded-base bg-raised p-0.5">
-                    {(['manual', 'timer'] as const).map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => setDurationMode(m)}
-                        className={`rounded-sm px-2 py-0.5 text-[10px] font-medium transition-colors duration-150 ${
-                          durationMode === m
-                            ? 'bg-surface text-foreground outline outline-1 outline-[rgba(255,255,255,0.08)]'
-                            : 'text-muted hover:text-foreground'
-                        }`}
-                      >
-                        {m === 'manual' ? t('durationManual') : t('durationTimer')}
-                      </button>
-                    ))}
-                  </div>
+                <label className="text-xs font-medium text-muted">
+                  {t('stamina')}
+                </label>
+                <div className="flex items-center gap-2">
+                  {/* One run's worth per click — most logs are a whole number
+                      of runs, so typing is the exception, not the rule. */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setStamina((s) => Math.max(0, s - STAMINA_UNIT))
+                    }
+                    disabled={stamina < STAMINA_UNIT}
+                    aria-label={t('staminaMinus', { count: STAMINA_UNIT })}
+                    title={t('staminaMinus', { count: STAMINA_UNIT })}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-base border border-border text-muted transition-colors hover:text-foreground hover:border-[var(--border-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--focus)] disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <NumericInput
+                    value={stamina}
+                    onValueChange={(v) => setStamina(Math.min(v, 99999))}
+                    className="w-20 rounded-base border border-border bg-surface px-2 py-2.5 text-sm text-foreground text-center placeholder:text-muted outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
+                    placeholder="0"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setStamina((s) => Math.min(99999, s + STAMINA_UNIT))
+                    }
+                    aria-label={t('staminaPlus', { count: STAMINA_UNIT })}
+                    title={t('staminaPlus', { count: STAMINA_UNIT })}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-base border border-border text-muted transition-colors hover:text-foreground hover:border-[var(--border-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--focus)]"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                  <span className="text-xs text-muted">{t('staminaShort')}</span>
                 </div>
-
-                {durationMode === 'manual' ? (
-                  <div className="flex items-center gap-2">
-                    <NumericInput
-                      value={hours}
-                      onValueChange={(v) => setHours(Math.min(v, 24))}
-                      className="w-16 rounded-base border border-border bg-surface px-2 py-2.5 text-sm text-foreground text-center placeholder:text-muted outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
-                      placeholder="0"
-                    />
-                    <span className="text-xs text-muted">{t('hourShort')}</span>
-                    <NumericInput
-                      value={minutes}
-                      onValueChange={(v) => setMinutes(Math.min(v, 59))}
-                      className="w-16 rounded-base border border-border bg-surface px-2 py-2.5 text-sm text-foreground text-center placeholder:text-muted outline-none focus:border-[var(--focus)] focus:ring-2 focus:ring-[var(--focus)]/20"
-                      placeholder="0"
-                    />
-                    <span className="text-xs text-muted">{t('minuteShort')}</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span
-                      className={`min-w-[78px] rounded-base border border-border bg-surface px-2 py-2 text-center text-base font-semibold tabular-nums ${
-                        isTimerRunning ? 'text-gold' : 'text-foreground'
-                      }`}
-                    >
-                      {timerClock}
-                    </span>
-                    {!isTimerRunning ? (
-                      <button
-                        type="button"
-                        onClick={startTimer}
-                        aria-label={liveMs === 0 ? t('timerStart') : t('timerResume')}
-                        title={liveMs === 0 ? t('timerStart') : t('timerResume')}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-base bg-[var(--success)] text-white transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--focus)]"
-                      >
-                        <Play className="h-4 w-4" />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={pauseTimer}
-                        aria-label={t('timerPause')}
-                        title={t('timerPause')}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-base bg-[var(--warning)] text-[var(--root)] transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--focus)]"
-                      >
-                        <Pause className="h-4 w-4" />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={stopTimer}
-                      disabled={liveMs === 0}
-                      aria-label={t('timerStop')}
-                      title={t('timerStop')}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-base bg-[var(--danger)] text-white transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--focus)] disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <Square className="h-4 w-4" />
-                    </button>
-                    {!isTimerRunning && liveMs > 0 && (
-                      <button
-                        type="button"
-                        onClick={resetTimer}
-                        aria-label={t('timerReset')}
-                        title={t('timerReset')}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-base border border-border text-muted transition-colors hover:text-foreground hover:border-[var(--border-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--focus)]"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
 
               {/* Wallet gold before the run */}
@@ -533,7 +354,7 @@ export default function GrindPage() {
                 />
               </div>
 
-              {/* Session note — spans under dungeon/character/duration */}
+              {/* Session note — spans under dungeon/character/stamina */}
               <div className="flex flex-col gap-1.5 laptop:col-span-3">
                 <label htmlFor="session-note" className="text-xs font-medium text-muted">
                   {t('note')}
@@ -715,13 +536,13 @@ export default function GrindPage() {
                   </div>
 
                   <div className="flex items-center justify-between gap-2">
-                    <span className="shrink-0 text-xs text-muted">{t('valuePerHour')}</span>
-                    <Currency copper={goldPerHour} className="text-sm" />
+                    <span className="shrink-0 text-xs text-muted">{t('valuePerStamina')}</span>
+                    <Currency copper={goldPerStamina} className="text-sm" />
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted">{t('duration')}</span>
+                    <span className="text-xs text-muted">{t('stamina')}</span>
                     <span className="text-sm text-foreground tabular-nums">
-                      {displayHours}{t('hourShort')} {displayMinutes}{t('minuteShort')}
+                      {stamina} {t('staminaShort')}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">

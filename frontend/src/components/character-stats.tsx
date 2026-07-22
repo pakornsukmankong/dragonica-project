@@ -55,8 +55,12 @@ export function CharacterStats({ stats }: CharacterStatsProps) {
             </div>
             <div className="flex gap-4 text-xs text-muted">
               <span>{t('sessions', { count: stat.totalSessions })}</span>
-              <span>{t('hoursPlayed', { count: Math.round(stat.totalMinutes / 60) })}</span>
-              <span>{t('perHour', { value: formatGoldShort(stat.goldPerHour) })}</span>
+              <span>{t('staminaSpent', { count: stat.totalStamina })}</span>
+              <span>
+                {t('perStamina', {
+                  value: formatGoldShort(stat.goldPerStamina),
+                })}
+              </span>
             </div>
           </div>
         ))}

@@ -81,7 +81,7 @@ export class SessionService {
         dungeon_id: dto.dungeonId,
         started_at: dto.startedAt,
         ended_at: dto.endedAt,
-        duration_minutes: dto.durationMinutes,
+        stamina_used: dto.staminaUsed,
         gold_earned: dto.goldEarned ?? 0,
         gold_dropped: dto.goldDropped ?? 0,
         note: dto.note,
@@ -101,8 +101,8 @@ export class SessionService {
     if (dto.dungeonId) updateData['dungeon_id'] = dto.dungeonId;
     if (dto.startedAt) updateData['started_at'] = dto.startedAt;
     if (dto.endedAt) updateData['ended_at'] = dto.endedAt;
-    if (dto.durationMinutes !== undefined)
-      updateData['duration_minutes'] = dto.durationMinutes;
+    if (dto.staminaUsed !== undefined)
+      updateData['stamina_used'] = dto.staminaUsed;
     if (dto.goldEarned !== undefined)
       updateData['gold_earned'] = dto.goldEarned;
     if (dto.goldDropped !== undefined)
@@ -161,8 +161,8 @@ export class SessionService {
     if (dto.dungeonId) updateData['dungeon_id'] = dto.dungeonId;
     if (dto.startedAt) updateData['started_at'] = dto.startedAt;
     if (dto.endedAt) updateData['ended_at'] = dto.endedAt;
-    if (dto.durationMinutes !== undefined)
-      updateData['duration_minutes'] = dto.durationMinutes;
+    if (dto.staminaUsed !== undefined)
+      updateData['stamina_used'] = dto.staminaUsed;
     if (dto.goldEarned !== undefined)
       updateData['gold_earned'] = dto.goldEarned;
     if (dto.goldDropped !== undefined)

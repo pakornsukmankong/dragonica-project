@@ -231,8 +231,8 @@ function AdminUserSessions({ userId }: { userId: string }) {
                       month: 'short',
                       year: 'numeric',
                     })}
-                    {s.duration_minutes
-                      ? ` · ${ts('minutesShort', { count: s.duration_minutes })}`
+                    {s.stamina_used
+                      ? ` · ${ts('staminaShort', { count: s.stamina_used })}`
                       : ''}
                   </p>
                 </div>
@@ -292,7 +292,7 @@ function AdminSessionEditForm({
   const [dungeonId, setDungeonId] = useState(session.dungeon_id ?? '');
   const [gold, setGold] = useState(Number(session.gold_earned));
   const [goldDrop, setGoldDrop] = useState(Number(session.gold_dropped ?? 0));
-  const [duration, setDuration] = useState(session.duration_minutes ?? 0);
+  const [staminaUsed, setStaminaUsed] = useState(session.stamina_used ?? 0);
   const [note, setNote] = useState(session.note ?? '');
 
   // Drop edits are staged locally and committed atomically on Save alongside
@@ -346,7 +346,7 @@ function AdminSessionEditForm({
       dungeonId?: string;
       goldEarned: number;
       goldDropped: number;
-      durationMinutes?: number;
+      staminaUsed?: number;
       note?: string;
     }) => {
       const ops: Promise<unknown>[] = [
@@ -412,7 +412,7 @@ function AdminSessionEditForm({
             dungeonId: dungeonId || undefined,
             goldEarned: gold,
             goldDropped: goldDrop,
-            durationMinutes: duration || undefined,
+            staminaUsed: staminaUsed || undefined,
             // Always sent (even '') so clearing the note actually clears it —
             // undefined would mean "leave unchanged" on the backend.
             note: note.trim(),
@@ -462,13 +462,13 @@ function AdminSessionEditForm({
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-muted">
-              {t('durationMin')}
+              {t('staminaUsed')}
             </label>
             <input
               type="number"
               min={0}
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
+              value={staminaUsed}
+              onChange={(e) => setStaminaUsed(Number(e.target.value))}
               className="rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
             />
           </div>

@@ -235,8 +235,8 @@ function GrindPreview() {
             </div>
           </div>
           <div>
-            <p className={label}>{g('duration')}</p>
-            <div className={field}>{t('previewDuration')}</div>
+            <p className={label}>{g('stamina')}</p>
+            <div className={field}>{t('previewStamina')}</div>
           </div>
           <div>
             <p className={label}>{g('goldDrop')}</p>
@@ -274,7 +274,7 @@ function GrindPreview() {
         {/* Summary + save */}
         <div className="mt-4 flex items-center justify-between">
           <div>
-            <p className={label}>{g('valuePerHour')}</p>
+            <p className={label}>{g('valuePerStamina')}</p>
             <p className="text-lg font-bold tracking-tight text-gold">
               234<span className="text-xs opacity-80">g</span>
             </p>
