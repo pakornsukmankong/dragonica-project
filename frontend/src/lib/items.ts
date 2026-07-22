@@ -51,7 +51,8 @@ export interface GameItem {
   drops?: number;
 }
 
-/** One drop source: monster or map name + its level (monster level / map recommended level). */
+/** One drop source: monster, map or dungeon name + its level (monster level / map
+ * or dungeon recommended level). */
 export interface GameItemDropSource {
   n: string;
   l?: number;
@@ -60,6 +61,8 @@ export interface GameItemDropSource {
 export interface GameItemDrops {
   mons?: GameItemDropSource[];
   maps?: GameItemDropSource[];
+  /** Dungeons that hand this out as a clear-rank reward (TB_DefMission_RankReward) */
+  dgn?: GameItemDropSource[];
 }
 
 /** Monster grades (AT 4007): 1 normal, 2 upgraded, 3 elite, 4 boss. */

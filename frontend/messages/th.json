@@ -49,12 +49,13 @@
   "items": {
     "title": "ฐานข้อมูลเกม",
     "subtitle": "ดูข้อมูลไอเทมและมอนสเตอร์ทั้งหมดในเกม — อุปกรณ์สวมใส่ คอสตูม ไอเทมใช้ วัตถุดิบ และมอนสเตอร์ที่ดรอปของ",
-    "searchPlaceholder": "ค้นหาชื่อไอเทม...",
+    "searchPlaceholder": "ค้นหาชื่อไอเทมหรือออปชั่น...",
     "allSlots": "ทุกตำแหน่ง",
     "allClasses": "ทุกคลาส",
     "allWeapons": "อาวุธทุกประเภท",
     "allClassesTag": "ทุกคลาส",
     "allRarities": "ทุกระดับ",
+    "allOptions": "ทุกออปชั่น",
     "resetFilters": "ล้างตัวกรอง",
     "levelMin": "ต่ำสุด",
     "levelMax": "สูงสุด",
@@ -75,6 +76,7 @@
     "dropBadge": "ดรอป ({count})",
     "dropMonsters": "ดรอปจากมอนสเตอร์",
     "dropMaps": "ดรอปในแผนที่",
+    "dropDungeons": "รางวัลแรงก์ 1 จากดันเจี้ยน",
     "categories": {
       "equipment": "อุปกรณ์สวมใส่",
       "costume": "คอสตูม",

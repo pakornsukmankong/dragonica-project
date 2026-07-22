@@ -191,6 +191,25 @@ function DropsPanel({
               </ul>
             </div>
           )}
+          {drops.dgn && drops.dgn.length > 0 && (
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+                {t('dropDungeons')}
+              </div>
+              <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                {drops.dgn.map((m) => (
+                  <li key={m.n} className="text-xs text-foreground">
+                    {m.n}
+                    {m.l ? (
+                      <span className="ml-1 text-muted tabular-nums">
+                        Lv. {m.l}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -216,6 +235,8 @@ export default function ItemsPage() {
   const [minLevel, setMinLevel] = useState('');
   const [maxLevel, setMaxLevel] = useState('');
   const [rarity, setRarity] = useState('');
+  /** Filter to items carrying a given stat/option (StatKey, '' = any). */
+  const [stat, setStat] = useState('');
   const [sort, setSort] = useState('levelAsc');
   const [page, setPage] = useState(1);
   // Mobile only: the filter stack is taller than the viewport, so it starts
@@ -296,6 +317,7 @@ export default function ItemsPage() {
     minLevel !== '' ||
     maxLevel !== '' ||
     rarity !== '' ||
+    stat !== '' ||
     sort !== 'levelAsc';
 
   // Badge on the mobile toggle, so collapsed filters can't silently narrow the
@@ -307,6 +329,7 @@ export default function ItemsPage() {
     branch !== '',
     minLevel !== '' || maxLevel !== '',
     rarity !== '',
+    stat !== '',
     sort !== 'levelAsc',
   ].filter(Boolean).length;
 
@@ -319,6 +342,7 @@ export default function ItemsPage() {
     setMinLevel('');
     setMaxLevel('');
     setRarity('');
+    setStat('');
     setSort('levelAsc');
     setPage(1);
   };
@@ -333,6 +357,30 @@ export default function ItemsPage() {
     [subcat, t],
   );
 
+  // Option (stat) labels in the active locale, lowercased once so the search box
+  // can match them per keystroke without re-translating for every item.
+  const statLabels = useMemo(
+    () =>
+      new Map(
+        STAT_META.map((m) => [m.key as string, t(`stats.${m.key}`).toLowerCase()]),
+      ),
+    [t],
+  );
+
+  // Only offer options that actually occur in the loaded category.
+  const statOptions = useMemo(() => {
+    const present = new Set<string>();
+    for (const it of items ?? [])
+      for (const k of Object.keys(it.stats ?? {})) present.add(k);
+    return [
+      { value: '', label: t('allOptions') },
+      ...STAT_META.filter((m) => present.has(m.key)).map((m) => ({
+        value: m.key,
+        label: t(`stats.${m.key}`),
+      })),
+    ];
+  }, [items, t]);
+
   const filtered = useMemo(() => {
     if (!items) return [];
     const q = deferredSearch.trim().toLowerCase();
@@ -341,7 +389,15 @@ export default function ItemsPage() {
     const branchId = Number(branch) || 0;
 
     const result = items.filter((it) => {
-      if (q && !it.name.toLowerCase().includes(q)) return false;
+      // Search matches the item name or any of its option (stat) labels, so
+      // e.g. "critical" finds everything rolling crit rate or crit damage.
+      if (
+        q &&
+        !it.name.toLowerCase().includes(q) &&
+        !Object.keys(it.stats ?? {}).some((k) => statLabels.get(k)?.includes(q))
+      )
+        return false;
+      if (stat && it.stats?.[stat as StatKey] === undefined) return false;
       if (slotted) {
         if (subcat !== 'all' && (!it.slot || SLOT_CATEGORY[it.slot] !== subcat))
           return false;
@@ -386,6 +442,8 @@ export default function ItemsPage() {
     minLevel,
     maxLevel,
     rarity,
+    stat,
+    statLabels,
     sort,
   ]);
 
@@ -540,6 +598,14 @@ export default function ItemsPage() {
             ]}
             className="w-40"
           />
+          {statOptions.length > 1 && (
+            <Select
+              value={stat}
+              onChange={withPageReset(setStat)}
+              options={statOptions}
+              className="w-44"
+            />
+          )}
           <div className="flex items-center gap-1.5">
             <input
               type="text"
