@@ -405,14 +405,14 @@
     "previewCharacterName": "Aria · Mage",
     "previewItem1": "Dragon Scale",
     "previewItem2": "Ancient Coin",
-    "previewDuration": "1h 20m",
     "previewSessionsLabel": "sessions",
     "previewDungeon2": "Frost Cavern",
     "previewCharacter2": "Kai · Warrior",
     "previewToday": "Today",
     "previewYesterday": "Yesterday",
     "previewDaysAgo": "2 days ago",
-    "previewDrops": "{count} drops"
+    "previewDrops": "{count} drops",
+    "previewStamina": "40 stamina"
   },
   "login": {
     "brandSubtitle": "Hunt · Farm · Profit",
@@ -447,8 +447,6 @@
     "rangeAll": "All",
     "rangeCustom": "Custom",
     "statTotalValue": "Total Value",
-    "statTotalHours": "Total Hours",
-    "statValuePerHour": "Value / Hour",
     "statFavoriteDungeon": "Favorite Dungeon",
     "na": "N/A",
     "characters": "Characters",
@@ -458,7 +456,9 @@
     "noSessions": "No sessions recorded yet.",
     "colCharacter": "Character",
     "colDate": "Date",
-    "colValue": "Value"
+    "colValue": "Value",
+    "statValuePerStamina": "Value / 20 stamina",
+    "statTotalStamina": "Total Stamina"
   },
   "grind": {
     "title": "Grind Tracker",
@@ -471,16 +471,8 @@
     "notePlaceholder": "Anything worth remembering about this run — party, buffs, events...",
     "character": "Character",
     "selectCharacter": "Select character...",
-    "duration": "Duration",
     "hourShort": "h",
     "minuteShort": "m",
-    "durationManual": "Manual",
-    "durationTimer": "Timer",
-    "timerStart": "Start",
-    "timerResume": "Resume",
-    "timerPause": "Pause",
-    "timerStop": "Stop",
-    "timerReset": "Reset",
     "goldDrop": "Gold Drop",
     "goldDropHint": "(end − start)",
     "goldStart": "Gold at start",
@@ -499,12 +491,16 @@
     "summary": "Summary",
     "itemValue": "Item Value",
     "totalValue": "Total Value",
-    "valuePerHour": "Value / Hour",
     "itemsTracked": "Items Tracked",
     "saveSession": "Save Session",
     "toastSavedTitle": "Session saved",
     "toastSavedDesc": "Added to your dashboard.",
-    "toastSaveErrorTitle": "Could not save session"
+    "toastSaveErrorTitle": "Could not save session",
+    "stamina": "Stamina",
+    "staminaShort": "stamina",
+    "valuePerStamina": "Value / 20 stamina",
+    "staminaMinus": "-{count} stamina",
+    "staminaPlus": "+{count} stamina"
   },
   "sessions": {
     "title": "Sessions",
@@ -526,17 +522,14 @@
     "showing": "Showing {count, plural, one {# session} other {# sessions}}",
     "unknownCharacter": "Unknown Character",
     "noDate": "No date",
-    "minutesShort": "{count} min",
     "empty": "No sessions found. Try adjusting your filters or start grinding!",
     "value": "Value",
     "goldDrop": "Gold Drop",
-    "duration": "Duration",
     "drops": "Drops",
     "unknownItem": "Unknown",
     "editSession": "Edit Session",
     "dungeon": "Dungeon",
     "totalValue": "Total Value",
-    "durationMin": "Duration (min)",
     "note": "Note",
     "toastDeleted": "Session deleted",
     "toastDeleteError": "Could not delete session",
@@ -554,7 +547,10 @@
     "selectItem": "Select item…",
     "noDrops": "No item drops yet.",
     "toastUpdated": "Session updated",
-    "toastUpdateError": "Could not update session"
+    "toastUpdateError": "Could not update session",
+    "stamina": "Stamina",
+    "staminaUsed": "Stamina used",
+    "staminaShort": "{count} stamina"
   },
   "characters": {
     "title": "Characters",
@@ -841,17 +837,17 @@
     "loading": "Loading stats...",
     "empty": "No session data yet. Start grinding!",
     "sessions": "{count, plural, one {# session} other {# sessions}}",
-    "hoursPlayed": "{count}h played",
-    "perHour": "{value}/hr"
+    "perStamina": "{value}/20 sta",
+    "staminaSpent": "{count} stamina"
   },
   "dungeonStats": {
     "title": "Best Farming Spots",
-    "subtitle": "ranked by gold / hour",
+    "subtitle": "ranked by gold / 20 stamina",
     "empty": "No dungeon runs yet. Log a session with a dungeon to compare efficiency.",
     "colRank": "#",
     "colDungeon": "Dungeon",
-    "colValuePerHr": "Value / hr",
-    "colRuns": "Runs"
+    "colRuns": "Runs",
+    "colValuePerStamina": "Value / 20 sta"
   },
   "goldChart": {
     "title": "Gold Earned",

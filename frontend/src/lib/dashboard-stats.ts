@@ -6,8 +6,7 @@
 // single filter, instead of each block querying its own unfiltered endpoint.
 //
 // The math mirrors the backend DashboardService so numbers match when no
-// filter is applied: gold/hour is derived from raw minutes (not rounded
-// hours) so short sessions aren't distorted.
+// filter is applied.
 
 import type {
   CharacterStat,
@@ -16,15 +15,35 @@ import type {
   Session,
 } from '@/types';
 
-const perHour = (totalGold: number, totalMinutes: number): number =>
-  totalMinutes > 0 ? Math.round((totalGold / totalMinutes) * 60) : 0;
+// One dungeon run costs 20 stamina, so gold is rated per 20 — that reads as
+// "what a run is worth" instead of a per-point figure nobody thinks in.
+const STAMINA_UNIT = 20;
+
+// Only runs that actually recorded stamina may feed the rate; a run logged
+// without it would otherwise add gold to the numerator and nothing to the
+// denominator.
+const perStamina = (gold: number, totalStamina: number): number =>
+  totalStamina > 0 ? Math.round((gold / totalStamina) * STAMINA_UNIT) : 0;
+
+// Gold from runs that recorded stamina — the rate's numerator, tracked
+// alongside the plain totals while grouping.
+interface RatedGold {
+  ratedGold: number;
+}
+
+function addRatedGold(totals: RatedGold, s: Session) {
+  if ((s.stamina_used ?? 0) > 0) totals.ratedGold += s.gold_earned ?? 0;
+}
 
 export function computeSummary(sessions: Session[]): DashboardSummary {
   const totalGold = sessions.reduce((sum, s) => sum + (s.gold_earned ?? 0), 0);
-  const totalMinutes = sessions.reduce(
-    (sum, s) => sum + (s.duration_minutes ?? 0),
+  const totalStamina = sessions.reduce(
+    (sum, s) => sum + (s.stamina_used ?? 0),
     0,
   );
+
+  const rated: RatedGold = { ratedGold: 0 };
+  for (const s of sessions) addRatedGold(rated, s);
 
   // Most-farmed dungeon by run count.
   const dungeonCounts = new Map<string, number>();
@@ -44,73 +63,86 @@ export function computeSummary(sessions: Session[]): DashboardSummary {
 
   return {
     totalGold,
-    totalHours: Math.round(totalMinutes / 60),
-    goldPerHour: perHour(totalGold, totalMinutes),
+    totalStamina,
+    goldPerStamina: perStamina(rated.ratedGold, totalStamina),
     favoriteDungeon,
   };
 }
 
 export function computeCharacterStats(sessions: Session[]): CharacterStat[] {
-  const map = new Map<string, CharacterStat>();
+  const map = new Map<string, CharacterStat & RatedGold>();
 
   for (const s of sessions) {
     const charId = s.character_id;
-    const existing = map.get(charId);
+    let existing = map.get(charId);
 
     if (existing) {
       existing.totalSessions += 1;
       existing.totalGold += s.gold_earned ?? 0;
-      existing.totalMinutes += s.duration_minutes ?? 0;
+      existing.totalStamina += s.stamina_used ?? 0;
     } else {
-      map.set(charId, {
+      existing = {
         characterId: charId,
         characterName: s.characters?.name ?? 'Unknown',
         className: s.characters?.classes?.name ?? 'Unknown',
         level: s.characters?.level ?? 1,
         totalSessions: 1,
         totalGold: s.gold_earned ?? 0,
-        totalMinutes: s.duration_minutes ?? 0,
-        goldPerHour: 0,
-      });
+        totalStamina: s.stamina_used ?? 0,
+        goldPerStamina: 0,
+        ratedGold: 0,
+      };
+      map.set(charId, existing);
     }
+
+    addRatedGold(existing, s);
   }
 
   return Array.from(map.values())
-    .map((stat) => ({
+    .map(({ ratedGold, ...stat }) => ({
       ...stat,
-      goldPerHour: perHour(stat.totalGold, stat.totalMinutes),
+      goldPerStamina: perStamina(ratedGold, stat.totalStamina),
     }))
     .sort((a, b) => b.totalGold - a.totalGold);
 }
 
 export function computeDungeonStats(sessions: Session[]): DungeonStats[] {
-  const map = new Map<string, DungeonStats>();
+  const map = new Map<string, DungeonStats & RatedGold>();
 
   for (const s of sessions) {
     // Sessions not tied to a dungeon can't be ranked by dungeon.
     if (!s.dungeon_id || !s.dungeons) continue;
 
     const id = s.dungeon_id;
-    const existing = map.get(id);
+    let existing = map.get(id);
 
     if (existing) {
       existing.totalSessions += 1;
       existing.totalGold += s.gold_earned ?? 0;
-      existing.totalMinutes += s.duration_minutes ?? 0;
+      existing.totalStamina += s.stamina_used ?? 0;
     } else {
-      map.set(id, {
+      existing = {
         dungeonId: id,
         dungeonName: s.dungeons.name,
         totalSessions: 1,
         totalGold: s.gold_earned ?? 0,
-        totalMinutes: s.duration_minutes ?? 0,
-        goldPerHour: 0,
-      });
+        totalStamina: s.stamina_used ?? 0,
+        goldPerStamina: 0,
+        ratedGold: 0,
+      };
+      map.set(id, existing);
     }
+
+    addRatedGold(existing, s);
   }
 
-  return Array.from(map.values())
-    .map((d) => ({ ...d, goldPerHour: perHour(d.totalGold, d.totalMinutes) }))
-    // Best farming spot first (gold per hour).
-    .sort((a, b) => b.goldPerHour - a.goldPerHour);
+  return (
+    Array.from(map.values())
+      .map(({ ratedGold, ...d }) => ({
+        ...d,
+        goldPerStamina: perStamina(ratedGold, d.totalStamina),
+      }))
+      // Best farming spot first (gold per 20 stamina).
+      .sort((a, b) => b.goldPerStamina - a.goldPerStamina)
+  );
 }

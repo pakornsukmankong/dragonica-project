@@ -270,7 +270,7 @@ export default function SessionsPage() {
         Date: s.started_at
           ? new Date(s.started_at).toISOString().split('T')[0]
           : '',
-        'Duration (min)': s.duration_minutes ?? '',
+        Stamina: s.stamina_used ?? '',
         Gold: v.gold,
         Silver: v.silver,
         Copper: v.copper,
@@ -461,9 +461,9 @@ export default function SessionsPage() {
                               minute: '2-digit',
                             })
                           : t('noDate')}
-                        {session.duration_minutes && (
-                          <span> · {t('minutesShort', { count: session.duration_minutes })}</span>
-                        )}
+                        {session.stamina_used ? (
+                          <span> · {t('staminaShort', { count: session.stamina_used })}</span>
+                        ) : null}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -499,10 +499,10 @@ export default function SessionsPage() {
                       </div>
                     )}
                     <div>
-                      <p className="text-xs text-muted">{t('duration')}</p>
+                      <p className="text-xs text-muted">{t('stamina')}</p>
                       <p className="text-sm font-medium text-foreground">
-                        {session.duration_minutes
-                          ? t('minutesShort', { count: session.duration_minutes })
+                        {session.stamina_used
+                          ? t('staminaShort', { count: session.stamina_used })
                           : '-'}
                       </p>
                     </div>
@@ -674,7 +674,7 @@ function SessionEditForm({
   const [dungeonId, setDungeonId] = useState(session.dungeon_id ?? '');
   const [gold, setGold] = useState(Number(session.gold_earned));
   const [goldDrop, setGoldDrop] = useState(Number(session.gold_dropped ?? 0));
-  const [duration, setDuration] = useState(session.duration_minutes ?? 0);
+  const [staminaUsed, setStaminaUsed] = useState(session.stamina_used ?? 0);
   const [note, setNote] = useState(session.note ?? '');
 
   const { data: dungeons } = useQuery<Dungeon[]>({
@@ -688,7 +688,7 @@ function SessionEditForm({
       dungeonId?: string;
       goldEarned: number;
       goldDropped: number;
-      durationMinutes?: number;
+      staminaUsed?: number;
       note?: string;
     }) => api.patch(`/sessions/${session.id}`, body),
     onSuccess: () => {
@@ -717,7 +717,7 @@ function SessionEditForm({
             dungeonId: dungeonId || undefined,
             goldEarned: gold,
             goldDropped: goldDrop,
-            durationMinutes: duration || undefined,
+            staminaUsed: staminaUsed || undefined,
             // Always sent (even '') so clearing the note actually clears it —
             // undefined would mean "leave unchanged" on the backend.
             note: note.trim(),
@@ -761,12 +761,12 @@ function SessionEditForm({
             <CurrencyInput value={goldDrop} onChange={setGoldDrop} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted">{t('durationMin')}</label>
+            <label className="text-xs font-medium text-muted">{t('staminaUsed')}</label>
             <input
               type="number"
               min={0}
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
+              value={staminaUsed}
+              onChange={(e) => setStaminaUsed(Number(e.target.value))}
               className="rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
             />
           </div>

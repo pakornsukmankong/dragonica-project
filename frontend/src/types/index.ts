@@ -51,7 +51,7 @@ export interface Session {
   dungeon_id: string | null;
   started_at: string | null;
   ended_at: string | null;
-  duration_minutes: number | null;
+  stamina_used: number | null;
   gold_earned: number;
   gold_dropped: number;
   note: string | null;
@@ -75,8 +75,8 @@ export interface AdminUser {
 
 export interface DashboardSummary {
   totalGold: number;
-  totalHours: number;
-  goldPerHour: number;
+  totalStamina: number;
+  goldPerStamina: number; // gold per 20 stamina (one dungeon run)
   favoriteDungeon: string | null;
 }
 
@@ -294,8 +294,8 @@ export interface DungeonStats {
   dungeonName: string;
   totalSessions: number;
   totalGold: number;
-  totalMinutes: number;
-  goldPerHour: number;
+  totalStamina: number;
+  goldPerStamina: number; // gold per 20 stamina (one dungeon run)
 }
 
 export interface CharacterStat {
@@ -305,6 +305,6 @@ export interface CharacterStat {
   level: number;
   totalSessions: number;
   totalGold: number;
-  totalMinutes: number;
-  goldPerHour: number;
+  totalStamina: number;
+  goldPerStamina: number; // gold per 20 stamina (one dungeon run)
 }

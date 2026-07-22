@@ -31,7 +31,7 @@ export function DungeonStats({ stats }: DungeonStatsProps) {
               <tr className="border-b border-border">
                 <th className="pb-3 pr-3 text-xs font-medium text-muted">{t('colRank')}</th>
                 <th className="pb-3 text-xs font-medium text-muted">{t('colDungeon')}</th>
-                <th className="pb-3 text-right text-xs font-medium text-muted">{t('colValuePerHr')}</th>
+                <th className="pb-3 text-right text-xs font-medium text-muted">{t('colValuePerStamina')}</th>
                 <th className="pb-3 text-right text-xs font-medium text-muted">{t('colRuns')}</th>
               </tr>
             </thead>
@@ -56,7 +56,7 @@ export function DungeonStats({ stats }: DungeonStatsProps) {
                     </span>
                   </td>
                   <td className="py-3 text-right text-sm">
-                    <Currency copper={d.goldPerHour} className="justify-end text-sm" />
+                    <Currency copper={d.goldPerStamina} className="justify-end text-sm" />
                   </td>
                   <td className="py-3 text-right text-xs text-muted tabular-nums">
                     {d.totalSessions}

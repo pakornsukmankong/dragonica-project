@@ -405,14 +405,14 @@
     "previewCharacterName": "อาเรีย · เมจ",
     "previewItem1": "เกล็ดมังกร",
     "previewItem2": "เหรียญโบราณ",
-    "previewDuration": "1 ชม. 20 น.",
     "previewSessionsLabel": "ประวัติเซสชัน",
     "previewDungeon2": "ถ้ำน้ำแข็ง",
     "previewCharacter2": "ไค · นักรบ",
     "previewToday": "วันนี้",
     "previewYesterday": "เมื่อวาน",
     "previewDaysAgo": "2 วันก่อน",
-    "previewDrops": "{count} ดรอป"
+    "previewDrops": "{count} ดรอป",
+    "previewStamina": "40 สตามิน่า"
   },
   "login": {
     "brandSubtitle": "ล่า · ฟาร์ม · ทำกำไร",
@@ -447,8 +447,6 @@
     "rangeAll": "ทั้งหมด",
     "rangeCustom": "กำหนดเอง",
     "statTotalValue": "มูลค่ารวม",
-    "statTotalHours": "ชั่วโมงรวม",
-    "statValuePerHour": "มูลค่า / ชั่วโมง",
     "statFavoriteDungeon": "ดันเจี้ยนที่ชอบ",
     "na": "ไม่มี",
     "characters": "ตัวละคร",
@@ -458,7 +456,9 @@
     "noSessions": "ยังไม่มีรอบฟาร์มที่บันทึกไว้",
     "colCharacter": "ตัวละคร",
     "colDate": "วันที่",
-    "colValue": "มูลค่า"
+    "colValue": "มูลค่า",
+    "statValuePerStamina": "มูลค่า / 20 สตามิน่า",
+    "statTotalStamina": "สตามิน่ารวม"
   },
   "grind": {
     "title": "ตัวบันทึกการฟาร์ม",
@@ -471,16 +471,8 @@
     "notePlaceholder": "จดอะไรก็ได้เกี่ยวกับรอบนี้ — ปาร์ตี้ บัฟ อีเวนต์...",
     "character": "ตัวละคร",
     "selectCharacter": "เลือกตัวละคร...",
-    "duration": "ระยะเวลา",
     "hourShort": "ชม.",
     "minuteShort": "น.",
-    "durationManual": "กรอกเอง",
-    "durationTimer": "จับเวลา",
-    "timerStart": "เริ่ม",
-    "timerResume": "เริ่มต่อ",
-    "timerPause": "พัก",
-    "timerStop": "หยุด",
-    "timerReset": "รีเซ็ต",
     "goldDrop": "ทองที่ได้",
     "goldDropHint": "(ส่วนต่าง จบ − เริ่ม)",
     "goldStart": "เงินตอนเริ่ม",
@@ -499,12 +491,16 @@
     "summary": "สรุป",
     "itemValue": "มูลค่าไอเทม",
     "totalValue": "มูลค่ารวม",
-    "valuePerHour": "มูลค่า / ชั่วโมง",
     "itemsTracked": "ไอเทมที่บันทึก",
     "saveSession": "บันทึกรอบฟาร์ม",
     "toastSavedTitle": "บันทึกรอบฟาร์มแล้ว",
     "toastSavedDesc": "เพิ่มลงในแดชบอร์ดของคุณแล้ว",
-    "toastSaveErrorTitle": "บันทึกรอบฟาร์มไม่สำเร็จ"
+    "toastSaveErrorTitle": "บันทึกรอบฟาร์มไม่สำเร็จ",
+    "stamina": "สตามิน่า",
+    "staminaShort": "สตามิน่า",
+    "valuePerStamina": "มูลค่า / 20 สตามิน่า",
+    "staminaMinus": "-{count} สตามิน่า",
+    "staminaPlus": "+{count} สตามิน่า"
   },
   "sessions": {
     "title": "รอบฟาร์ม",
@@ -526,17 +522,14 @@
     "showing": "แสดง {count} รอบ",
     "unknownCharacter": "ตัวละครไม่ทราบชื่อ",
     "noDate": "ไม่มีวันที่",
-    "minutesShort": "{count} นาที",
     "empty": "ไม่พบรอบฟาร์ม ลองปรับตัวกรองหรือเริ่มฟาร์มดูสิ!",
     "value": "มูลค่า",
     "goldDrop": "ทองที่ได้",
-    "duration": "ระยะเวลา",
     "drops": "ไอเทมที่ดรอป",
     "unknownItem": "ไม่ทราบ",
     "editSession": "แก้ไขรอบฟาร์ม",
     "dungeon": "ดันเจี้ยน",
     "totalValue": "มูลค่ารวม",
-    "durationMin": "ระยะเวลา (นาที)",
     "note": "โน้ต",
     "toastDeleted": "ลบรอบฟาร์มแล้ว",
     "toastDeleteError": "ลบรอบฟาร์มไม่สำเร็จ",
@@ -554,7 +547,10 @@
     "selectItem": "เลือกไอเทม…",
     "noDrops": "ยังไม่มีไอเทมที่ดรอป",
     "toastUpdated": "อัปเดตรอบฟาร์มแล้ว",
-    "toastUpdateError": "อัปเดตรอบฟาร์มไม่สำเร็จ"
+    "toastUpdateError": "อัปเดตรอบฟาร์มไม่สำเร็จ",
+    "stamina": "สตามิน่า",
+    "staminaUsed": "สตามิน่าที่ใช้",
+    "staminaShort": "{count} สตามิน่า"
   },
   "characters": {
     "title": "ตัวละคร",
@@ -841,17 +837,17 @@
     "loading": "กำลังโหลดสถิติ...",
     "empty": "ยังไม่มีข้อมูลรอบฟาร์ม เริ่มฟาร์มเลย!",
     "sessions": "{count} รอบ",
-    "hoursPlayed": "เล่นไป {count} ชม.",
-    "perHour": "{value}/ชม."
+    "perStamina": "{value}/20 สตา",
+    "staminaSpent": "{count} สตามิน่า"
   },
   "dungeonStats": {
     "title": "จุดฟาร์มที่ดีที่สุด",
-    "subtitle": "จัดอันดับตามทอง / ชั่วโมง",
+    "subtitle": "จัดอันดับตามทอง / 20 สตามิน่า",
     "empty": "ยังไม่มีรอบดันเจี้ยน บันทึกรอบฟาร์มพร้อมดันเจี้ยนเพื่อเทียบประสิทธิภาพ",
     "colRank": "#",
     "colDungeon": "ดันเจี้ยน",
-    "colValuePerHr": "มูลค่า / ชม.",
-    "colRuns": "รอบ"
+    "colRuns": "รอบ",
+    "colValuePerStamina": "มูลค่า / 20 สตา"
   },
   "goldChart": {
     "title": "ทองที่ได้",

@@ -29,7 +29,7 @@ export class UpdateSessionDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  durationMinutes?: number;
+  staminaUsed?: number;
 
   @IsOptional()
   @IsNumber()

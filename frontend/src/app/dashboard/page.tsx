@@ -6,7 +6,7 @@ import { m } from 'motion/react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { useDateFormatter } from '@/lib/i18n';
-import { Coins, Clock, TrendingUp, MapPin } from 'lucide-react';
+import { Coins, TrendingUp, MapPin, Flame } from 'lucide-react';
 import type { Session } from '@/types';
 import { GoldChart } from '@/components/gold-chart';
 import { CharacterStats } from '@/components/character-stats';
@@ -151,13 +151,13 @@ export default function DashboardPage() {
       currency: true,
     },
     {
-      label: t('statTotalHours'),
-      value: `${summary.totalHours}h`,
-      icon: Clock,
+      label: t('statTotalStamina'),
+      value: summary.totalStamina,
+      icon: Flame,
     },
     {
-      label: t('statValuePerHour'),
-      value: summary.goldPerHour,
+      label: t('statValuePerStamina'),
+      value: summary.goldPerStamina,
       icon: TrendingUp,
       currency: true,
     },
