@@ -75,6 +75,12 @@ const LS_REGION = 'dgn-auto-region';
 const LS_TUNING = 'dgn-auto-tuning';
 const LS_LOCKED = 'dgn-auto-locked';
 
+// Bumped whenever the defaults above change meaningfully. Saved tuning from an
+// older version is discarded rather than applied: a stored cutoff of 190 would
+// silently clip "START" again and undo the fix, on exactly the machines that
+// had already run the old build.
+const TUNING_VERSION = 2;
+
 type Region = typeof DEFAULT_REGION;
 type Hit = { n: number; at: string };
 
@@ -141,6 +147,7 @@ export default function AutoCountPage() {
   const scanRef = useRef<HTMLCanvasElement | null>(null); // offscreen whole-frame
   const lastHitRef = useRef(0);
   const tickRef = useRef(0);
+  const seqRef = useRef(0); // run number, so history entries cannot collide
 
   const [running, setRunning] = useState(false);
   // Until the banner has been found once, the region is a guess; after that the
@@ -151,6 +158,9 @@ export default function AutoCountPage() {
   const [minScore, setMinScore] = useState(DEFAULT_MIN_SCORE);
   const [cooldown, setCooldown] = useState(DEFAULT_COOLDOWN);
   const [live, setLive] = useState(0);
+  // Highest score seen since the counter was reset — a run that only just clears
+  // the threshold looks identical to a solid one without this.
+  const [peak, setPeak] = useState(0);
   const [count, setCount] = useState(0);
   const [hits, setHits] = useState<Hit[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -179,9 +189,11 @@ export default function AutoCountPage() {
       const t = localStorage.getItem(LS_TUNING);
       if (t) {
         const v = JSON.parse(t);
-        if (typeof v.cutoff === 'number') setCutoff(v.cutoff);
-        if (typeof v.minScore === 'number') setMinScore(v.minScore);
-        if (typeof v.cooldown === 'number') setCooldown(v.cooldown);
+        if (v.v === TUNING_VERSION) {
+          if (typeof v.cutoff === 'number') setCutoff(v.cutoff);
+          if (typeof v.minScore === 'number') setMinScore(v.minScore);
+          if (typeof v.cooldown === 'number') setCooldown(v.cooldown);
+        }
       }
     } catch {
       // corrupt or unavailable storage just means "start fresh"
@@ -198,7 +210,7 @@ export default function AutoCountPage() {
   useEffect(() => {
     localStorage.setItem(
       LS_TUNING,
-      JSON.stringify({ cutoff, minScore, cooldown }),
+      JSON.stringify({ v: TUNING_VERSION, cutoff, minScore, cooldown }),
     );
   }, [cutoff, minScore, cooldown]);
 
@@ -395,16 +407,19 @@ export default function AutoCountPage() {
       }
       if (s === null) return;
       setLive(s);
+      setPeak((p) => (s > p ? s : p));
       const now = Date.now();
       if (s >= minScore && now - lastHitRef.current > cooldown * 1000) {
         lastHitRef.current = now;
-        setCount((c) => {
-          const n = c + 1;
-          setHits((h) =>
-            [{ n, at: new Date().toLocaleTimeString() }, ...h].slice(0, 50),
-          );
-          return n;
-        });
+        // The run number lives in a ref, not in the count updater: React may
+        // invoke an updater more than once, and nesting setHits inside it
+        // duplicated history entries.
+        seqRef.current += 1;
+        const n = seqRef.current;
+        setCount(n);
+        setHits((h) =>
+          [{ n, at: new Date().toLocaleTimeString() }, ...h].slice(0, 50),
+        );
       }
     }, SAMPLE_MS);
     return () => clearInterval(id);
@@ -506,7 +521,9 @@ export default function AutoCountPage() {
               onClick={() => {
                 setCount(0);
                 setHits([]);
+                setPeak(0);
                 lastHitRef.current = 0;
+                seqRef.current = 0;
               }}
               className="mt-2 rounded-base border border-border px-2 py-1 text-xs text-muted hover:text-foreground"
             >
@@ -524,6 +541,23 @@ export default function AutoCountPage() {
             </div>
             <div className="tabular-nums text-foreground">
               {(live * 100).toFixed(1)}% (ต้องถึง {(minScore * 100).toFixed(0)}%)
+            </div>
+            <div className="tabular-nums text-muted">
+              สูงสุดที่เคยเจอ{' '}
+              <span
+                className={
+                  peak >= minScore + 0.15
+                    ? 'text-[var(--success)]'
+                    : peak >= minScore
+                      ? 'text-gold'
+                      : ''
+                }
+              >
+                {(peak * 100).toFixed(1)}%
+              </span>
+              {peak > 0 && peak < minScore + 0.15 && (
+                <span className="ml-1">— เฉียดเกณฑ์ ควรลดเกณฑ์ลง</span>
+              )}
             </div>
             <div className="mt-2 space-y-1">
               <canvas
