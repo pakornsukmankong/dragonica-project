@@ -16,6 +16,8 @@ export type OverlayOptions = {
   stamina: boolean;
   dot: boolean;
   align: 'left' | 'center' | 'right';
+  /** Outline width on the number, in px; the smaller text scales down from it. */
+  stroke: number;
 };
 
 /**
@@ -88,12 +90,22 @@ export function OverlayView({
             0 2px 6px rgba(0, 0, 0, 0.8),
             0 0 18px rgba(0, 0, 0, 0.6);
         }
+        /* The outline is what actually separates the text from the footage; the
+           shadows above only lift it off. paint-order puts the stroke behind the
+           fill, so a heavy outline thickens the glyph outwards instead of eating
+           into it — without it the digits go spindly at high stroke widths. */
+        .ov-n, .ov-label, .ov-sub { paint-order: stroke fill; }
         .ov-n {
           font-size: var(--ov-size);
           color: var(--ov-accent);
           display: inline-block;
+          -webkit-text-stroke: var(--ov-stroke) #000;
         }
-        .ov-label { font-size: calc(var(--ov-size) * 0.34); opacity: 0.92; }
+        .ov-label {
+          font-size: calc(var(--ov-size) * 0.34);
+          opacity: 0.92;
+          -webkit-text-stroke: calc(var(--ov-stroke) * 0.45) #000;
+        }
         .ov-sub {
           font-size: calc(var(--ov-size) * 0.24);
           font-weight: 600;
@@ -101,6 +113,7 @@ export function OverlayView({
           padding: 0 12px 8px;
           color: #fff;
           text-shadow: 0 0 4px rgba(0, 0, 0, 0.9), 0 2px 6px rgba(0, 0, 0, 0.8);
+          -webkit-text-stroke: calc(var(--ov-stroke) * 0.35) #000;
         }
         .ov-dot {
           width: 0.28em;
@@ -125,6 +138,7 @@ export function OverlayView({
           {
             '--ov-size': `${opts.size}px`,
             '--ov-accent': opts.accent,
+            '--ov-stroke': `${opts.stroke}px`,
             display: 'flex',
             flexDirection: 'column',
             alignItems:

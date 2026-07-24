@@ -147,6 +147,8 @@ export default function AutoCountPage() {
   const [overlayKey, setOverlayKey] = useState<string | null>(null);
   const [overlayLive, setOverlayLive] = useState(false);
   const [overlaySize, setOverlaySize] = useState(64);
+  // '' means "let the overlay scale the outline off the font size".
+  const [overlayStroke, setOverlayStroke] = useState<number | ''>('');
   const [overlayStamina, setOverlayStamina] = useState(false);
   const [copied, setCopied] = useState(false);
   // Persisting before the restore below has landed would write the empty
@@ -279,10 +281,11 @@ export default function AutoCountPage() {
     if (!overlayKey || typeof window === 'undefined') return '';
     const q = new URLSearchParams();
     if (overlaySize !== 64) q.set('size', String(overlaySize));
+    if (overlayStroke !== '') q.set('stroke', String(overlayStroke));
     if (overlayStamina) q.set('stamina', '1');
     const qs = q.toString();
     return `${window.location.origin}/overlay/${overlayKey}${qs ? `?${qs}` : ''}`;
-  }, [overlayKey, overlaySize, overlayStamina]);
+  }, [overlayKey, overlaySize, overlayStroke, overlayStamina]);
 
   // Paint the template once so the region box can be lined up by eye.
   useEffect(() => {
@@ -868,6 +871,26 @@ export default function AutoCountPage() {
                     )
                   }
                   className="w-20 rounded-base border border-border bg-[var(--root)] px-2 py-1 text-foreground"
+                />
+                px
+              </label>
+              <label className="flex items-center gap-2">
+                ขอบดำรอบตัวอักษร
+                <input
+                  type="number"
+                  min={0}
+                  max={16}
+                  step={0.5}
+                  placeholder="อัตโนมัติ"
+                  value={overlayStroke}
+                  onChange={(e) =>
+                    setOverlayStroke(
+                      e.target.value === ''
+                        ? ''
+                        : Math.min(16, Math.max(0, Number(e.target.value))),
+                    )
+                  }
+                  className="w-24 rounded-base border border-border bg-[var(--root)] px-2 py-1 text-foreground"
                 />
                 px
               </label>

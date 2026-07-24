@@ -21,11 +21,18 @@ function one(v: string | string[] | undefined) {
 
 /** Everything below is interpolated into markup or CSS, so nothing is trusted. */
 function readOptions(sp: Search): OverlayOptions {
-  const size = Number(one(sp.size));
+  const raw = Number(one(sp.size));
+  const size = Number.isFinite(raw) ? Math.min(300, Math.max(16, raw)) : 64;
   const accent = one(sp.accent)?.replace(/^#/, '') ?? '';
   const label = one(sp.label);
+  // Scales with the text unless asked otherwise, so bumping the size alone does
+  // not leave a hairline outline on a huge number.
+  const stroke = Number(one(sp.stroke));
   return {
-    size: Number.isFinite(size) ? Math.min(300, Math.max(16, size)) : 64,
+    size,
+    stroke: Number.isFinite(stroke)
+      ? Math.min(16, Math.max(0, stroke))
+      : Math.round(size * 0.045 * 10) / 10,
     accent: /^[0-9a-fA-F]{3,8}$/.test(accent) ? `#${accent}` : '#e0a53c',
     label: (label ?? 'รอบ').slice(0, 24),
     stamina: one(sp.stamina) === '1',
