@@ -1,6 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  MASK_H,
+  MASK_N,
+  MASK_W,
+  SEARCH_W,
+  buildTemplate,
+  scoreMask,
+  searchGray,
+  toGray,
+  type Region,
+} from './detector';
 
 /**
  * Internal, unlisted experiment: count dungeon runs by watching the game window.
@@ -11,18 +22,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
  */
 
 // Where "MISSION START" sits, measured off a 1920x1080 capture of a real run
-// (x680 y175, 470x180). Kept as percentages so a different capture resolution
-// still lines up as long as the aspect ratio matches.
-const DEFAULT_REGION = { x: 35.4, y: 16.2, w: 24.5, h: 16.7 };
+// (x680 y175, 470x180). Only a starting box for the overlay: the real one is
+// found by searching the frame, since the game usually sits in a window.
+const DEFAULT_REGION: Region = { x: 35.4, y: 16.2, w: 24.5, h: 16.7 };
 
-// The banner is matched as a small black/white mask: enough pixels to recognise
-// the letterforms, few enough to compare on every sampled frame.
-const MASK_W = 96;
-const MASK_H = 36;
-const MASK_N = MASK_W * MASK_H;
-
-// Brightness at which a pixel counts as lit. The template below was built at
-// this value, so changing it in the UI trades recall against false positives.
+// Brightness at which a pixel counts as lit. The template was built at this
+// value, so changing it in the UI trades recall against false positives.
 //
 // 140 rather than something brighter because "START" is rendered in orange-gold,
 // which has a much lower luma than the white "MISSION": at 190 the darker "RT"
@@ -30,112 +35,75 @@ const MASK_N = MASK_W * MASK_H;
 // survives the blur that comes with capturing a small game window.
 const DEFAULT_CUTOFF = 140;
 
-// Scanning happens on a downscaled frame, which dims thin strokes further, so
-// the hunt uses a more forgiving cutoff than the final check.
-const COARSE_CUTOFF = 110;
-
-// The banner shows for ~2s and runs are ~164s apart, so sampling twice a second
-// gives 4-5 chances to catch each one without loading the machine.
-const SAMPLE_MS = 500;
-
-/**
- * Built-in template, derived from four banner frames across two runs of a real
- * recording — no per-user calibration needed.
- *
- * ON  = lit in every sample (the letter cores).
- * OFF = dark in every sample (gaps and outline).
- *
- * Two maps rather than one because the backdrop behind the banner changes with
- * the dungeon: only pixels that agreed across visibly different backgrounds are
- * kept, so the match keys on the text and ignores the scenery.
- */
-const TPL_ON =
-  'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6O8cGHwQODAQAAAA7O+eOP8YeDAQAAAA/PnXPOeY/HAQAAAI/PHDDAHMzHAQAAAI3HHHDADMzHAAAAgM3m+PBBDszOAAAAgG3n8MFDBszMAAAAgD1jwAFnBu5sAAAAwDhzwAFnBmd8AAAAwJhzxwxznmN4AAAAwIgz//wx/HF4AAAAYIAxfvgw+DA4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHz4DwTwAAAAAAAAAP/8Hwb4j/8BAAAAgP/8Dwb43/8BAAAAgOPhAQ8cHBwAAAAAwMHggA8cHAwAAAAAwAHggA8cHA4AAAAAwANgwA0cHA4AAAAAwB9w4AwcDwYAAAAAgD9wYBz+BwYAAAAAAHwwcBz+AwcAAAAAAHg4+B/+AAMAAAAAAHA4/B/mAAMAAAAAOHAYHDznAAMAAAAAeDgYDjjngQEAAAAA8D8cDzjHgQEAAAAA8B8MBzjDgwEAAAAAwAMMAAACAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-const TPL_OFF =
-  '//////////////////////////////////////////////////FxDj54Pvx8/v////ExBhxwDnh8/v////AwYowxhnA4/v///3Aw488/4zM4/v///3I4448/8zM4////fzIZBw8W8TMR////f5IYDz4Y8TMT////f8KcP/6Y+RED////P8eMP/6Y+ZiD////P2eMOPOMYZyH////P3fMAAPOA46H////n3/OgQfPB8/H/////////////////////////////////////////4MH8PsP/P///////wAD4PkHcAD+////fwAD8PkHIAD+////fxwe/vDj4+P/////Pz4ff/Dj4/P/////P/4ff/Dj4/H/////P/yfP/Lj4/H/////P+CPH/Pj8Pn/////f8CPn+MB+Pn//////4PPj+MB/Pj//////4fHB+AB//z//////4/HA+AZ//z/////x4/n48MY//z/////h8fn8ccYfv7/////D8Dj8Mc4fv7/////D+Dz+Mc8fP7/////P/zz///9/f//////////////////////////////////';
-
 // Across fullscreen and three simulated window sizes the banner scores 0.79-0.91
 // while the best false match on town, combat and result frames reaches 0.43, so
 // the default sits between the two with room on each side.
 const DEFAULT_MIN_SCORE = 0.6;
 
-// Runs are ~164s apart; this only has to outlast the ~2s the banner is up.
-const DEFAULT_COOLDOWN = 60;
+// Shortest allowed gap between two counted runs. This is now only a backstop —
+// double-counting is prevented by the release rule below, not by a timer — so it
+// can be short enough that a fast party clearing in under a minute still counts.
+const DEFAULT_MIN_GAP = 10;
 
-// Banner width-to-height ratio (470x180). Candidate boxes keep it so the crop
-// always lands on the template's own proportions.
-const TPL_ASPECT = 470 / 180;
+// Minimum interval between samples. The banner holds for ~2s, so this leaves 4-5
+// chances to catch each one.
+const SAMPLE_MS = 400;
 
-// Width the whole frame is reduced to while hunting for the banner. 480 was too
-// coarse: with the game in a 1280-wide window the banner shrinks to ~78px there
-// and the strokes blur away entirely.
-const SEARCH_W = 960;
+// A run is counted only after this many consecutive samples clear the threshold,
+// so one fluke frame cannot invent a run.
+const CONFIRM_FRAMES = 2;
+
+// ...and the next run cannot be counted until the score has fallen back below
+// this fraction of the threshold, i.e. until the banner has actually gone away.
+// Hysteresis rather than a long cooldown: a cooldown long enough to cover one
+// banner also swallows genuinely short runs.
+const RELEASE_RATIO = 0.7;
+
+// A gap longer than this between samples means a banner could have come and gone
+// unseen — almost always a throttled background tab.
+const GAP_WARN_MS = 2500;
 
 const LS_REGION = 'dgn-auto-region';
 const LS_TUNING = 'dgn-auto-tuning';
-const LS_LOCKED = 'dgn-auto-locked';
+const LS_RUNS = 'dgn-auto-runs';
+const LS_LOCKED_LEGACY = 'dgn-auto-locked';
 
 // Bumped whenever the defaults above change meaningfully. Saved tuning from an
 // older version is discarded rather than applied: a stored cutoff of 190 would
-// silently clip "START" again and undo the fix, on exactly the machines that
-// had already run the old build.
-const TUNING_VERSION = 2;
+// silently clip "START" again, and a stored 60s cooldown would now block short
+// runs, on exactly the machines that had already run the old build.
+const TUNING_VERSION = 3;
 
-type Region = typeof DEFAULT_REGION;
-type Hit = { n: number; at: string };
+type Run = { id: number; at: number; manual?: boolean };
 
-function unpack(b64: string): Uint8Array {
-  const bin = atob(b64);
-  const out = new Uint8Array(MASK_N);
-  for (let i = 0; i < MASK_N; i++)
-    out[i] = (bin.charCodeAt(i >> 3) >> (i & 7)) & 1;
-  return out;
-}
-
-/** Every `step`-th pixel of a template — cheap enough to slide over a whole frame. */
-function subsample(mask: Uint8Array, step: number) {
-  const w = Math.floor(MASK_W / step);
-  const h = Math.floor(MASK_H / step);
-  const out = new Uint8Array(w * h);
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) out[y * w + x] = mask[y * step * MASK_W + x * step];
-  return { mask: out, w, h, n: out.reduce((a: number, b) => a + b, 0) };
-}
-
-/**
- * Score one candidate box: how much of the template's text is lit, times how
- * much of its dark area stayed dark. Samples the template grid out of `gray`
- * with nearest-neighbour, so any box size can be tested without rescaling.
- */
-function scoreBox(
-  gray: Uint8Array,
-  gw: number,
-  ox: number,
-  oy: number,
-  bw: number,
-  bh: number,
-  on: Uint8Array,
-  off: Uint8Array,
-  nOn: number,
-  nOff: number,
-  tw: number,
-  th: number,
-  cutoff: number,
-): number {
-  let onHit = 0;
-  let offHit = 0;
-  for (let ty = 0; ty < th; ty++) {
-    const row = (((oy + ((ty + 0.5) * bh) / th) | 0) * gw) | 0;
-    const trow = ty * tw;
-    for (let tx = 0; tx < tw; tx++) {
-      const gx = (ox + ((tx + 0.5) * bw) / tw) | 0;
-      const lit = gray[row + gx] >= cutoff ? 1 : 0;
-      const i = trow + tx;
-      if (on[i] && lit) onHit++;
-      if (off[i] && !lit) offHit++;
-    }
+function validRegion(v: unknown): Region | null {
+  if (!v || typeof v !== 'object') return null;
+  const r = v as Record<string, unknown>;
+  const out = {} as Region;
+  for (const k of ['x', 'y', 'w', 'h'] as const) {
+    const n = r[k];
+    // A NaN or out-of-range box makes drawImage throw on every single frame.
+    if (typeof n !== 'number' || !Number.isFinite(n) || n < 0 || n > 100)
+      return null;
+    out[k] = n;
   }
-  return (onHit / nOn) * (offHit / nOff);
+  return out.w > 0 && out.h > 0 ? out : null;
+}
+
+function validRuns(v: unknown): Run[] | null {
+  if (!Array.isArray(v)) return null;
+  const out: Run[] = [];
+  for (const r of v) {
+    if (
+      r &&
+      typeof r === 'object' &&
+      typeof (r as Run).id === 'number' &&
+      typeof (r as Run).at === 'number' &&
+      Number.isFinite((r as Run).at)
+    )
+      out.push({ id: (r as Run).id, at: (r as Run).at, manual: !!(r as Run).manual });
+  }
+  return out;
 }
 
 export default function AutoCountPage() {
@@ -145,9 +113,8 @@ export default function AutoCountPage() {
   const tplRef = useRef<HTMLCanvasElement>(null); // template, for aligning
   const workRef = useRef<HTMLCanvasElement | null>(null); // offscreen sampler
   const scanRef = useRef<HTMLCanvasElement | null>(null); // offscreen whole-frame
-  const lastHitRef = useRef(0);
-  const tickRef = useRef(0);
-  const seqRef = useRef(0); // run number, so history entries cannot collide
+  const grayRef = useRef(new Uint8Array(MASK_N));
+  const idRef = useRef(0);
 
   const [running, setRunning] = useState(false);
   // Until the banner has been found once, the region is a guess; after that the
@@ -156,63 +123,82 @@ export default function AutoCountPage() {
   const [region, setRegion] = useState<Region>(DEFAULT_REGION);
   const [cutoff, setCutoff] = useState(DEFAULT_CUTOFF);
   const [minScore, setMinScore] = useState(DEFAULT_MIN_SCORE);
-  const [cooldown, setCooldown] = useState(DEFAULT_COOLDOWN);
+  const [minGap, setMinGap] = useState(DEFAULT_MIN_GAP);
   const [live, setLive] = useState(0);
   // Highest score seen since the counter was reset — a run that only just clears
   // the threshold looks identical to a solid one without this.
   const [peak, setPeak] = useState(0);
-  const [count, setCount] = useState(0);
-  const [hits, setHits] = useState<Hit[]>([]);
+  const [runs, setRuns] = useState<Run[]>([]);
+  const [rate, setRate] = useState(0); // samples/second actually achieved
+  const [maxGap, setMaxGap] = useState(0); // longest blind spot, ms
+  const [workerDown, setWorkerDown] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Persisting before the restore below has landed would write the empty
+  // initial state over the saved one.
+  const [hydrated, setHydrated] = useState(false);
 
-  const tpl = useMemo(() => {
-    const on = unpack(TPL_ON);
-    const off = unpack(TPL_OFF);
-    let nOn = 0;
-    let nOff = 0;
-    for (let i = 0; i < MASK_N; i++) {
-      nOn += on[i];
-      nOff += off[i];
-    }
-    return { on, off, nOn, nOff, cOn: subsample(on, 3), cOff: subsample(off, 3) };
-  }, []);
+  const count = runs.length;
 
-  // Restore tuning from the last session. This has to run in an effect rather
-  // than a lazy state initialiser: localStorage does not exist during the
-  // server render, and seeding state from it there would desync hydration.
+  const tpl = useMemo(() => buildTemplate(), []);
+
+  // Config the sampling loop reads without being torn down and rebuilt every
+  // time a slider moves.
+  const cfgRef = useRef({ cutoff, minScore, minGap });
+  const regionRef = useRef(region);
+  const lockedRef = useRef(locked);
+  useEffect(() => {
+    cfgRef.current = { cutoff, minScore, minGap };
+  }, [cutoff, minScore, minGap]);
+  useEffect(() => {
+    regionRef.current = region;
+  }, [region]);
+  useEffect(() => {
+    lockedRef.current = locked;
+  }, [locked]);
+
+  // Restore from the last session. This has to run in an effect rather than a
+  // lazy state initialiser: localStorage does not exist during the server
+  // render, and seeding state from it there would desync hydration.
+  //
+  // `locked` is deliberately not restored — the game window may have moved since
+  // the tab was closed, and the only way to know is to find the banner again.
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- one-shot restore on mount */
     try {
-      const r = localStorage.getItem(LS_REGION);
-      if (r) setRegion(JSON.parse(r));
-      if (localStorage.getItem(LS_LOCKED) === '1') setLocked(true);
-      const t = localStorage.getItem(LS_TUNING);
-      if (t) {
-        const v = JSON.parse(t);
-        if (v.v === TUNING_VERSION) {
-          if (typeof v.cutoff === 'number') setCutoff(v.cutoff);
-          if (typeof v.minScore === 'number') setMinScore(v.minScore);
-          if (typeof v.cooldown === 'number') setCooldown(v.cooldown);
-        }
+      localStorage.removeItem(LS_LOCKED_LEGACY);
+      const r = validRegion(JSON.parse(localStorage.getItem(LS_REGION) ?? 'null'));
+      if (r) setRegion(r);
+      const saved = validRuns(JSON.parse(localStorage.getItem(LS_RUNS) ?? 'null'));
+      if (saved?.length) {
+        setRuns(saved);
+        idRef.current = Math.max(...saved.map((x) => x.id));
+      }
+      const t = JSON.parse(localStorage.getItem(LS_TUNING) ?? 'null');
+      if (t && t.v === TUNING_VERSION) {
+        if (typeof t.cutoff === 'number') setCutoff(t.cutoff);
+        if (typeof t.minScore === 'number') setMinScore(t.minScore);
+        if (typeof t.minGap === 'number') setMinGap(t.minGap);
       }
     } catch {
       // corrupt or unavailable storage just means "start fresh"
     }
+    setHydrated(true);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(LS_REGION, JSON.stringify(region));
-  }, [region]);
+    if (hydrated) localStorage.setItem(LS_REGION, JSON.stringify(region));
+  }, [hydrated, region]);
   useEffect(() => {
-    localStorage.setItem(LS_LOCKED, locked ? '1' : '0');
-  }, [locked]);
+    if (hydrated) localStorage.setItem(LS_RUNS, JSON.stringify(runs));
+  }, [hydrated, runs]);
   useEffect(() => {
-    localStorage.setItem(
-      LS_TUNING,
-      JSON.stringify({ v: TUNING_VERSION, cutoff, minScore, cooldown }),
-    );
-  }, [cutoff, minScore, cooldown]);
+    if (hydrated)
+      localStorage.setItem(
+        LS_TUNING,
+        JSON.stringify({ v: TUNING_VERSION, cutoff, minScore, minGap }),
+      );
+  }, [hydrated, cutoff, minScore, minGap]);
 
   // Paint the template once so the region box can be lined up by eye.
   useEffect(() => {
@@ -221,142 +207,112 @@ export default function AutoCountPage() {
     if (!c || !ctx) return;
     const img = ctx.createImageData(MASK_W, MASK_H);
     for (let i = 0; i < MASK_N; i++) {
-      const v = tpl.on[i] ? 255 : 0;
-      img.data[i * 4] = v;
-      img.data[i * 4 + 1] = tpl.on[i] ? 190 : 0;
+      img.data[i * 4] = tpl.on.data[i] ? 255 : 0;
+      img.data[i * 4 + 1] = tpl.on.data[i] ? 190 : 0;
       img.data[i * 4 + 2] = 0;
       img.data[i * 4 + 3] = 255;
     }
     ctx.putImageData(img, 0, 0);
   }, [tpl]);
 
-  /**
-   * Score the current frame: how much of the template's text is lit, times how
-   * much of its dark area stayed dark. The second factor is what stops a bright
-   * scene — which would light every text pixel by accident — from matching.
-   */
-  const sample = useCallback((): number | null => {
-    const video = videoRef.current;
-    if (!video || !video.videoWidth) return null;
+  const addRun = useCallback((manual = false) => {
+    // The id is taken before the updater runs: React may invoke an updater more
+    // than once, and doing this inside it duplicated history entries.
+    const id = ++idRef.current;
+    const at = Date.now();
+    setRuns((r) => [...r, { id, at, manual }]);
+  }, []);
 
-    const work =
-      workRef.current ?? (workRef.current = document.createElement('canvas'));
-    work.width = MASK_W;
-    work.height = MASK_H;
+  const resetCounter = () => {
+    setRuns([]);
+    setPeak(0);
+    setMaxGap(0);
+    idRef.current = 0;
+  };
+
+  const rehunt = () => {
+    setLocked(false);
+    lockedRef.current = false;
+    setLive(0);
+    setPeak(0);
+  };
+
+  /** Crop the pinned region and score it. Also paints the two previews. */
+  const sampleLocked = useCallback((): number | null => {
+    const video = videoRef.current;
+    if (!video?.videoWidth) return null;
+
+    const work = (workRef.current ??= document.createElement('canvas'));
+    if (work.width !== MASK_W) {
+      work.width = MASK_W;
+      work.height = MASK_H;
+    }
     const wctx = work.getContext('2d', { willReadFrequently: true });
     if (!wctx) return null;
 
-    const sx = (region.x / 100) * video.videoWidth;
-    const sy = (region.y / 100) * video.videoHeight;
-    const sw = (region.w / 100) * video.videoWidth;
-    const sh = (region.h / 100) * video.videoHeight;
+    const r = regionRef.current;
+    const sx = (r.x / 100) * video.videoWidth;
+    const sy = (r.y / 100) * video.videoHeight;
+    const sw = (r.w / 100) * video.videoWidth;
+    const sh = (r.h / 100) * video.videoHeight;
     wctx.drawImage(video, sx, sy, sw, sh, 0, 0, MASK_W, MASK_H);
 
-    const data = wctx.getImageData(0, 0, MASK_W, MASK_H).data;
-    let onHit = 0;
-    let offHit = 0;
-    const mc = maskRef.current;
-    const mctx = mc?.getContext('2d');
-    const out = mctx?.createImageData(MASK_W, MASK_H);
+    const gray = grayRef.current;
+    toGray(wctx.getImageData(0, 0, MASK_W, MASK_H).data, gray);
 
-    for (let i = 0; i < MASK_N; i++) {
-      const p = i * 4;
-      // Rec. 601 luma — cheaper than a colour-space conversion, good enough here.
-      const luma =
-        0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
-      const litPx = luma >= cutoff ? 1 : 0;
-      if (tpl.on[i] && litPx) onHit++;
-      if (tpl.off[i] && !litPx) offHit++;
-      if (out) {
-        const v = litPx ? 255 : 0;
-        out.data[p] = v;
-        out.data[p + 1] = v;
-        out.data[p + 2] = v;
-        out.data[p + 3] = 255;
+    const cutoff = cfgRef.current.cutoff;
+    const mctx = maskRef.current?.getContext('2d');
+    if (mctx) {
+      const out = mctx.createImageData(MASK_W, MASK_H);
+      for (let i = 0; i < MASK_N; i++) {
+        const v = gray[i] >= cutoff ? 255 : 0;
+        out.data[i * 4] = v;
+        out.data[i * 4 + 1] = v;
+        out.data[i * 4 + 2] = v;
+        out.data[i * 4 + 3] = 255;
       }
+      mctx.putImageData(out, 0, 0);
     }
-    if (mctx && out) mctx.putImageData(out, 0, 0);
-
     const crop = cropRef.current;
     const cctx = crop?.getContext('2d');
     if (crop && cctx)
       cctx.drawImage(video, sx, sy, sw, sh, 0, 0, crop.width, crop.height);
 
-    return (onHit / tpl.nOn) * (offHit / tpl.nOff);
-  }, [region, cutoff, tpl]);
+    return scoreMask(gray, tpl.on, tpl.off, cutoff);
+  }, [tpl]);
 
-  /**
-   * Find the banner anywhere in the frame, at any size. The game may sit in a
-   * window with title bar and letterboxing, so its content rectangle — and with
-   * it the banner's position and scale — cannot be assumed from the capture.
-   *
-   * Coarse pass slides a 1-in-3 template over the whole frame; the winner is
-   * then refined with the full template. Only run while unlocked.
-   */
-  const searchFrame = useCallback((): { score: number; region: Region } | null => {
+  /** Downscale the whole frame to a grey buffer for the search. */
+  const grabGray = useCallback(() => {
     const video = videoRef.current;
     if (!video?.videoWidth) return null;
-    const SW = SEARCH_W;
-    const SH = Math.round((SW * video.videoHeight) / video.videoWidth);
-    const c = scanRef.current ?? (scanRef.current = document.createElement('canvas'));
-    c.width = SW;
-    c.height = SH;
+    const sw = SEARCH_W;
+    const sh = Math.round((sw * video.videoHeight) / video.videoWidth);
+    const c = (scanRef.current ??= document.createElement('canvas'));
+    if (c.width !== sw || c.height !== sh) {
+      c.width = sw;
+      c.height = sh;
+    }
     const ctx = c.getContext('2d', { willReadFrequently: true });
     if (!ctx) return null;
-    ctx.drawImage(video, 0, 0, SW, SH);
-    const d = ctx.getImageData(0, 0, SW, SH).data;
-    const gray = new Uint8Array(SW * SH);
-    for (let i = 0; i < gray.length; i++) {
-      const p = i * 4;
-      gray[i] = (0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2]) | 0;
-    }
-
-    // Coarse pass: a geometric ladder of banner widths, because the game window
-    // can be anything from a small window to the whole screen and relative size
-    // error is what matters.
-    const { cOn, cOff } = tpl;
-    let best = { s: -1, x: 0, y: 0, w: 0, h: 0 };
-    for (let bw = 80; bw <= 340; bw = Math.round(bw * 1.12)) {
-      const bh = bw / TPL_ASPECT;
-      if (bh >= SH) break;
-      for (let oy = 0; oy + bh <= SH; oy += 5)
-        for (let ox = 0; ox + bw <= SW; ox += 5) {
-          const s = scoreBox(gray, SW, ox, oy, bw, bh, cOn.mask, cOff.mask, cOn.n, cOff.n, cOn.w, cOn.h, COARSE_CUTOFF);
-          if (s > best.s) best = { s, x: ox, y: oy, w: bw, h: bh };
-        }
-    }
-    if (best.s < 0) return null;
-
-    // Fine pass: full template, real cutoff, around the winner.
-    let fine = { s: -1, x: best.x, y: best.y, w: best.w, h: best.h };
-    for (let f = 0.88; f <= 1.13; f += 0.04) {
-      const bw = best.w * f;
-      const bh = bw / TPL_ASPECT;
-      for (let oy = best.y - 6; oy <= best.y + 6; oy++)
-        for (let ox = best.x - 6; ox <= best.x + 6; ox++) {
-          if (ox < 0 || oy < 0 || ox + bw > SW || oy + bh > SH) continue;
-          const s = scoreBox(gray, SW, ox, oy, bw, bh, tpl.on, tpl.off, tpl.nOn, tpl.nOff, MASK_W, MASK_H, cutoff);
-          if (s > fine.s) fine = { s, x: ox, y: oy, w: bw, h: bh };
-        }
-    }
-    return {
-      score: fine.s,
-      region: {
-        x: (fine.x / SW) * 100,
-        y: (fine.y / SH) * 100,
-        w: (fine.w / SW) * 100,
-        h: (fine.h / SH) * 100,
-      },
-    };
-  }, [tpl, cutoff]);
+    ctx.drawImage(video, 0, 0, sw, sh);
+    const gray = new Uint8Array(sw * sh);
+    toGray(ctx.getImageData(0, 0, sw, sh).data, gray);
+    return { gray, sw, sh };
+  }, []);
 
   const start = async () => {
     setError(null);
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: 5 },
+      // Hints only, but they pre-select the right tab in the picker: sharing the
+      // game window alone keeps the rest of the desktop out of the page's reach
+      // and makes the frame almost entirely banner-relevant. selfBrowserSurface
+      // is newer than the DOM typings, hence the cast.
+      const opts: DisplayMediaStreamOptions = {
+        video: { frameRate: 10, displaySurface: 'window' },
         audio: false,
-      });
+        ...({ selfBrowserSurface: 'exclude' } as object),
+      };
+      const stream = await navigator.mediaDevices.getDisplayMedia(opts);
       const video = videoRef.current;
       if (!video) return;
       video.srcObject = stream;
@@ -366,6 +322,7 @@ export default function AutoCountPage() {
         setRunning(false);
         if (videoRef.current) videoRef.current.srcObject = null;
       });
+      setMaxGap(0);
       setRunning(true);
     } catch (e) {
       setError(
@@ -386,44 +343,167 @@ export default function AutoCountPage() {
 
   useEffect(() => stop, []); // release the capture when leaving the page
 
+  /**
+   * The sampling loop.
+   *
+   * Three independent clocks feed one gated tick, because the tab spends nearly
+   * all of its time in the background while the user is in the game and each of
+   * them can stall on its own: requestVideoFrameCallback stops when the page is
+   * not being composited, a main-thread interval is clamped (and eventually
+   * throttled hard) in a hidden tab, and a worker interval is the most resistant
+   * but not guaranteed either. Whatever survives drives the sampling, and the
+   * watchdog below reports the rate actually achieved so a stall is visible
+   * instead of silent.
+   */
   useEffect(() => {
     if (!running) return;
-    const id = setInterval(() => {
-      let s: number | null;
-      if (locked) {
-        s = sample();
-      } else {
-        // Searching is far heavier than the fixed check, so only every other
-        // tick — the banner is up for ~2s, which is plenty.
-        if (tickRef.current++ % 2) return;
-        const found = searchFrame();
-        s = found?.score ?? null;
-        // A confident hit means we have also just located the box: pin it, and
-        // keep painting previews from here on.
-        if (found && found.score >= minScore) {
-          setRegion(found.region);
-          setLocked(true);
-        }
-      }
-      if (s === null) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    let disposed = false;
+    let busy = false; // a scan is in flight
+    let seq = 0;
+    let lastSample = 0;
+    let above = 0; // consecutive samples over the threshold
+    let armed = true; // false until the score falls back down
+    let lastHit = 0;
+    let lockDims = '';
+    const stamps: number[] = [];
+
+    let worker: Worker | null = null;
+    try {
+      worker = new Worker(new URL('./scan.worker.ts', import.meta.url), {
+        type: 'module',
+      });
+    } catch {
+      worker = null;
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reporting the state of an external system (worker construction), not deriving state
+    if (!worker) setWorkerDown(true);
+
+    const lockOnto = (r: Region) => {
+      regionRef.current = r;
+      lockedRef.current = true;
+      lockDims = `${video.videoWidth}x${video.videoHeight}`;
+      setRegion(r);
+      setLocked(true);
+    };
+
+    const applyScore = (s: number, found: Region | null) => {
+      if (disposed) return;
       setLive(s);
       setPeak((p) => (s > p ? s : p));
-      const now = Date.now();
-      if (s >= minScore && now - lastHitRef.current > cooldown * 1000) {
-        lastHitRef.current = now;
-        // The run number lives in a ref, not in the count updater: React may
-        // invoke an updater more than once, and nesting setHits inside it
-        // duplicated history entries.
-        seqRef.current += 1;
-        const n = seqRef.current;
-        setCount(n);
-        setHits((h) =>
-          [{ n, at: new Date().toLocaleTimeString() }, ...h].slice(0, 50),
-        );
+      const cfg = cfgRef.current;
+      if (s >= cfg.minScore) {
+        above++;
+        if (above >= CONFIRM_FRAMES) {
+          if (found) lockOnto(found);
+          const now = Date.now();
+          if (armed && now - lastHit >= cfg.minGap * 1000) {
+            armed = false;
+            lastHit = now;
+            addRun();
+          }
+        }
+      } else {
+        above = 0;
+        // Re-arm only once the banner is clearly gone, not the moment the score
+        // dips below the line.
+        if (s < cfg.minScore * RELEASE_RATIO) armed = true;
       }
-    }, SAMPLE_MS);
-    return () => clearInterval(id);
-  }, [running, locked, sample, searchFrame, minScore, cooldown]);
+    };
+
+    const tick = () => {
+      if (disposed) return;
+      const now = performance.now();
+      if (lastSample && now - lastSample < SAMPLE_MS) return;
+      if (lastSample) {
+        const gap = now - lastSample;
+        setMaxGap((g) => (gap > g ? gap : g));
+      }
+      lastSample = now;
+
+      stamps.push(now);
+      if (stamps.length > 16) stamps.shift();
+      if (stamps.length > 1)
+        setRate(
+          ((stamps.length - 1) / (stamps[stamps.length - 1] - stamps[0])) * 1000,
+        );
+
+      if (lockedRef.current) {
+        // The window was resized or the share was switched, so the pinned box no
+        // longer means anything.
+        if (lockDims && `${video.videoWidth}x${video.videoHeight}` !== lockDims) {
+          lockedRef.current = false;
+          setLocked(false);
+          return;
+        }
+        const s = sampleLocked();
+        if (s !== null) applyScore(s, null);
+        return;
+      }
+
+      if (busy) return;
+      const g = grabGray();
+      if (!g) return;
+      if (worker) {
+        busy = true;
+        worker.postMessage(
+          {
+            type: 'scan',
+            seq: ++seq,
+            gray: g.gray.buffer,
+            sw: g.sw,
+            sh: g.sh,
+            cutoff: cfgRef.current.cutoff,
+          },
+          [g.gray.buffer],
+        );
+      } else {
+        const found = searchGray(g.gray, g.sw, g.sh, cfgRef.current.cutoff, tpl);
+        if (found) applyScore(found.score, found.region);
+      }
+    };
+
+    if (worker) {
+      worker.addEventListener('message', (e: MessageEvent) => {
+        const m = e.data;
+        if (m?.type === 'tick') tick();
+        else if (m?.type === 'scan') {
+          busy = false;
+          if (m.found) applyScore(m.found.score, m.found.region);
+        }
+      });
+      worker.addEventListener('error', () => {
+        // Fall back to searching on the main thread rather than stopping.
+        worker?.terminate();
+        worker = null;
+        setWorkerDown(true);
+      });
+      worker.postMessage({ type: 'clock', ms: SAMPLE_MS });
+    }
+
+    const interval = setInterval(tick, SAMPLE_MS);
+
+    let rvfc = 0;
+    const onFrame = () => {
+      if (disposed) return;
+      tick();
+      rvfc = video.requestVideoFrameCallback(onFrame);
+    };
+    if ('requestVideoFrameCallback' in video)
+      rvfc = video.requestVideoFrameCallback(onFrame);
+
+    return () => {
+      disposed = true;
+      clearInterval(interval);
+      if (rvfc) video.cancelVideoFrameCallback(rvfc);
+      worker?.terminate();
+    };
+  }, [running, addRun, sampleLocked, grabGray, tpl]);
+
+  const stalled = running && maxGap > GAP_WARN_MS;
+  const recent = runs.slice(-40).reverse();
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 p-4">
@@ -435,6 +515,11 @@ export default function AutoCountPage() {
           จับภาพหน้าจอเกมแล้วนับเมื่อเจอ “MISSION START” — พร้อมใช้ทันที
           ไม่ต้องตั้งค่าอะไร อ่านภาพอย่างเดียว ไม่ยุ่งกับตัวเกม เล่นแบบ Windowed
           / Borderless จะจับภาพได้ (Fullscreen Exclusive อาจได้จอดำ)
+        </p>
+        <p className="mt-1 text-sm text-muted">
+          ตอนเลือกสิ่งที่จะแชร์ <strong className="text-foreground">ให้เลือกแท็บ
+          “หน้าต่าง” แล้วเลือกหน้าต่างเกม</strong> ไม่ต้องแชร์ทั้งจอ — ปลอดภัยกว่า
+          เพราะหน้านี้จะเห็นแค่เกม และหาตำแหน่งแบนเนอร์ได้เร็วกว่าด้วย
         </p>
       </header>
 
@@ -461,10 +546,7 @@ export default function AutoCountPage() {
           </button>
         )}
         <button
-          onClick={() => {
-            setLocked(false);
-            setLive(0);
-          }}
+          onClick={rehunt}
           disabled={!locked}
           className="rounded-base border border-border px-3 py-2 text-sm text-foreground hover:border-gold/50 disabled:opacity-40"
           title="ถ้าย้าย/ปรับขนาดหน้าต่างเกม ให้กดหาตำแหน่งใหม่"
@@ -485,6 +567,16 @@ export default function AutoCountPage() {
           ยังไม่รู้ว่าหน้าต่างเกมอยู่ตรงไหนในภาพที่จับ กำลังสแกนทั้งจอหาแบนเนอร์
           — <strong>ลงดันตามปกติได้เลย</strong> พอ “MISSION START” ขึ้นครั้งแรก
           มันจะจับตำแหน่งเอง ล็อกไว้ แล้วนับรอบนั้นให้ด้วย
+        </div>
+      )}
+
+      {stalled && (
+        <div className="rounded-base border border-[var(--border-danger)] bg-[var(--danger)]/10 p-3 text-sm text-foreground">
+          เคยมีช่วงที่ตรวจจับห่างกันถึง {(maxGap / 1000).toFixed(1)} วินาที —
+          แบนเนอร์ขึ้นแค่ ~2 วิ ช่วงนั้นอาจนับตกไปแล้ว
+          มักเกิดจากเบราว์เซอร์ลดการทำงานของแท็บที่ถูกสลับไปอยู่ข้างหลัง
+          ถ้าเป็นบ่อยให้เปิดแท็บนี้ค้างไว้ให้เห็น (เช่นจออีกจอ
+          หรือหน้าต่างเล็ก ๆ วางข้างเกม) แล้วกดรีเซ็ตตัวนับเพื่อวัดใหม่
         </div>
       )}
 
@@ -515,20 +607,32 @@ export default function AutoCountPage() {
               <span className="ml-2 text-sm font-normal text-muted">รอบ</span>
             </div>
             <div className="text-xs text-muted">
-              ≈ {count * 20} stamina · ล่าสุด {hits[0]?.at ?? '—'}
+              ≈ {count * 20} stamina · ล่าสุด{' '}
+              {recent[0] ? new Date(recent[0].at).toLocaleTimeString() : '—'}
             </div>
-            <button
-              onClick={() => {
-                setCount(0);
-                setHits([]);
-                setPeak(0);
-                lastHitRef.current = 0;
-                seqRef.current = 0;
-              }}
-              className="mt-2 rounded-base border border-border px-2 py-1 text-xs text-muted hover:text-foreground"
-            >
-              รีเซ็ตตัวนับ
-            </button>
+            <div className="mt-2 flex flex-wrap gap-1">
+              <button
+                onClick={() => addRun(true)}
+                className="rounded-base border border-border px-2 py-1 text-xs text-foreground hover:border-gold/50"
+                title="นับตกไปหนึ่งรอบ"
+              >
+                +1
+              </button>
+              <button
+                onClick={() => setRuns((r) => r.slice(0, -1))}
+                disabled={!count}
+                className="rounded-base border border-border px-2 py-1 text-xs text-foreground hover:border-gold/50 disabled:opacity-40"
+                title="ลบรอบล่าสุดที่นับเกินมา"
+              >
+                −1
+              </button>
+              <button
+                onClick={resetCounter}
+                className="rounded-base border border-border px-2 py-1 text-xs text-muted hover:text-foreground"
+              >
+                รีเซ็ตตัวนับ
+              </button>
+            </div>
           </div>
 
           <div className="rounded-base border border-border bg-surface p-3 text-xs">
@@ -559,6 +663,15 @@ export default function AutoCountPage() {
                 <span className="ml-1">— เฉียดเกณฑ์ ควรลดเกณฑ์ลง</span>
               )}
             </div>
+            {running && (
+              <div className="tabular-nums text-muted">
+                ตรวจจับ {rate.toFixed(1)} ครั้ง/วิ · ห่างสุด{' '}
+                <span className={stalled ? 'text-[var(--danger)]' : ''}>
+                  {(maxGap / 1000).toFixed(1)} วิ
+                </span>
+                {workerDown && <span className="ml-1">· ไม่มี worker</span>}
+              </div>
+            )}
             <div className="mt-2 space-y-1">
               <canvas
                 ref={cropRef}
@@ -603,9 +716,10 @@ export default function AutoCountPage() {
                 type="number"
                 step="0.1"
                 value={region[k]}
-                onChange={(e) =>
-                  setRegion({ ...region, [k]: Number(e.target.value) })
-                }
+                onChange={(e) => {
+                  const next = { ...region, [k]: Number(e.target.value) };
+                  setRegion(validRegion(next) ?? region);
+                }}
                 className="mt-1 w-full rounded-base border border-border bg-[var(--root)] px-2 py-1 text-sm text-foreground"
               />
             </label>
@@ -633,14 +747,14 @@ export default function AutoCountPage() {
             />
           </label>
           <label className="text-xs text-muted">
-            หน่วงกันนับซ้ำ ({cooldown} วิ)
+            เว้นระยะขั้นต่ำระหว่างรอบ ({minGap} วิ)
             <input
               type="range"
-              min={5}
-              max={180}
+              min={0}
+              max={60}
               step={5}
-              value={cooldown}
-              onChange={(e) => setCooldown(Number(e.target.value))}
+              value={minGap}
+              onChange={(e) => setMinGap(Number(e.target.value))}
               className="mt-1 w-full"
             />
           </label>
@@ -649,7 +763,7 @@ export default function AutoCountPage() {
               setRegion(DEFAULT_REGION);
               setCutoff(DEFAULT_CUTOFF);
               setMinScore(DEFAULT_MIN_SCORE);
-              setCooldown(DEFAULT_COOLDOWN);
+              setMinGap(DEFAULT_MIN_GAP);
             }}
             className="self-end rounded-base border border-border px-2 py-1 text-xs text-muted hover:text-foreground"
           >
@@ -658,15 +772,27 @@ export default function AutoCountPage() {
         </div>
       </details>
 
-      {hits.length > 0 && (
+      {recent.length > 0 && (
         <div className="rounded-base border border-border bg-surface p-3">
           <div className="mb-2 text-sm font-medium text-foreground">
-            ประวัติการตรวจเจอ
+            ประวัติการตรวจเจอ{' '}
+            <span className="text-xs font-normal text-muted">
+              (กด × เพื่อลบรอบที่นับผิด)
+            </span>
           </div>
-          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-            {hits.map((h) => (
-              <li key={h.n} className="tabular-nums">
-                #{h.n} · {h.at}
+          <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
+            {recent.map((r, i) => (
+              <li key={r.id} className="tabular-nums">
+                <span className={r.manual ? 'text-gold' : ''}>
+                  #{count - i} · {new Date(r.at).toLocaleTimeString()}
+                </span>
+                <button
+                  onClick={() => setRuns((all) => all.filter((x) => x.id !== r.id))}
+                  className="ml-1 text-muted hover:text-[var(--danger)]"
+                  aria-label={`ลบรอบที่ ${count - i}`}
+                >
+                  ×
+                </button>
               </li>
             ))}
           </ul>
