@@ -25,6 +25,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { isOverlayRoute } from '@/components/off-overlay';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { LoginModal } from '@/components/login-modal';
 import { LoginPromptProvider } from '@/components/login-prompt';
@@ -238,6 +239,17 @@ function UserFooter({
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  // Split rather than an early return inside the shell: OBS loads /overlay/*
+  // with no session, and this way the auth subscription and the nav's queries
+  // are never mounted there at all.
+  return isOverlayRoute(usePathname()) ? (
+    <>{children}</>
+  ) : (
+    <AppShellChrome>{children}</AppShellChrome>
+  );
+}
+
+function AppShellChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations('nav');

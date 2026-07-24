@@ -18,6 +18,8 @@ export default function robots(): MetadataRoute.Robots {
         '/tickets',
         '/login',
         '/auth/',
+        // Stream overlays — a token-addressed page meant for OBS, not readers.
+        '/overlay',
       ],
     },
     sitemap: `${siteUrl()}/sitemap.xml`,

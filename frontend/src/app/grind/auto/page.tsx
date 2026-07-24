@@ -1,6 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
+import {
+  OVERLAY_BEAT_MS,
+  OVERLAY_EVENT,
+  newOverlayToken,
+  overlayChannel,
+  type OverlayState,
+} from '@/lib/run-overlay';
 import {
   MASK_H,
   MASK_N,
@@ -66,6 +75,7 @@ const GAP_WARN_MS = 2500;
 const LS_REGION = 'dgn-auto-region';
 const LS_TUNING = 'dgn-auto-tuning';
 const LS_RUNS = 'dgn-auto-runs';
+const LS_OVERLAY = 'dgn-auto-overlay';
 const LS_LOCKED_LEGACY = 'dgn-auto-locked';
 
 // Bumped whenever the defaults above change meaningfully. Saved tuning from an
@@ -133,6 +143,12 @@ export default function AutoCountPage() {
   const [maxGap, setMaxGap] = useState(0); // longest blind spot, ms
   const [workerDown, setWorkerDown] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // OBS overlay: null until the user asks for a link.
+  const [overlayKey, setOverlayKey] = useState<string | null>(null);
+  const [overlayLive, setOverlayLive] = useState(false);
+  const [overlaySize, setOverlaySize] = useState(64);
+  const [overlayStamina, setOverlayStamina] = useState(false);
+  const [copied, setCopied] = useState(false);
   // Persisting before the restore below has landed would write the empty
   // initial state over the saved one.
   const [hydrated, setHydrated] = useState(false);
@@ -173,6 +189,8 @@ export default function AutoCountPage() {
         setRuns(saved);
         idRef.current = Math.max(...saved.map((x) => x.id));
       }
+      const k = localStorage.getItem(LS_OVERLAY);
+      if (k && /^[a-z0-9]{8,40}$/i.test(k)) setOverlayKey(k);
       const t = JSON.parse(localStorage.getItem(LS_TUNING) ?? 'null');
       if (t && t.v === TUNING_VERSION) {
         if (typeof t.cutoff === 'number') setCutoff(t.cutoff);
@@ -199,6 +217,72 @@ export default function AutoCountPage() {
         JSON.stringify({ v: TUNING_VERSION, cutoff, minScore, minGap }),
       );
   }, [hydrated, cutoff, minScore, minGap]);
+
+  /*
+   * Publishing to the OBS overlay.
+   *
+   * The overlay runs in OBS's own embedded browser, so the count has to travel
+   * over the network — see lib/run-overlay for why this is a Supabase broadcast
+   * channel rather than anything local.
+   *
+   * The whole state goes out every time, never a "+1" event: broadcast does not
+   * guarantee delivery, and an overlay that incremented a local tally would
+   * drift permanently the first time a message was dropped.
+   */
+  const overlayRef = useRef<RealtimeChannel | null>(null);
+  const overlayReadyRef = useRef(false);
+  const stateRef = useRef<OverlayState>({ count: 0, lastAt: null, at: 0 });
+
+  const pushOverlay = useCallback(() => {
+    if (!overlayReadyRef.current || !overlayRef.current) return;
+    overlayRef.current.send({
+      type: 'broadcast',
+      event: OVERLAY_EVENT,
+      payload: { ...stateRef.current, at: Date.now() },
+    });
+  }, []);
+
+  useEffect(() => {
+    stateRef.current = {
+      count: runs.length,
+      lastAt: runs.length ? runs[runs.length - 1].at : null,
+      at: Date.now(),
+    };
+    pushOverlay();
+  }, [runs, pushOverlay]);
+
+  useEffect(() => {
+    if (!overlayKey) return;
+    const supabase = createClient();
+    const ch = supabase.channel(overlayChannel(overlayKey), {
+      config: { broadcast: { self: false } },
+    });
+    overlayRef.current = ch;
+    ch.subscribe((status) => {
+      overlayReadyRef.current = status === 'SUBSCRIBED';
+      setOverlayLive(status === 'SUBSCRIBED');
+      // An overlay opened later — or reloaded by a scene switch — has no history
+      // to catch up on, so the heartbeat is also how it learns the count.
+      if (status === 'SUBSCRIBED') pushOverlay();
+    });
+    const beat = setInterval(pushOverlay, OVERLAY_BEAT_MS);
+    return () => {
+      clearInterval(beat);
+      overlayReadyRef.current = false;
+      overlayRef.current = null;
+      setOverlayLive(false);
+      supabase.removeChannel(ch);
+    };
+  }, [overlayKey, pushOverlay]);
+
+  const overlayUrl = useMemo(() => {
+    if (!overlayKey || typeof window === 'undefined') return '';
+    const q = new URLSearchParams();
+    if (overlaySize !== 64) q.set('size', String(overlaySize));
+    if (overlayStamina) q.set('stamina', '1');
+    const qs = q.toString();
+    return `${window.location.origin}/overlay/${overlayKey}${qs ? `?${qs}` : ''}`;
+  }, [overlayKey, overlaySize, overlayStamina]);
 
   // Paint the template once so the region box can be lined up by eye.
   useEffect(() => {
@@ -228,6 +312,28 @@ export default function AutoCountPage() {
     setPeak(0);
     setMaxGap(0);
     idRef.current = 0;
+  };
+
+  const createOverlay = () => {
+    const k = newOverlayToken();
+    localStorage.setItem(LS_OVERLAY, k);
+    setOverlayKey(k);
+    setCopied(false);
+  };
+
+  const clearOverlay = () => {
+    localStorage.removeItem(LS_OVERLAY);
+    setOverlayKey(null);
+  };
+
+  const copyOverlay = async () => {
+    try {
+      await navigator.clipboard.writeText(overlayUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard blocked — the field is selectable, so this is not fatal
+    }
   };
 
   const rehunt = () => {
@@ -702,6 +808,101 @@ export default function AutoCountPage() {
           </div>
         </div>
       </div>
+
+      {/* stream overlay — a browser source URL for OBS */}
+      <details className="rounded-base border border-border bg-surface p-3">
+        <summary className="cursor-pointer text-sm font-medium text-foreground">
+          โชว์จำนวนรอบบนสตรีม (OBS){' '}
+          {overlayKey && (
+            <span
+              className={`ml-1 text-xs font-normal ${overlayLive ? 'text-[var(--success)]' : 'text-muted'}`}
+            >
+              ● {overlayLive ? 'ส่งข้อมูลอยู่' : 'กำลังเชื่อมต่อ…'}
+            </span>
+          )}
+        </summary>
+
+        {!overlayKey ? (
+          <div className="mt-3 space-y-2 text-xs text-muted">
+            <p>
+              สร้างลิงก์แล้วเอาไปใส่เป็น <strong>Browser Source</strong> ใน OBS
+              จำนวนรอบจะขึ้นบนสตรีมและอัปเดตทันทีที่นับได้
+              โดยแท็บนี้ต้องเปิดค้างไว้
+            </p>
+            <button
+              onClick={createOverlay}
+              className="rounded-base border border-gold/50 px-3 py-1.5 text-xs text-gold hover:bg-gold/10"
+            >
+              สร้างลิงก์สำหรับ OBS
+            </button>
+          </div>
+        ) : (
+          <div className="mt-3 space-y-3 text-xs">
+            <div className="flex flex-wrap gap-2">
+              <input
+                readOnly
+                value={overlayUrl}
+                onFocus={(e) => e.currentTarget.select()}
+                className="min-w-0 flex-1 rounded-base border border-border bg-[var(--root)] px-2 py-1 font-mono text-[11px] text-foreground"
+              />
+              <button
+                onClick={copyOverlay}
+                className="rounded-base border border-gold/50 px-3 py-1 text-xs text-gold hover:bg-gold/10"
+              >
+                {copied ? 'คัดลอกแล้ว' : 'คัดลอก'}
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 text-muted">
+              <label className="flex items-center gap-2">
+                ขนาดตัวเลข
+                <input
+                  type="number"
+                  min={16}
+                  max={300}
+                  step={4}
+                  value={overlaySize}
+                  onChange={(e) =>
+                    setOverlaySize(
+                      Math.min(300, Math.max(16, Number(e.target.value) || 64)),
+                    )
+                  }
+                  className="w-20 rounded-base border border-border bg-[var(--root)] px-2 py-1 text-foreground"
+                />
+                px
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={overlayStamina}
+                  onChange={(e) => setOverlayStamina(e.target.checked)}
+                />
+                แสดง stamina ด้วย
+              </label>
+              <button
+                onClick={createOverlay}
+                className="rounded-base border border-border px-2 py-1 text-muted hover:text-foreground"
+                title="ลิงก์เดิมจะใช้ไม่ได้ทันที"
+              >
+                สร้างลิงก์ใหม่
+              </button>
+              <button
+                onClick={clearOverlay}
+                className="rounded-base border border-border px-2 py-1 text-muted hover:text-foreground"
+              >
+                เลิกใช้
+              </button>
+            </div>
+
+            <p className="text-muted">
+              ลิงก์นี้คือรหัสผ่านในตัว —{' '}
+              <strong className="text-foreground">อย่าให้มันโผล่บนสตรีม</strong>{' '}
+              (เช่นตอนแชร์หน้าจอนี้) ใครที่ได้ลิงก์ไปจะเห็นจำนวนรอบของคุณ
+              ถ้าหลุดให้กด “สร้างลิงก์ใหม่”
+            </p>
+          </div>
+        )}
+      </details>
 
       {/* tuning — only needed if the region does not line up on this setup */}
       <details className="rounded-base border border-border bg-surface p-3">
