@@ -16,9 +16,13 @@ export type OverlayOptions = {
   stamina: boolean;
   dot: boolean;
   align: 'left' | 'center' | 'right';
+  valign: 'top' | 'middle' | 'bottom';
   /** Outline width on the number, in px; the smaller text scales down from it. */
   stroke: number;
 };
+
+const JUSTIFY = { top: 'flex-start', middle: 'center', bottom: 'flex-end' };
+const ALIGN = { left: 'flex-start', center: 'center', right: 'flex-end' };
 
 /**
  * The OBS browser source. Deliberately styled with its own <style> block rather
@@ -75,6 +79,24 @@ export function OverlayView({
           margin: 0;
           overflow: hidden;
         }
+        /* A browser source is a fixed box positioned in OBS, not a page anyone
+           scrolls, so the content fills it and is placed within it — otherwise
+           it clings to the top-left corner of whatever size the source was
+           given, and lining it up means resizing the source to fit the text. */
+        .ov-root {
+          /* Pinned to the viewport rather than laid out in flow: whatever the
+             app wraps a page in must not shift the overlay inside its source.
+             Longhand insets, since OBS ships an older Chromium than the browser
+             this was written in. */
+          position: fixed;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+        }
         .ov {
           display: flex;
           align-items: baseline;
@@ -101,10 +123,13 @@ export function OverlayView({
           display: inline-block;
           -webkit-text-stroke: var(--ov-stroke) #000;
         }
+        /* Secondary text keeps more outline than its size alone would suggest:
+           scaled purely in proportion it disappears against busy footage, which
+           is exactly where the outline is needed. */
         .ov-label {
           font-size: calc(var(--ov-size) * 0.34);
           opacity: 0.92;
-          -webkit-text-stroke: calc(var(--ov-stroke) * 0.45) #000;
+          -webkit-text-stroke: calc(var(--ov-stroke) * 0.6) #000;
         }
         .ov-sub {
           font-size: calc(var(--ov-size) * 0.24);
@@ -113,7 +138,7 @@ export function OverlayView({
           padding: 0 12px 8px;
           color: #fff;
           text-shadow: 0 0 4px rgba(0, 0, 0, 0.9), 0 2px 6px rgba(0, 0, 0, 0.8);
-          -webkit-text-stroke: calc(var(--ov-stroke) * 0.35) #000;
+          -webkit-text-stroke: calc(var(--ov-stroke) * 0.55) #000;
         }
         .ov-dot {
           width: 0.28em;
@@ -134,19 +159,14 @@ export function OverlayView({
       `}</style>
 
       <div
+        className="ov-root"
         style={
           {
             '--ov-size': `${opts.size}px`,
             '--ov-accent': opts.accent,
             '--ov-stroke': `${opts.stroke}px`,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems:
-              opts.align === 'center'
-                ? 'center'
-                : opts.align === 'right'
-                  ? 'flex-end'
-                  : 'flex-start',
+            alignItems: ALIGN[opts.align],
+            justifyContent: JUSTIFY[opts.valign],
           } as React.CSSProperties
         }
       >

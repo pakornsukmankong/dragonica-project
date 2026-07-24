@@ -37,12 +37,10 @@ function readOptions(sp: Search): OverlayOptions {
     label: (label ?? 'รอบ').slice(0, 24),
     stamina: one(sp.stamina) === '1',
     dot: one(sp.dot) !== '0',
-    align:
-      one(sp.align) === 'center'
-        ? 'center'
-        : one(sp.align) === 'right'
-          ? 'right'
-          : 'left',
+    // Centred by default: the source box is what gets positioned in OBS, so
+    // anchoring to a corner of it only makes lining the text up harder.
+    align: one(sp.align) === 'left' ? 'left' : one(sp.align) === 'right' ? 'right' : 'center',
+    valign: one(sp.valign) === 'top' ? 'top' : one(sp.valign) === 'bottom' ? 'bottom' : 'middle',
   };
 }
 
