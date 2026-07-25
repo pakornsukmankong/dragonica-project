@@ -1,8 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
+import { useIsAdmin } from '@/hooks/use-is-admin';
 import {
   OVERLAY_BEAT_MS,
   OVERLAY_EVENT,
@@ -116,7 +118,43 @@ function validRuns(v: unknown): Run[] | null {
   return out;
 }
 
+/**
+ * Admin-only. The gate is a client check, not middleware: /grind is cookie-gated
+ * for existence only (no network call), and the admin role lives in `profiles`,
+ * not in the JWT, so middleware cannot see it. Same pattern as /admin.
+ *
+ * This is a soft gate — the page is client-only and touches no protected API, so
+ * there is no server point to enforce at — but it also does nothing sensitive
+ * server-side, so keeping non-admins out of the UI is enough. The counter's
+ * hooks (screen capture, the scan worker) only mount once past it.
+ */
 export default function AutoCountPage() {
+  const t = useTranslations('admin');
+  const { isAdmin, isLoading } = useIsAdmin();
+
+  if (isLoading)
+    return (
+      <div className="grid min-h-[50vh] place-items-center">
+        <p className="text-sm text-muted">{t('checkingPermissions')}</p>
+      </div>
+    );
+
+  if (!isAdmin)
+    return (
+      <div className="grid min-h-[50vh] place-items-center p-4">
+        <div className="max-w-sm rounded-base border border-border bg-surface p-8 text-center">
+          <p className="mb-2 text-sm font-medium text-foreground">
+            {t('accessDenied')}
+          </p>
+          <p className="text-xs text-muted">{t('accessDeniedDesc')}</p>
+        </div>
+      </div>
+    );
+
+  return <AutoCounter />;
+}
+
+function AutoCounter() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const cropRef = useRef<HTMLCanvasElement>(null); // colour crop preview
   const maskRef = useRef<HTMLCanvasElement>(null); // binarised preview
