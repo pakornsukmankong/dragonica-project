@@ -10,6 +10,7 @@ import { Clarity } from '@/components/clarity';
 import { GoogleAdsense } from '@/components/google-adsense';
 import { GoogleAnalytics } from '@/components/google-analytics';
 import { JsonLd } from '@/components/json-ld';
+import { OffOverlay } from '@/components/off-overlay';
 import { SiteVisit } from '@/components/site-visit';
 import { siteUrl } from '@/lib/site-url';
 
@@ -104,12 +105,16 @@ export default async function RootLayout({
             },
           }}
         />
-        <Clarity />
-        <GoogleAdsense />
-        <GoogleAnalytics />
-        {/* Counts the visit on whichever page the reader landed on, so search
-            traffic straight to /items or /skills is not missed. */}
-        <SiteVisit />
+        {/* Every one of these is skipped on /overlay/*, which OBS keeps open for
+            a whole stream with nobody looking at it. */}
+        <OffOverlay>
+          <Clarity />
+          <GoogleAdsense />
+          <GoogleAnalytics />
+          {/* Counts the visit on whichever page the reader landed on, so search
+              traffic straight to /items or /skills is not missed. */}
+          <SiteVisit />
+        </OffOverlay>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <AppShell>{children}</AppShell>
@@ -117,7 +122,9 @@ export default async function RootLayout({
         </NextIntlClientProvider>
         {/* Vercel Analytics — page views + visitors. Injects its own script
             and is a no-op outside Vercel deploys, so local dev stays clean. */}
-        <Analytics />
+        <OffOverlay>
+          <Analytics />
+        </OffOverlay>
       </body>
     </html>
   );
