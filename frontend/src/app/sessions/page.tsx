@@ -196,35 +196,32 @@ export default function SessionsPage() {
   };
 
   // Save all drop edits for a session at once: PATCH each changed drop and POST
-  // the new-item row if one was filled in.
+  // the new-item row if one was filled in. Run sequentially, not in parallel:
+  // each write makes the backend recompute the session total, and concurrent
+  // recomputes could race and store a stale value — the last write to finish
+  // must see every earlier edit.
   const saveDropsMutation = useMutation({
     mutationFn: async (session: Session) => {
-      const ops: Promise<unknown>[] = [];
       for (const d of session.session_drops ?? []) {
         const draft = dropDrafts[d.id];
         if (
           draft &&
           (draft.quantity !== d.quantity || draft.priceEach !== d.price_each)
         ) {
-          ops.push(
-            api.patch(`/sessions/drops/${d.id}`, {
-              quantity: draft.quantity,
-              priceEach: draft.priceEach,
-            }),
-          );
+          await api.patch(`/sessions/drops/${d.id}`, {
+            quantity: draft.quantity,
+            priceEach: draft.priceEach,
+          });
         }
       }
       if (newItemId && newQty >= 1) {
-        ops.push(
-          api.post('/sessions/drops', {
-            sessionId: session.id,
-            itemId: newItemId,
-            quantity: newQty,
-            priceEach: newPrice,
-          }),
-        );
+        await api.post('/sessions/drops', {
+          sessionId: session.id,
+          itemId: newItemId,
+          quantity: newQty,
+          priceEach: newPrice,
+        });
       }
-      await Promise.all(ops);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });

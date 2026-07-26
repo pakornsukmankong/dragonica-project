@@ -349,12 +349,15 @@ function AdminSessionEditForm({
       staminaUsed?: number;
       note?: string;
     }) => {
-      const ops: Promise<unknown>[] = [
-        api.patch(`/admin/sessions/${session.id}`, body),
-      ];
+      // Save the session fields first (including gold_dropped), then apply drop
+      // edits sequentially. Each drop write makes the backend recompute the
+      // session total from drops + gold_dropped, so the drops must run after the
+      // session patch and one at a time — the last recompute wins and must see
+      // both the saved gold_dropped and every earlier drop edit.
+      await api.patch(`/admin/sessions/${session.id}`, body);
       for (const d of session.session_drops ?? []) {
         if (deletedDropIds.has(d.id)) {
-          ops.push(api.delete(`/admin/sessions/drops/${d.id}`));
+          await api.delete(`/admin/sessions/drops/${d.id}`);
           continue;
         }
         const draft = dropDrafts[d.id];
@@ -362,25 +365,20 @@ function AdminSessionEditForm({
           draft &&
           (draft.quantity !== d.quantity || draft.priceEach !== d.price_each)
         ) {
-          ops.push(
-            api.patch(`/admin/sessions/drops/${d.id}`, {
-              quantity: draft.quantity,
-              priceEach: draft.priceEach,
-            }),
-          );
+          await api.patch(`/admin/sessions/drops/${d.id}`, {
+            quantity: draft.quantity,
+            priceEach: draft.priceEach,
+          });
         }
       }
       if (newItemId && newQty >= 1) {
-        ops.push(
-          api.post('/admin/sessions/drops', {
-            sessionId: session.id,
-            itemId: newItemId,
-            quantity: newQty,
-            priceEach: newPrice,
-          }),
-        );
+        await api.post('/admin/sessions/drops', {
+          sessionId: session.id,
+          itemId: newItemId,
+          quantity: newQty,
+          priceEach: newPrice,
+        });
       }
-      await Promise.all(ops);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

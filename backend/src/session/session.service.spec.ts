@@ -18,13 +18,20 @@ describe('SessionService (drop ownership)', () => {
       const { service: supabase, fromTables } = createSupabaseMock([
         { data: session, error: null }, // findOneByUser(session)
         { data: inserted, error: null }, // insert drop
+        { data: { gold_dropped: 0, session_drops: [] }, error: null }, // recalc read
+        { data: null, error: null }, // recalc write
       ]);
       const svc = new SessionService(supabase, i18n);
 
       await expect(
         svc.addDrop(USER, { sessionId: 's1', itemId: 'i1', quantity: 2 }),
       ).resolves.toEqual(inserted);
-      expect(fromTables).toEqual(['sessions', 'session_drops']);
+      expect(fromTables).toEqual([
+        'sessions',
+        'session_drops',
+        'sessions',
+        'sessions',
+      ]);
     });
 
     it('rejects adding a drop to a session the user does not own', async () => {
@@ -47,6 +54,8 @@ describe('SessionService (drop ownership)', () => {
         { data: { id: 'd1', session_id: 's1' }, error: null }, // drop lookup
         { data: { id: 's1', user_id: USER }, error: null }, // session ownership
         { data: null, error: null }, // delete
+        { data: { gold_dropped: 0, session_drops: [] }, error: null }, // recalc read
+        { data: null, error: null }, // recalc write
       ]);
       const svc = new SessionService(supabase, i18n);
 
@@ -57,6 +66,8 @@ describe('SessionService (drop ownership)', () => {
         'session_drops',
         'sessions',
         'session_drops',
+        'sessions',
+        'sessions',
       ]);
     });
 
@@ -88,6 +99,35 @@ describe('SessionService (drop ownership)', () => {
   });
 
   describe('updateDrop', () => {
+    it('recomputes the session value from its drops plus raw gold', async () => {
+      const { service: supabase, from } = createSupabaseMock([
+        { data: { id: 'd1', session_id: 's1' }, error: null }, // drop lookup
+        { data: { id: 's1', user_id: USER }, error: null }, // ownership
+        { data: { id: 'd1', session_id: 's1', price_each: 9 }, error: null }, // update drop
+        {
+          data: {
+            gold_dropped: 100, // raw currency
+            session_drops: [
+              { quantity: 3, price_each: 9 }, // 27
+              { quantity: 2, price_each: 50 }, // 100
+            ],
+          },
+          error: null,
+        }, // recalc read
+        { data: null, error: null }, // recalc write
+      ]);
+      const svc = new SessionService(supabase, i18n);
+
+      await svc.updateDrop(USER, 'd1', { priceEach: 9 });
+
+      // Whatever was written to sessions.gold_earned: 27 + 100 + 100 raw = 227.
+      const writes = from.mock.results
+        .map((r) => (r.value as { update: jest.Mock }).update)
+        .filter((fn) => fn.mock.calls.length > 0)
+        .map((fn) => fn.mock.calls[0][0]);
+      expect(writes).toContainEqual({ gold_earned: 227 });
+    });
+
     it('refuses to update a drop whose session belongs to another user', async () => {
       const { service: supabase, fromTables } = createSupabaseMock([
         { data: { id: 'd1', session_id: 's1' }, error: null }, // drop exists
@@ -113,13 +153,20 @@ describe('SessionService (admin drop mutations)', () => {
       const { service: supabase, fromTables } = createSupabaseMock([
         { data: session, error: null }, // findOneAsAdmin(session)
         { data: inserted, error: null }, // insert drop
+        { data: { gold_dropped: 0, session_drops: [] }, error: null }, // recalc read
+        { data: null, error: null }, // recalc write
       ]);
       const svc = new SessionService(supabase, i18n);
 
       await expect(
         svc.addDropAsAdmin({ sessionId: 's1', itemId: 'i1', quantity: 2 }),
       ).resolves.toEqual(inserted);
-      expect(fromTables).toEqual(['sessions', 'session_drops']);
+      expect(fromTables).toEqual([
+        'sessions',
+        'session_drops',
+        'sessions',
+        'sessions',
+      ]);
     });
 
     it('throws NotFound when the parent session does not exist', async () => {
@@ -138,16 +185,18 @@ describe('SessionService (admin drop mutations)', () => {
 
   describe('updateDropAsAdmin', () => {
     it('updates the drop directly without an ownership check', async () => {
-      const updated = { id: 'd1', quantity: 99 };
+      const updated = { id: 'd1', session_id: 's1', quantity: 99 };
       const { service: supabase, fromTables } = createSupabaseMock([
         { data: updated, error: null }, // update drop
+        { data: { gold_dropped: 0, session_drops: [] }, error: null }, // recalc read
+        { data: null, error: null }, // recalc write
       ]);
       const svc = new SessionService(supabase, i18n);
 
       await expect(
         svc.updateDropAsAdmin('d1', { quantity: 99 }),
       ).resolves.toEqual(updated);
-      expect(fromTables).toEqual(['session_drops']);
+      expect(fromTables).toEqual(['session_drops', 'sessions', 'sessions']);
     });
 
     it('throws NotFound when the drop does not exist', async () => {
@@ -165,14 +214,22 @@ describe('SessionService (admin drop mutations)', () => {
   describe('removeDropAsAdmin', () => {
     it('deletes the drop directly without an ownership check', async () => {
       const { service: supabase, fromTables } = createSupabaseMock([
+        { data: { session_id: 's1' }, error: null }, // owning-session lookup
         { data: null, error: null }, // delete
+        { data: { gold_dropped: 0, session_drops: [] }, error: null }, // recalc read
+        { data: null, error: null }, // recalc write
       ]);
       const svc = new SessionService(supabase, i18n);
 
       await expect(svc.removeDropAsAdmin('d1')).resolves.toEqual({
         deleted: true,
       });
-      expect(fromTables).toEqual(['session_drops']);
+      expect(fromTables).toEqual([
+        'session_drops',
+        'session_drops',
+        'sessions',
+        'sessions',
+      ]);
     });
   });
 });
