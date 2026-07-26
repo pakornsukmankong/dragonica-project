@@ -236,6 +236,7 @@ export class SessionService {
       .select('*, items(*)');
 
     if (error) throw error;
+    await this.recalcSessionGold(dto.sessionId);
     return data;
   }
 
@@ -256,12 +257,17 @@ export class SessionService {
       .single();
 
     if (error) throw error;
+    await this.recalcSessionGold(dto.sessionId);
     return data;
   }
 
   // Look up which session a drop belongs to and verify the user owns it.
-  // RLS is bypassed, so this ownership check is enforced in code.
-  private async assertDropOwnership(userId: string, dropId: string) {
+  // RLS is bypassed, so this ownership check is enforced in code. Returns the
+  // owning session id so callers can recompute its total afterwards.
+  private async assertDropOwnership(
+    userId: string,
+    dropId: string,
+  ): Promise<string> {
     const { data: drop, error } = await this.supabase
       .from('session_drops')
       .select('id, session_id')
@@ -273,10 +279,41 @@ export class SessionService {
     }
 
     await this.findOneByUser(drop.session_id, userId);
+    return drop.session_id;
+  }
+
+  // `sessions.gold_earned` (the session "Value") is derived — item-drop value
+  // plus the raw currency picked up (`gold_dropped`) — but stored rather than
+  // computed on read, so it has to be recomputed whenever a drop changes.
+  // Otherwise editing a drop's price leaves the total stale.
+  private async recalcSessionGold(sessionId: string): Promise<void> {
+    const { data, error } = await this.supabase
+      .from('sessions')
+      .select('gold_dropped, session_drops(quantity, price_each)')
+      .eq('id', sessionId)
+      .single();
+
+    // Session gone (e.g. deleted mid-request) — nothing left to keep in sync.
+    if (error || !data) return;
+
+    const row = data as unknown as {
+      gold_dropped: number | null;
+      session_drops: { quantity: number | null; price_each: number | null }[];
+    };
+    const dropsValue = (row.session_drops ?? []).reduce(
+      (sum, d) => sum + (d.quantity ?? 0) * (d.price_each ?? 0),
+      0,
+    );
+
+    const { error: updateError } = await this.supabase
+      .from('sessions')
+      .update({ gold_earned: dropsValue + (row.gold_dropped ?? 0) })
+      .eq('id', sessionId);
+    if (updateError) throw updateError;
   }
 
   async updateDrop(userId: string, dropId: string, dto: UpdateDropDto) {
-    await this.assertDropOwnership(userId, dropId);
+    const sessionId = await this.assertDropOwnership(userId, dropId);
 
     const updateData: TablesUpdate<'session_drops'> = {};
     if (dto.quantity !== undefined) updateData['quantity'] = dto.quantity;
@@ -290,11 +327,12 @@ export class SessionService {
       .single();
 
     if (error) throw error;
+    await this.recalcSessionGold(sessionId);
     return data;
   }
 
   async removeDrop(userId: string, dropId: string) {
-    await this.assertDropOwnership(userId, dropId);
+    const sessionId = await this.assertDropOwnership(userId, dropId);
 
     const { error } = await this.supabase
       .from('session_drops')
@@ -302,6 +340,7 @@ export class SessionService {
       .eq('id', dropId);
 
     if (error) throw error;
+    await this.recalcSessionGold(sessionId);
     return { deleted: true };
   }
 
@@ -323,6 +362,7 @@ export class SessionService {
       .single();
 
     if (error) throw error;
+    await this.recalcSessionGold(dto.sessionId);
     return data;
   }
 
@@ -341,16 +381,28 @@ export class SessionService {
     if (error || !data) {
       throw new NotFoundException(this.i18n.t('errors.session.drop_not_found'));
     }
+    await this.recalcSessionGold((data as { session_id: string }).session_id);
     return data;
   }
 
   async removeDropAsAdmin(dropId: string) {
+    // Capture the owning session before the row is gone, so its total can be
+    // recomputed after the delete.
+    const { data: drop } = await this.supabase
+      .from('session_drops')
+      .select('session_id')
+      .eq('id', dropId)
+      .single();
+
     const { error } = await this.supabase
       .from('session_drops')
       .delete()
       .eq('id', dropId);
 
     if (error) throw error;
+    if (drop) {
+      await this.recalcSessionGold((drop as { session_id: string }).session_id);
+    }
     return { deleted: true };
   }
 }
