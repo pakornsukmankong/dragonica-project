@@ -263,6 +263,7 @@
     "added": "Item Code added",
     "copy": "Copy",
     "copied": "Copied!",
+    "copyHint": "Click to copy this code",
     "copyFailed": "Couldn't copy to clipboard",
     "empty": "No item codes yet — be the first to add one.",
     "loginToAdd": "Log in to add a code",
