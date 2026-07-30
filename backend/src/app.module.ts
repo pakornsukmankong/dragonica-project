@@ -19,6 +19,7 @@ import { DonationModule } from './donation/donation.module';
 import { TicketModule } from './ticket/ticket.module';
 import { SkillModule } from './skill/skill.module';
 import { ItemCodeModule } from './item-code/item-code.module';
+import { EventModule } from './event/event.module';
 import { YoutubeModule } from './youtube/youtube.module';
 import { StatsModule } from './stats/stats.module';
 import { HealthController } from './health/health.controller';
@@ -54,6 +55,7 @@ import { ThrottlerBehindProxyGuard } from './common/guards/throttler-behind-prox
     TicketModule,
     SkillModule,
     ItemCodeModule,
+    EventModule,
     YoutubeModule,
     StatsModule,
   ],

@@ -190,6 +190,50 @@ export type Database = {
         };
         Relationships: [];
       };
+      game_events: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          detail: string | null;
+          end_date: string;
+          id: string;
+          link: string | null;
+          start_date: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          detail?: string | null;
+          end_date: string;
+          id?: string;
+          link?: string | null;
+          start_date: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          detail?: string | null;
+          end_date?: string;
+          id?: string;
+          link?: string | null;
+          start_date?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'game_events_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       item_codes: {
         Row: {
           code: string;
