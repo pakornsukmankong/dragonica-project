@@ -38,5 +38,10 @@
     "duplicate": "This Item Code already exists.",
     "date_order": "Start Date cannot be later than Expire Date.",
     "not_found": "Item Code not found"
+  },
+  "event": {
+    "required": "Event name is required.",
+    "date_order": "End Date cannot be earlier than Start Date.",
+    "not_found": "Event not found"
   }
 }

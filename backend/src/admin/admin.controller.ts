@@ -18,6 +18,8 @@ import { SkillService } from '../skill/skill.service';
 import { AdminUpdateBuildDto } from '../skill/dto/admin-update-build.dto';
 import { ItemCodeService } from '../item-code/item-code.service';
 import { CreateItemCodeDto } from '../item-code/dto/create-item-code.dto';
+import { EventService } from '../event/event.service';
+import { CreateEventDto } from '../event/dto/create-event.dto';
 import { UpdateSessionDto } from '../session/dto/update-session.dto';
 import { CreateDropDto } from '../session/dto/create-drop.dto';
 import { UpdateDropDto } from '../session/dto/update-drop.dto';
@@ -36,6 +38,7 @@ export class AdminController {
     private readonly characterService: CharacterService,
     private readonly skillService: SkillService,
     private readonly itemCodeService: ItemCodeService,
+    private readonly eventService: EventService,
   ) {}
 
   // Users
@@ -128,6 +131,26 @@ export class AdminController {
   @Delete('item-codes/:id')
   deleteItemCode(@Param('id') id: string) {
     return this.itemCodeService.removeAsAdmin(id);
+  }
+
+  // Community game events / timetable (moderation: list all with author, edit,
+  // delete any).
+  @Get('events')
+  getEvents(@Query('search') search?: string, @Query('page') page?: string) {
+    return this.eventService.listAllAsAdmin({
+      search: search || undefined,
+      page: page ? Number(page) : 1,
+    });
+  }
+
+  @Patch('events/:id')
+  updateEvent(@Param('id') id: string, @Body() dto: CreateEventDto) {
+    return this.eventService.updateAsAdmin(id, dto);
+  }
+
+  @Delete('events/:id')
+  deleteEvent(@Param('id') id: string) {
+    return this.eventService.removeAsAdmin(id);
   }
 
   // Dungeons

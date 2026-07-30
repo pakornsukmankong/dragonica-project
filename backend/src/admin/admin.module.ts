@@ -5,6 +5,7 @@ import { SessionModule } from '../session/session.module';
 import { CharacterModule } from '../character/character.module';
 import { SkillModule } from '../skill/skill.module';
 import { ItemCodeModule } from '../item-code/item-code.module';
+import { EventModule } from '../event/event.module';
 import { AdminController } from './admin.controller';
 import { PublicDataController } from './public.controller';
 import { UploadController } from './upload.controller';
@@ -18,6 +19,7 @@ import { AdminGuard } from '../auth/guards/admin.guard';
     CharacterModule,
     SkillModule,
     ItemCodeModule,
+    EventModule,
     MulterModule.register({ limits: { fileSize: 5 * 1024 * 1024 } }),
   ],
   controllers: [AdminController, PublicDataController, UploadController],

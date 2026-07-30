@@ -217,7 +217,9 @@ export function DatePicker({
         <RP.Content
           align="start"
           sideOffset={4}
-          className="z-50 w-[17.5rem] rounded-base border border-border bg-surface p-3 shadow-sm"
+          // Above modal dialogs (overlay z-90 / content z-100) so the calendar
+          // is usable when the picker sits inside a Dialog, not just inline.
+          className="z-[110] w-[17.5rem] rounded-base border border-border bg-surface p-3 shadow-sm"
         >
           <div className="mb-2 flex items-center justify-between gap-2">
             <span className="text-sm font-medium text-foreground">

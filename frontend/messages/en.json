@@ -15,7 +15,8 @@
     "retry": "Retry",
     "retrying": "Retrying...",
     "offlineTitle": "Can't reach the server",
-    "offlineDesc": "You look offline. Nothing is lost — reconnect and try again."
+    "offlineDesc": "You look offline. Nothing is lost — reconnect and try again.",
+    "close": "Close"
   },
   "datePicker": {
     "placeholder": "Select a date",
@@ -55,7 +56,8 @@
     "footerDiscord": "Join the Discord",
     "footerYouTube": "FLOKZ CHANNEL on YouTube",
     "footerDisclaimer": "Fan project. Not affiliated with Dragonica.",
-    "footerAnalytics": "We use analytics tools to improve this site."
+    "footerAnalytics": "We use analytics tools to improve this site.",
+    "timetable": "Event Timetable"
   },
   "items": {
     "title": "Game Database",
@@ -745,7 +747,25 @@
     "codeDeleteError": "Could not delete the code",
     "deleteCodeTitle": "Delete item code",
     "deleteCodeDesc": "Delete \"{code}\"? This cannot be undone.",
-    "codeScheduled": "Scheduled"
+    "codeScheduled": "Scheduled",
+    "tabEvents": "Events",
+    "eventsTotal": "Total events",
+    "eventsNone": "No events found.",
+    "eventSearchPlaceholder": "Search events…",
+    "colEvent": "Event",
+    "colDates": "Dates",
+    "colLink": "Link",
+    "eventDeleted": "Event deleted",
+    "eventDeleteError": "Couldn’t delete the event",
+    "eventDeleteTitle": "Delete event",
+    "eventDeleteConfirm": "Delete “{title}”? This cannot be undone.",
+    "eventUpdated": "Event updated",
+    "eventUpdateError": "Couldn’t update the event",
+    "eventFieldTitle": "Event name",
+    "eventFieldStart": "Start date",
+    "eventFieldEnd": "End date",
+    "eventFieldDetail": "Detail",
+    "eventFieldLink": "Link"
   },
   "errorPages": {
     "notFoundTitle": "Page not found",
@@ -1107,6 +1127,53 @@
       "googleAds": "Google Ad Settings — manage or turn off personalised ads",
       "aboutAds": "aboutads.info — opt out of third-party vendor cookies",
       "gaOptOut": "Google Analytics opt-out browser add-on"
+    }
+  },
+  "timetable": {
+    "title": "Event Timetable",
+    "subtitle": "Community-tracked in-game events — see what is running and when.",
+    "add": "Add Event",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today",
+    "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "more": "+{count} more",
+    "empty": "No events yet. Be the first to add one.",
+    "loginToAdd": "Sign in to add an event",
+    "openLink": "Open game page",
+    "addOnDay": "Add an event on this day",
+    "noEventsDay": "No events on this day.",
+    "added": "Event added",
+    "updated": "Event updated",
+    "deleted": "Event deleted",
+    "deleteError": "Couldn’t delete the event",
+    "addTitle": "Add event",
+    "editTitle": "Edit event",
+    "cancel": "Cancel",
+    "submit": "Add event",
+    "saveChanges": "Save changes",
+    "deleteTitle": "Delete event",
+    "deleteConfirm": "Delete “{title}”? This cannot be undone.",
+    "fields": {
+      "title": "Event name",
+      "titlePlaceholder": "e.g. Summer Festival",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "detail": "Detail",
+      "detailPlaceholder": "What is this event about?",
+      "link": "Link",
+      "linkPlaceholder": "https://… (link to the game page)"
+    },
+    "errors": {
+      "required": "Event name is required.",
+      "datesRequired": "Please choose a start and end date.",
+      "dateOrder": "End date cannot be earlier than start date."
+    },
+    "detailsHeading": "Event details",
+    "status": {
+      "active": "Ongoing",
+      "upcoming": "Upcoming",
+      "ended": "Ended"
     }
   }
 }

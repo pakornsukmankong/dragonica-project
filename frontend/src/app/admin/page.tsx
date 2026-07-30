@@ -9,6 +9,7 @@ import { ClassesTab } from './tabs/classes';
 import { UsersTab } from './tabs/users';
 import { SkillBuildsTab } from './tabs/skill-builds';
 import { ItemCodesTab } from './tabs/item-codes';
+import { EventsTab } from './tabs/events';
 import { DonationsTab } from './tabs/donations';
 import { TicketsTab } from './tabs/tickets';
 
@@ -19,6 +20,7 @@ const TABS = [
   { value: 'users', Tab: UsersTab },
   { value: 'skillBuilds', Tab: SkillBuildsTab },
   { value: 'itemCodes', Tab: ItemCodesTab },
+  { value: 'events', Tab: EventsTab },
   { value: 'donations', Tab: DonationsTab },
   { value: 'tickets', Tab: TicketsTab },
 ] as const;

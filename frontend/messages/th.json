@@ -15,7 +15,8 @@
     "retry": "ลองใหม่",
     "retrying": "กำลังลองใหม่...",
     "offlineTitle": "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้",
-    "offlineDesc": "เหมือนเน็ตจะหลุด ข้อมูลไม่ได้หายไปไหน ต่อเน็ตแล้วลองใหม่ได้เลย"
+    "offlineDesc": "เหมือนเน็ตจะหลุด ข้อมูลไม่ได้หายไปไหน ต่อเน็ตแล้วลองใหม่ได้เลย",
+    "close": "ปิด"
   },
   "datePicker": {
     "placeholder": "เลือกวันที่",
@@ -55,7 +56,8 @@
     "footerDiscord": "เข้าร่วม Discord",
     "footerYouTube": "FLOKZ CHANNEL บน YouTube",
     "footerDisclaimer": "โปรเจกต์ของแฟนเกม ไม่เกี่ยวข้องกับผู้ให้บริการ Dragonica",
-    "footerAnalytics": "เว็บไซต์นี้ใช้เครื่องมือวิเคราะห์เพื่อปรับปรุงการใช้งาน"
+    "footerAnalytics": "เว็บไซต์นี้ใช้เครื่องมือวิเคราะห์เพื่อปรับปรุงการใช้งาน",
+    "timetable": "ตารางกิจกรรม"
   },
   "items": {
     "title": "ฐานข้อมูลเกม",
@@ -745,7 +747,25 @@
     "codeDeleteError": "ลบโค้ดไม่สำเร็จ",
     "deleteCodeTitle": "ลบโค้ดไอเทม",
     "deleteCodeDesc": "ลบ \"{code}\" ใช่ไหม? การกระทำนี้ย้อนกลับไม่ได้",
-    "codeScheduled": "ยังไม่เริ่ม"
+    "codeScheduled": "ยังไม่เริ่ม",
+    "tabEvents": "กิจกรรม",
+    "eventsTotal": "กิจกรรมทั้งหมด",
+    "eventsNone": "ไม่พบกิจกรรม",
+    "eventSearchPlaceholder": "ค้นหากิจกรรม…",
+    "colEvent": "กิจกรรม",
+    "colDates": "ช่วงวันที่",
+    "colLink": "ลิงก์",
+    "eventDeleted": "ลบกิจกรรมแล้ว",
+    "eventDeleteError": "ลบกิจกรรมไม่สำเร็จ",
+    "eventDeleteTitle": "ลบกิจกรรม",
+    "eventDeleteConfirm": "ลบ “{title}” ใช่ไหม? การกระทำนี้ย้อนกลับไม่ได้",
+    "eventUpdated": "อัปเดตกิจกรรมแล้ว",
+    "eventUpdateError": "อัปเดตกิจกรรมไม่สำเร็จ",
+    "eventFieldTitle": "ชื่อกิจกรรม",
+    "eventFieldStart": "วันเริ่ม",
+    "eventFieldEnd": "วันสุดท้าย",
+    "eventFieldDetail": "รายละเอียด",
+    "eventFieldLink": "ลิงก์"
   },
   "errorPages": {
     "notFoundTitle": "ไม่พบหน้านี้",
@@ -1107,6 +1127,53 @@
       "googleAds": "Google Ad Settings — จัดการหรือปิดโฆษณาแบบปรับตามความสนใจ",
       "aboutAds": "aboutads.info — opt out คุกกี้ของผู้ให้บริการโฆษณาบุคคลที่สาม",
       "gaOptOut": "ส่วนขยายเบราว์เซอร์สำหรับ opt out Google Analytics"
+    }
+  },
+  "timetable": {
+    "title": "ตารางกิจกรรม",
+    "subtitle": "รวมกิจกรรมในเกมที่ชุมชนช่วยกันบันทึก — ดูว่ามีกิจกรรมอะไรและช่วงไหนบ้าง",
+    "add": "เพิ่มกิจกรรม",
+    "prevMonth": "เดือนก่อนหน้า",
+    "nextMonth": "เดือนถัดไป",
+    "today": "วันนี้",
+    "weekdays": ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."],
+    "more": "อีก {count}",
+    "empty": "ยังไม่มีกิจกรรม มาเป็นคนแรกที่เพิ่มกันเลย",
+    "loginToAdd": "เข้าสู่ระบบเพื่อเพิ่มกิจกรรม",
+    "openLink": "ไปหน้าเกม",
+    "addOnDay": "เพิ่มกิจกรรมในวันนี้",
+    "noEventsDay": "ไม่มีกิจกรรมในวันนี้",
+    "added": "เพิ่มกิจกรรมแล้ว",
+    "updated": "อัปเดตกิจกรรมแล้ว",
+    "deleted": "ลบกิจกรรมแล้ว",
+    "deleteError": "ลบกิจกรรมไม่สำเร็จ",
+    "addTitle": "เพิ่มกิจกรรม",
+    "editTitle": "แก้ไขกิจกรรม",
+    "cancel": "ยกเลิก",
+    "submit": "เพิ่มกิจกรรม",
+    "saveChanges": "บันทึกการแก้ไข",
+    "deleteTitle": "ลบกิจกรรม",
+    "deleteConfirm": "ลบ “{title}” ใช่ไหม? การกระทำนี้ย้อนกลับไม่ได้",
+    "fields": {
+      "title": "ชื่อกิจกรรม",
+      "titlePlaceholder": "เช่น เทศกาลฤดูร้อน",
+      "startDate": "วันเริ่ม",
+      "endDate": "วันสุดท้าย",
+      "detail": "รายละเอียด",
+      "detailPlaceholder": "กิจกรรมนี้เกี่ยวกับอะไร?",
+      "link": "ลิงก์",
+      "linkPlaceholder": "https://… (ลิงก์ไปหน้าเกม)"
+    },
+    "errors": {
+      "required": "กรุณากรอกชื่อกิจกรรม",
+      "datesRequired": "กรุณาเลือกวันเริ่มและวันสุดท้าย",
+      "dateOrder": "วันสุดท้ายต้องไม่ก่อนวันเริ่ม"
+    },
+    "detailsHeading": "รายละเอียดกิจกรรม",
+    "status": {
+      "active": "กำลังจัด",
+      "upcoming": "กำลังจะมา",
+      "ended": "จบแล้ว"
     }
   }
 }
