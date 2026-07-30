@@ -765,6 +765,8 @@
     "eventFieldTitle": "Event name",
     "eventFieldStart": "Start date",
     "eventFieldEnd": "End date",
+    "eventFieldStartTime": "Start time",
+    "eventFieldEndTime": "End time",
     "eventFieldDetail": "Detail",
     "eventFieldLink": "Link"
   },
@@ -1138,7 +1140,6 @@
     "nextMonth": "Next month",
     "today": "Today",
     "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    "more": "+{count} more",
     "empty": "No events yet. Be the first to add one.",
     "loginToAdd": "Sign in to add an event",
     "openLink": "Open game page",
@@ -1160,6 +1161,8 @@
       "titlePlaceholder": "e.g. Summer Festival",
       "startDate": "Start date",
       "endDate": "End date",
+      "startTime": "Start time",
+      "endTime": "End time",
       "detail": "Detail",
       "detailPlaceholder": "What is this event about?",
       "link": "Link",
@@ -1171,6 +1174,8 @@
       "dateOrder": "End date cannot be earlier than start date."
     },
     "detailsHeading": "Event details",
+    "readMore": "Read more",
+    "showLess": "Show less",
     "status": {
       "active": "Ongoing",
       "upcoming": "Upcoming",

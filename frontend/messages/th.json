@@ -765,6 +765,8 @@
     "eventFieldTitle": "ชื่อกิจกรรม",
     "eventFieldStart": "วันเริ่ม",
     "eventFieldEnd": "วันสุดท้าย",
+    "eventFieldStartTime": "เวลาเริ่ม",
+    "eventFieldEndTime": "เวลาสิ้นสุด",
     "eventFieldDetail": "รายละเอียด",
     "eventFieldLink": "ลิงก์"
   },
@@ -1138,7 +1140,6 @@
     "nextMonth": "เดือนถัดไป",
     "today": "วันนี้",
     "weekdays": ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."],
-    "more": "อีก {count}",
     "empty": "ยังไม่มีกิจกรรม มาเป็นคนแรกที่เพิ่มกันเลย",
     "loginToAdd": "เข้าสู่ระบบเพื่อเพิ่มกิจกรรม",
     "openLink": "ไปหน้าเกม",
@@ -1160,6 +1161,8 @@
       "titlePlaceholder": "เช่น เทศกาลฤดูร้อน",
       "startDate": "วันเริ่ม",
       "endDate": "วันสุดท้าย",
+      "startTime": "เวลาเริ่ม",
+      "endTime": "เวลาสิ้นสุด",
       "detail": "รายละเอียด",
       "detailPlaceholder": "กิจกรรมนี้เกี่ยวกับอะไร?",
       "link": "ลิงก์",
@@ -1171,6 +1174,8 @@
       "dateOrder": "วันสุดท้ายต้องไม่ก่อนวันเริ่ม"
     },
     "detailsHeading": "รายละเอียดกิจกรรม",
+    "readMore": "อ่านเพิ่มเติม",
+    "showLess": "ย่อ",
     "status": {
       "active": "กำลังจัด",
       "upcoming": "กำลังจะมา",

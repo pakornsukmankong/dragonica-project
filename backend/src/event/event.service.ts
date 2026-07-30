@@ -11,7 +11,8 @@ import { CreateEventDto } from './dto/create-event.dto';
 // show edit/delete only on the viewer's own rows (a UUID, no email); the
 // backend is still the real gate on every mutation.
 const LIST_COLUMNS =
-  'id, title, start_date, end_date, detail, link, created_at, created_by';
+  'id, title, start_date, end_date, start_time, end_time, detail, link, ' +
+  'created_at, created_by';
 
 // How far back the public calendar carries ended events. All upcoming/ongoing
 // events (end_date >= today) are always returned; only events that ended more
@@ -47,13 +48,16 @@ export class EventService {
   }
 
   async create(userId: string, dto: CreateEventDto) {
-    const { title, startDate, endDate, detail, link } = this.normalize(dto);
+    const { title, startDate, endDate, startTime, endTime, detail, link } =
+      this.normalize(dto);
     const { data, error } = await this.supabase
       .from('game_events')
       .insert({
         title,
         start_date: startDate,
         end_date: endDate,
+        start_time: startTime,
+        end_time: endTime,
         detail,
         link,
         created_by: userId,
@@ -92,8 +96,8 @@ export class EventService {
     let query = this.supabase
       .from('game_events')
       .select(
-        'id, title, start_date, end_date, detail, link, created_at, ' +
-          'updated_at, created_by, profiles(username)',
+        'id, title, start_date, end_date, start_time, end_time, detail, ' +
+          'link, created_at, updated_at, created_by, profiles(username)',
         { count: 'exact' },
       );
     if (opts.search) {
@@ -128,8 +132,9 @@ export class EventService {
 
   // --- helpers ----------------------------------------------------------------
 
-  // Trim the title, trim the detail, normalise the dates to YYYY-MM-DD, and
-  // reject an end date earlier than the start date.
+  // Trim the title, trim the detail, normalise the dates to YYYY-MM-DD and the
+  // times to HH:mm (default 00:00), and reject an end instant earlier than the
+  // start instant.
   private normalize(dto: CreateEventDto) {
     const title = dto.title.trim();
     if (!title) {
@@ -139,16 +144,25 @@ export class EventService {
     const link = dto.link?.trim() || null;
     const startDate = this.toDateOnly(dto.startDate);
     const endDate = this.toDateOnly(dto.endDate);
-    if (endDate < startDate) {
+    const startTime = this.toTimeOnly(dto.startTime);
+    const endTime = this.toTimeOnly(dto.endTime);
+    // Compare the whole instant; fixed-width strings make this lexicographic.
+    if (`${endDate}T${endTime}` < `${startDate}T${startTime}`) {
       throw new BadRequestException(this.i18n.t('errors.event.date_order'));
     }
-    return { title, startDate, endDate, detail, link };
+    return { title, startDate, endDate, startTime, endTime, detail, link };
   }
 
   // A `date` column stores day granularity; keep only the YYYY-MM-DD part so a
   // timestamp with a timezone offset can't shift the stored day.
   private toDateOnly(value: string): string {
     return value.slice(0, 10);
+  }
+
+  // Time-of-day as HH:mm; unset (or blank) defaults to midnight. The DTO's
+  // regex already rejects anything that is not 24h HH:mm.
+  private toTimeOnly(value?: string): string {
+    return value?.trim() || '00:00';
   }
 
   // Shared write for owner and admin edits. `ownerId` scopes the update to the
@@ -158,13 +172,16 @@ export class EventService {
     dto: CreateEventDto,
     ownerId: string | null,
   ) {
-    const { title, startDate, endDate, detail, link } = this.normalize(dto);
+    const { title, startDate, endDate, startTime, endTime, detail, link } =
+      this.normalize(dto);
     let query = this.supabase
       .from('game_events')
       .update({
         title,
         start_date: startDate,
         end_date: endDate,
+        start_time: startTime,
+        end_time: endTime,
         detail,
         link,
         updated_at: new Date().toISOString(),

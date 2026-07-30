@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  Matches,
   MaxLength,
 } from 'class-validator';
 
@@ -19,6 +20,16 @@ export class CreateEventDto {
 
   @IsISO8601()
   endDate: string;
+
+  // Optional time of day (24h HH:mm). Defaults to 00:00 in the service; the
+  // full start/end instant order is enforced there and by a DB check.
+  @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
+  startTime?: string;
+
+  @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
+  endTime?: string;
 
   // Free-text description; trimmed in the service, empty stored as null.
   @IsOptional()
