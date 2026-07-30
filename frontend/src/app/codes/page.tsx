@@ -495,6 +495,26 @@ export default function CodesPage() {
                       <code className="min-w-0 truncate font-mono text-sm font-semibold text-foreground">
                         {c.code}
                       </code>
+                      {/* Prominent gold copy button sitting right next to the
+                          code (not on the far right with edit/delete) so the
+                          page's primary action is easy to spot and reach. */}
+                      <button
+                        onClick={() => copy(c)}
+                        title={t("copyHint")}
+                        aria-label={t("copy")}
+                        className={`inline-flex shrink-0 items-center gap-1.5 rounded-base border px-3 py-1.5 text-xs font-medium transition-colors ${
+                          copied
+                            ? "border-[var(--border-success)] bg-[var(--success-soft)] text-[var(--fg-success)]"
+                            : "border-gold/40 bg-gold-soft text-gold hover:border-gold/70 hover:bg-gold/15"
+                        }`}
+                      >
+                        {copied ? (
+                          <Check className="h-3.5 w-3.5" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                        {copied ? t("copied") : t("copy")}
+                      </button>
                     </div>
 
                     <div className="flex items-center gap-x-4 gap-y-0.5 text-xs text-muted">
@@ -524,45 +544,26 @@ export default function CodesPage() {
                       </span>
                     </div>
 
-                    <div className="ml-auto flex shrink-0 items-center gap-1.5">
-                      <button
-                        onClick={() => copy(c)}
-                        title={t("copy")}
-                        aria-label={t("copy")}
-                        className={`inline-flex items-center gap-1.5 rounded-base border px-3 py-1.5 text-xs font-medium transition-colors ${
-                          copied
-                            ? "border-[var(--border-success)] text-[var(--fg-success)]"
-                            : "border-border text-muted hover:border-gold/40 hover:text-foreground"
-                        }`}
-                      >
-                        {copied ? (
-                          <Check className="h-3.5 w-3.5" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                        {copied ? t("copied") : t("copy")}
-                      </button>
-                      {mine && (
-                        <>
-                          <button
-                            onClick={() => startEdit(c)}
-                            title={tc("edit")}
-                            aria-label={tc("edit")}
-                            className="inline-flex items-center rounded-base border border-border p-1.5 text-muted transition-colors hover:text-foreground"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setPendingDelete(c)}
-                            title={tc("delete")}
-                            aria-label={tc("delete")}
-                            className="inline-flex items-center rounded-base border border-[var(--border-danger)] p-1.5 text-[var(--fg-danger)] transition-colors hover:bg-[var(--danger-soft)]"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    {mine && (
+                      <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                        <button
+                          onClick={() => startEdit(c)}
+                          title={tc("edit")}
+                          aria-label={tc("edit")}
+                          className="inline-flex items-center rounded-base border border-border p-1.5 text-muted transition-colors hover:text-foreground"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setPendingDelete(c)}
+                          title={tc("delete")}
+                          aria-label={tc("delete")}
+                          className="inline-flex items-center rounded-base border border-[var(--border-danger)] p-1.5 text-[var(--fg-danger)] transition-colors hover:bg-[var(--danger-soft)]"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   {c.description && (
                     <p className="mt-2 whitespace-pre-wrap break-words border-t border-border/60 pt-2 text-xs text-muted">
