@@ -22,6 +22,8 @@ type AdminEvent = {
   title: string;
   start_date: string;
   end_date: string;
+  start_time: string; // HH:mm:ss
+  end_time: string;
   detail: string | null;
   link: string | null;
   created_at: string;
@@ -51,6 +53,8 @@ export function EventsTab() {
   const [editTitle, setEditTitle] = useState("");
   const [editStart, setEditStart] = useState("");
   const [editEnd, setEditEnd] = useState("");
+  const [editStartTime, setEditStartTime] = useState("00:00");
+  const [editEndTime, setEditEndTime] = useState("00:00");
   const [editDetail, setEditDetail] = useState("");
   const [editLink, setEditLink] = useState("");
   const [pendingDelete, setPendingDelete] = useState<AdminEvent | null>(null);
@@ -78,6 +82,8 @@ export function EventsTab() {
         title: editTitle.trim(),
         startDate: editStart,
         endDate: editEnd,
+        startTime: editStartTime || "00:00",
+        endTime: editEndTime || "00:00",
         detail: editDetail.trim() || undefined,
         link: editLink.trim() || undefined,
       }),
@@ -117,9 +123,17 @@ export function EventsTab() {
 
   const dateOpts = { day: "numeric", month: "short", year: "numeric" } as const;
   const range = (e: AdminEvent) => {
-    const start = formatDate(`${e.start_date}T00:00:00`, dateOpts);
-    if (e.start_date === e.end_date) return start;
-    return `${start} – ${formatDate(`${e.end_date}T00:00:00`, dateOpts)}`;
+    const sTime = e.start_time.slice(0, 5);
+    const eTime = e.end_time.slice(0, 5);
+    const withTime = sTime !== "00:00" || eTime !== "00:00";
+    const startDay = formatDate(`${e.start_date}T00:00:00`, dateOpts);
+    if (e.start_date === e.end_date) {
+      return withTime ? `${startDay}, ${sTime} – ${eTime}` : startDay;
+    }
+    const endDay = formatDate(`${e.end_date}T00:00:00`, dateOpts);
+    const start = withTime ? `${startDay}, ${sTime}` : startDay;
+    const end = withTime ? `${endDay}, ${eTime}` : endDay;
+    return `${start} – ${end}`;
   };
 
   const startEdit = (e: AdminEvent) => {
@@ -127,13 +141,19 @@ export function EventsTab() {
     setEditTitle(e.title);
     setEditStart(e.start_date);
     setEditEnd(e.end_date);
+    setEditStartTime(e.start_time.slice(0, 5));
+    setEditEndTime(e.end_time.slice(0, 5));
     setEditDetail(e.detail ?? "");
     setEditLink(e.link ?? "");
   };
 
-  // Mirror the API's guard so the save button reflects what will be accepted.
+  // Mirror the API's guard so the save button reflects what will be accepted —
+  // compare the whole instant so an inverted time on a single day is caught.
   const editValid =
-    !!editTitle.trim() && !!editStart && !!editEnd && editEnd >= editStart;
+    !!editTitle.trim() &&
+    !!editStart &&
+    !!editEnd &&
+    `${editEnd}T${editEndTime}` >= `${editStart}T${editStartTime}`;
 
   return (
     <div className="space-y-6">
@@ -281,6 +301,34 @@ export function EventsTab() {
                                     value={editEnd}
                                     min={editStart || undefined}
                                     onChange={setEditEnd}
+                                  />
+                                </label>
+                                <label className="flex flex-col gap-1">
+                                  <span className="text-[11px] text-muted">
+                                    {t("eventFieldStartTime")}
+                                  </span>
+                                  <input
+                                    type="time"
+                                    value={editStartTime}
+                                    onChange={(e) =>
+                                      setEditStartTime(
+                                        e.target.value || "00:00",
+                                      )
+                                    }
+                                    className="rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-gold/50"
+                                  />
+                                </label>
+                                <label className="flex flex-col gap-1">
+                                  <span className="text-[11px] text-muted">
+                                    {t("eventFieldEndTime")}
+                                  </span>
+                                  <input
+                                    type="time"
+                                    value={editEndTime}
+                                    onChange={(e) =>
+                                      setEditEndTime(e.target.value || "00:00")
+                                    }
+                                    className="rounded-base border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-gold/50"
                                   />
                                 </label>
                                 <label className="flex min-w-[240px] flex-1 flex-col gap-1">

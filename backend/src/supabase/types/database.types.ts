@@ -196,9 +196,11 @@ export type Database = {
           created_by: string | null;
           detail: string | null;
           end_date: string;
+          end_time: string;
           id: string;
           link: string | null;
           start_date: string;
+          start_time: string;
           title: string;
           updated_at: string;
         };
@@ -207,9 +209,11 @@ export type Database = {
           created_by?: string | null;
           detail?: string | null;
           end_date: string;
+          end_time?: string;
           id?: string;
           link?: string | null;
           start_date: string;
+          start_time?: string;
           title: string;
           updated_at?: string;
         };
@@ -218,9 +222,11 @@ export type Database = {
           created_by?: string | null;
           detail?: string | null;
           end_date?: string;
+          end_time?: string;
           id?: string;
           link?: string | null;
           start_date?: string;
+          start_time?: string;
           title?: string;
           updated_at?: string;
         };

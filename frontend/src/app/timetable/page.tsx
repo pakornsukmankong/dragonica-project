@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -29,15 +29,13 @@ type GameEvent = {
   title: string;
   start_date: string; // YYYY-MM-DD (inclusive)
   end_date: string; // YYYY-MM-DD (inclusive)
+  start_time: string; // HH:mm:ss (00:00:00 = no specific time)
+  end_time: string; // HH:mm:ss
   detail: string | null;
   link: string | null;
   created_at: string;
   created_by: string | null;
 };
-
-// How many stacked event bars a week shows before collapsing the rest into a
-// "+N more" affordance on the affected days.
-const MAX_LANES = 3;
 
 // Per-event bar colours (dark-tuned to match the app). Picked by a stable hash
 // of the id so an event keeps its colour across renders and months. Ten hues
@@ -246,6 +244,50 @@ function sortForList(
     });
 }
 
+// A description that clamps to a few lines, with a Read more / Show less
+// toggle. The toggle appears only when the text is actually taller than the
+// clamp, so short descriptions show in full with no button.
+function EventDescription({ text }: { text: string }) {
+  const t = useTranslations("timetable");
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    // Only measure while clamped; when expanded the clamp is off, so the
+    // "does it overflow" answer is meaningless — keep the last collapsed value.
+    if (!el || expanded) return;
+    const check = () => setOverflowing(el.scrollHeight > el.clientHeight + 1);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [text, expanded]);
+
+  return (
+    <div className="mt-1.5">
+      <p
+        ref={ref}
+        className={`whitespace-pre-wrap break-words text-xs text-muted ${
+          expanded ? "" : "line-clamp-3"
+        }`}
+      >
+        {text}
+      </p>
+      {(overflowing || expanded) && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          // Muted + underlined so it reads as an expand control, not a link
+          // (the event's link below is gold).
+          className="mt-1 text-xs font-medium text-muted underline underline-offset-2 transition-colors hover:text-foreground"
+        >
+          {expanded ? t("showLess") : t("readMore")}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ---- page ------------------------------------------------------------------
 
 export default function TimetablePage() {
@@ -284,6 +326,8 @@ export default function TimetablePage() {
   const [title, setTitle] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [startTime, setStartTime] = useState("00:00");
+  const [endTime, setEndTime] = useState("00:00");
   const [detail, setDetail] = useState("");
   const [link, setLink] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -331,6 +375,8 @@ export default function TimetablePage() {
     setTitle("");
     setStartDate("");
     setEndDate("");
+    setStartTime("00:00");
+    setEndTime("00:00");
     setDetail("");
     setLink("");
     setFormError(null);
@@ -359,6 +405,8 @@ export default function TimetablePage() {
     setTitle("");
     setStartDate(isoDay ?? "");
     setEndDate(isoDay ?? "");
+    setStartTime("00:00");
+    setEndTime("00:00");
     setDetail("");
     setLink("");
     setFormError(null);
@@ -371,6 +419,9 @@ export default function TimetablePage() {
     setTitle(e.title);
     setStartDate(e.start_date);
     setEndDate(e.end_date);
+    // Stored as HH:mm:ss; the <input type="time"> wants HH:mm.
+    setStartTime(e.start_time.slice(0, 5));
+    setEndTime(e.end_time.slice(0, 5));
     setDetail(e.detail ?? "");
     setLink(e.link ?? "");
     setFormError(null);
@@ -382,6 +433,8 @@ export default function TimetablePage() {
     title: title.trim(),
     startDate,
     endDate,
+    startTime: startTime || "00:00",
+    endTime: endTime || "00:00",
     detail: detail.trim() || undefined,
     link: link.trim() || undefined,
   });
@@ -435,7 +488,9 @@ export default function TimetablePage() {
       setFormError(t("errors.datesRequired"));
       return;
     }
-    if (endDate < startDate) {
+    // Compare the whole instant so an end time before the start on the same day
+    // is caught too (fixed-width strings make this lexicographic).
+    if (`${endDate}T${endTime}` < `${startDate}T${startTime}`) {
       setFormError(t("errors.dateOrder"));
       return;
     }
@@ -448,11 +503,13 @@ export default function TimetablePage() {
   const fmtDay = (ymd: string, opts: Intl.DateTimeFormatOptions) =>
     formatDate(`${ymd}T00:00:00`, opts);
 
+  // "date, time – date, time", with the time always shown (even 00:00). Used
+  // everywhere an event's span is displayed so the format stays consistent.
   const rangeLabel = (e: GameEvent) => {
     const opts = { day: "numeric", month: "short", year: "numeric" } as const;
-    const start = fmtDay(e.start_date, opts);
-    if (e.start_date === e.end_date) return start;
-    return `${start} – ${fmtDay(e.end_date, opts)}`;
+    const start = `${fmtDay(e.start_date, opts)}, ${e.start_time.slice(0, 5)}`;
+    const end = `${fmtDay(e.end_date, opts)}, ${e.end_time.slice(0, 5)}`;
+    return `${start} – ${end}`;
   };
 
   const dayEvents = dayOpen ? eventsOnDay(all, dayOpen) : [];
@@ -532,22 +589,9 @@ export default function TimetablePage() {
         ) : (
           weeks.map((week, wi) => {
             const segs = weekSegments(week, all, lanes);
-            const visibleSegs = segs.filter((s) => s.lane < MAX_LANES);
-            const laneRows = Math.min(
-              MAX_LANES,
-              visibleSegs.reduce((m, s) => Math.max(m, s.lane + 1), 0),
-            );
-            // Days that carry at least one hidden (overflow) event.
-            const hidden: Record<string, number> = {};
-            for (const ymd of week) {
-              const n = all.filter(
-                (e) =>
-                  e.start_date <= ymd &&
-                  e.end_date >= ymd &&
-                  (lanes.get(e.id) ?? 0) >= MAX_LANES,
-              ).length;
-              if (n > 0) hidden[ymd] = n;
-            }
+            // Show every lane — the week row grows to fit rather than
+            // collapsing the overflow into a "+N more" affordance.
+            const laneRows = segs.reduce((m, s) => Math.max(m, s.lane + 1), 0);
 
             return (
               <div
@@ -621,7 +665,7 @@ export default function TimetablePage() {
                   {/* event lanes */}
                   {Array.from({ length: laneRows }).map((_, lane) => (
                     <div key={lane} className="mt-1 grid grid-cols-7 px-1">
-                      {visibleSegs
+                      {segs
                         .filter((s) => s.lane === lane)
                         .map((s) => (
                           <button
@@ -643,24 +687,6 @@ export default function TimetablePage() {
                         ))}
                     </div>
                   ))}
-
-                  {/* +N more */}
-                  {Object.keys(hidden).length > 0 && (
-                    <div className="mt-1 grid grid-cols-7 px-1.5">
-                      {week.map((ymd, i) =>
-                        hidden[ymd] ? (
-                          <button
-                            key={ymd}
-                            onClick={() => setDayOpen(ymd)}
-                            style={{ gridColumn: `${i + 1} / span 1` }}
-                            className="pointer-events-auto truncate text-left text-[10px] font-semibold text-gold-dim hover:text-gold"
-                          >
-                            {t("more", { count: hidden[ymd] })}
-                          </button>
-                        ) : null,
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             );
@@ -708,11 +734,7 @@ export default function TimetablePage() {
                           {rangeLabel(e)}
                         </span>
                       </div>
-                      {e.detail && (
-                        <p className="mt-1.5 whitespace-pre-wrap break-words text-xs text-muted">
-                          {e.detail}
-                        </p>
-                      )}
+                      {e.detail && <EventDescription text={e.detail} />}
                       {e.link && (
                         <a
                           href={e.link}
@@ -969,24 +991,46 @@ export default function TimetablePage() {
                   <span className="text-xs font-medium text-muted">
                     {t("fields.startDate")} <span className="text-gold">*</span>
                   </span>
-                  <DatePicker
-                    value={startDate}
-                    onChange={(v) => {
-                      setStartDate(v);
-                      // Keep the end on/after the new start.
-                      if (endDate && v && endDate < v) setEndDate(v);
-                    }}
-                  />
+                  <div className="flex gap-2">
+                    <div className="min-w-0 flex-1">
+                      <DatePicker
+                        value={startDate}
+                        onChange={(v) => {
+                          setStartDate(v);
+                          // Keep the end on/after the new start.
+                          if (endDate && v && endDate < v) setEndDate(v);
+                        }}
+                      />
+                    </div>
+                    <input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value || "00:00")}
+                      aria-label={t("fields.startTime")}
+                      className="w-[7.5rem] shrink-0 rounded-base border border-border bg-raised px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
+                    />
+                  </div>
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="text-xs font-medium text-muted">
                     {t("fields.endDate")} <span className="text-gold">*</span>
                   </span>
-                  <DatePicker
-                    value={endDate}
-                    min={startDate || undefined}
-                    onChange={setEndDate}
-                  />
+                  <div className="flex gap-2">
+                    <div className="min-w-0 flex-1">
+                      <DatePicker
+                        value={endDate}
+                        min={startDate || undefined}
+                        onChange={setEndDate}
+                      />
+                    </div>
+                    <input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value || "00:00")}
+                      aria-label={t("fields.endTime")}
+                      className="w-[7.5rem] shrink-0 rounded-base border border-border bg-raised px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--focus)]"
+                    />
+                  </div>
                 </label>
 
                 <label className="flex flex-col gap-1 sm:col-span-2">

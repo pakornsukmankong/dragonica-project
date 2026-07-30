@@ -96,6 +96,50 @@ describe('EventService', () => {
         }),
       ).resolves.toEqual({ id: 'e1' });
     });
+
+    it('defaults an unset time to 00:00', async () => {
+      const { service: supabase, from } = createSupabaseMock([
+        { data: { id: 'e1' }, error: null },
+      ]);
+      const svc = new EventService(supabase, i18n);
+
+      await svc.create(USER, base);
+
+      const insert = from.mock.results[0].value.insert as jest.Mock;
+      expect(insert).toHaveBeenCalledWith(
+        expect.objectContaining({ start_time: '00:00', end_time: '00:00' }),
+      );
+    });
+
+    it('stores the provided start and end times', async () => {
+      const { service: supabase, from } = createSupabaseMock([
+        { data: { id: 'e1' }, error: null },
+      ]);
+      const svc = new EventService(supabase, i18n);
+
+      await svc.create(USER, { ...base, startTime: '20:00', endTime: '22:30' });
+
+      const insert = from.mock.results[0].value.insert as jest.Mock;
+      expect(insert).toHaveBeenCalledWith(
+        expect.objectContaining({ start_time: '20:00', end_time: '22:30' }),
+      );
+    });
+
+    it('rejects an end time before the start on a single-day event', async () => {
+      const { service: supabase, fromTables } = createSupabaseMock([]);
+      const svc = new EventService(supabase, i18n);
+
+      await expect(
+        svc.create(USER, {
+          ...base,
+          startDate: '2026-07-01',
+          endDate: '2026-07-01',
+          startTime: '22:00',
+          endTime: '20:00',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(fromTables).toEqual([]);
+    });
   });
 
   describe('update (ownership)', () => {
