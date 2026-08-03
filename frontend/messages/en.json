@@ -1139,7 +1139,15 @@
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
     "today": "Today",
-    "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "weekdays": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun"
+    ],
     "empty": "No events yet. Be the first to add one.",
     "loginToAdd": "Sign in to add an event",
     "openLink": "Open game page",
@@ -1180,6 +1188,11 @@
       "active": "Ongoing",
       "upcoming": "Upcoming",
       "ended": "Ended"
-    }
+    },
+    "filter": {
+      "current": "Ongoing & upcoming",
+      "ended": "Ended"
+    },
+    "noneInFilter": "No events in this filter."
   }
 }

@@ -332,14 +332,32 @@ export default function TimetablePage() {
   const [link, setLink] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Details-list filter: the current (ongoing + upcoming) events, or the ones
+  // that have already ended. Defaults to the current ones.
+  const [listFilter, setListFilter] = useState<"current" | "ended">("current");
+
   const { data: events, isLoading } = useQuery<GameEvent[]>({
     queryKey: ["game-events"],
     queryFn: () => api.get("/events"),
   });
 
   const all = useMemo(() => events ?? [], [events]);
+  // The calendar hides events that have already ended (end_date < today) — only
+  // ongoing and upcoming runs are drawn as bars. Colours are still assigned from
+  // every event so each keeps its colour in the details list after it ends.
+  const calendarEvents = useMemo(
+    () => all.filter((e) => e.end_date >= today),
+    [all, today],
+  );
   const listed = useMemo(() => sortForList(all, today), [all, today]);
-  const lanes = useMemo(() => assignLanes(all), [all]);
+  const visibleList = useMemo(
+    () =>
+      listed.filter(({ status }) =>
+        listFilter === "ended" ? status === "ended" : status !== "ended",
+      ),
+    [listed, listFilter],
+  );
+  const lanes = useMemo(() => assignLanes(calendarEvents), [calendarEvents]);
   const colors = useMemo(() => assignColors(all), [all]);
   const weeks = useMemo(() => buildWeeks(cursor.year, cursor.month), [cursor]);
 
@@ -512,7 +530,7 @@ export default function TimetablePage() {
     return `${start} – ${end}`;
   };
 
-  const dayEvents = dayOpen ? eventsOnDay(all, dayOpen) : [];
+  const dayEvents = dayOpen ? eventsOnDay(calendarEvents, dayOpen) : [];
 
   return (
     <main className="mx-auto max-w-container px-4 py-8 sm:px-7">
@@ -588,7 +606,7 @@ export default function TimetablePage() {
           </div>
         ) : (
           weeks.map((week, wi) => {
-            const segs = weekSegments(week, all, lanes);
+            const segs = weekSegments(week, calendarEvents, lanes);
             // Show every lane — the week row grows to fit rather than
             // collapsing the overflow into a "+N more" affordance.
             const laneRows = segs.reduce((m, s) => Math.max(m, s.lane + 1), 0);
@@ -699,11 +717,33 @@ export default function TimetablePage() {
           inline. */}
       {!isLoading && listed.length > 0 && (
         <section className="mt-8">
-          <h2 className="mb-3 text-base font-semibold text-foreground">
-            {t("detailsHeading")}
-          </h2>
-          <ul className="space-y-2">
-            {listed.map(({ event: e, status }) => {
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-base font-semibold text-foreground">
+              {t("detailsHeading")}
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {(["current", "ended"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setListFilter(f)}
+                  className={`rounded-base border px-3 py-1.5 text-sm transition-colors ${
+                    listFilter === f
+                      ? "border-gold/60 bg-gold-soft font-medium text-gold"
+                      : "border-border text-muted hover:border-gold/40 hover:text-foreground"
+                  }`}
+                >
+                  {t(`filter.${f}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+          {visibleList.length === 0 ? (
+            <p className="rounded-base border border-border bg-raised px-4 py-6 text-center text-sm text-muted">
+              {t("noneInFilter")}
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {visibleList.map(({ event: e, status }) => {
               const mine = !!userId && e.created_by === userId;
               return (
                 <li
@@ -772,7 +812,8 @@ export default function TimetablePage() {
                 </li>
               );
             })}
-          </ul>
+            </ul>
+          )}
         </section>
       )}
 
