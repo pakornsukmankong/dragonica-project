@@ -76,6 +76,13 @@ function toYmd(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+// Local wall-clock "YYYY-MM-DDTHH:mm:ss" — comparable against an event's stored
+// start/end instant to decide active / upcoming / ended down to the minute.
+function nowStampLocal(): string {
+  const d = new Date();
+  return `${toYmd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 // A month grid of Monday-started weeks (each a list of 7 YYYY-MM-DD strings),
 // including the leading/trailing days that fill the first and last rows.
 function buildWeeks(year: number, month: number): string[][] {
@@ -205,9 +212,21 @@ function eventsOnDay(events: GameEvent[], ymd: string): GameEvent[] {
 
 type EventStatus = "active" | "upcoming" | "ended";
 
-function statusOf(e: GameEvent, today: string): EventStatus {
-  if (e.end_date < today) return "ended";
-  if (e.start_date > today) return "upcoming";
+// The event's start/end as a comparable "YYYY-MM-DDTHH:mm:ss" instant (local
+// wall-clock, matching how the times are stored and picked).
+function startInstant(e: GameEvent): string {
+  return `${e.start_date}T${e.start_time.slice(0, 8)}`;
+}
+function endInstant(e: GameEvent): string {
+  return `${e.end_date}T${e.end_time.slice(0, 8)}`;
+}
+
+// `now` is a "YYYY-MM-DDTHH:mm:ss" local stamp. Comparing the whole instant
+// (not just the day) means an event that ended at 11:00 flips to "ended" at
+// 11:00, not at the end of the day.
+function statusOf(e: GameEvent, now: string): EventStatus {
+  if (endInstant(e) < now) return "ended";
+  if (startInstant(e) > now) return "upcoming";
   return "active";
 }
 
@@ -229,18 +248,18 @@ const STATUS_BADGE: Record<EventStatus, string> = {
 // summary list under the calendar reads the same "now" the badges do.
 function sortForList(
   events: GameEvent[],
-  today: string,
+  now: string,
 ): { event: GameEvent; status: EventStatus }[] {
   return events
-    .map((e) => ({ event: e, status: statusOf(e, today) }))
+    .map((e) => ({ event: e, status: statusOf(e, now) }))
     .sort((a, b) => {
       if (a.status !== b.status) {
         return STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
       }
       if (a.status === "ended") {
-        return b.event.end_date.localeCompare(a.event.end_date);
+        return endInstant(b.event).localeCompare(endInstant(a.event));
       }
-      return a.event.start_date.localeCompare(b.event.start_date);
+      return startInstant(a.event).localeCompare(startInstant(b.event));
     });
 }
 
@@ -305,16 +324,20 @@ export default function TimetablePage() {
     month: now.getMonth(),
   });
 
-  // "Today" as a local YYYY-MM-DD, kept fresh so the today-highlight and the
-  // status badges roll over at midnight even if the tab is left open.
-  const [today, setToday] = useState(() => toYmd(new Date()));
+  // Local "now" (down to the minute), kept fresh so status badges flip and the
+  // today-highlight rolls over on their own on a tab left open. Re-checked every
+  // 30s but only re-renders when the minute changes.
+  const [nowStamp, setNowStamp] = useState(nowStampLocal);
   useEffect(() => {
     const id = setInterval(() => {
-      const d = toYmd(new Date());
-      setToday((prev) => (prev === d ? prev : d));
-    }, 60_000);
+      setNowStamp((prev) => {
+        const n = nowStampLocal();
+        return prev.slice(0, 16) === n.slice(0, 16) ? prev : n;
+      });
+    }, 30_000);
     return () => clearInterval(id);
   }, []);
+  const today = nowStamp.slice(0, 10);
 
   const [selected, setSelected] = useState<GameEvent | null>(null);
   const [dayOpen, setDayOpen] = useState<string | null>(null);
@@ -342,14 +365,16 @@ export default function TimetablePage() {
   });
 
   const all = useMemo(() => events ?? [], [events]);
-  // The calendar hides events that have already ended (end_date < today) — only
-  // ongoing and upcoming runs are drawn as bars. Colours are still assigned from
-  // every event so each keeps its colour in the details list after it ends.
+  // The calendar hides events that have already ended — only ongoing and
+  // upcoming runs are drawn as bars. Compare the whole end instant (not just the
+  // day) so a run drops off the moment it ends, e.g. at 11:00, not at midnight.
+  // Colours are still assigned from every event so each keeps its colour in the
+  // details list after it ends.
   const calendarEvents = useMemo(
-    () => all.filter((e) => e.end_date >= today),
-    [all, today],
+    () => all.filter((e) => endInstant(e) >= nowStamp),
+    [all, nowStamp],
   );
-  const listed = useMemo(() => sortForList(all, today), [all, today]);
+  const listed = useMemo(() => sortForList(all, nowStamp), [all, nowStamp]);
   const visibleList = useMemo(
     () =>
       listed.filter(({ status }) =>
@@ -744,74 +769,74 @@ export default function TimetablePage() {
           ) : (
             <ul className="space-y-2">
               {visibleList.map(({ event: e, status }) => {
-              const mine = !!userId && e.created_by === userId;
-              return (
-                <li
-                  key={e.id}
-                  className="rounded-base border border-border bg-raised px-4 py-3 transition-colors hover:border-gold/40"
-                >
-                  <div className="flex items-start gap-3">
-                    <span
-                      aria-hidden
-                      className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border ${colorClass(
-                        colors.get(e.id) ?? 0,
-                      )}`}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                        <span
-                          className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${STATUS_BADGE[status]}`}
-                        >
-                          {t(`status.${status}`)}
-                        </span>
-                        <button
-                          onClick={() => setSelected(e)}
-                          className="truncate text-left text-sm font-semibold text-foreground transition-colors hover:text-gold"
-                        >
-                          {e.title}
-                        </button>
-                        <span className="whitespace-nowrap text-xs text-muted">
-                          {rangeLabel(e)}
-                        </span>
+                const mine = !!userId && e.created_by === userId;
+                return (
+                  <li
+                    key={e.id}
+                    className="rounded-base border border-border bg-raised px-4 py-3 transition-colors hover:border-gold/40"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span
+                        aria-hidden
+                        className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border ${colorClass(
+                          colors.get(e.id) ?? 0,
+                        )}`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                          <span
+                            className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${STATUS_BADGE[status]}`}
+                          >
+                            {t(`status.${status}`)}
+                          </span>
+                          <button
+                            onClick={() => setSelected(e)}
+                            className="truncate text-left text-sm font-semibold text-foreground transition-colors hover:text-gold"
+                          >
+                            {e.title}
+                          </button>
+                          <span className="whitespace-nowrap text-xs text-muted">
+                            {rangeLabel(e)}
+                          </span>
+                        </div>
+                        {e.detail && <EventDescription text={e.detail} />}
+                        {e.link && (
+                          <a
+                            href={e.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={t("openLink")}
+                            className="mt-1.5 inline-flex items-start gap-1.5 text-xs text-gold underline-offset-2 transition-colors hover:text-gold-strong hover:underline"
+                          >
+                            <ExternalLink className="mt-0.5 h-3 w-3 shrink-0" />
+                            <span className="break-all">{e.link}</span>
+                          </a>
+                        )}
                       </div>
-                      {e.detail && <EventDescription text={e.detail} />}
-                      {e.link && (
-                        <a
-                          href={e.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label={t("openLink")}
-                          className="mt-1.5 inline-flex items-start gap-1.5 text-xs text-gold underline-offset-2 transition-colors hover:text-gold-strong hover:underline"
-                        >
-                          <ExternalLink className="mt-0.5 h-3 w-3 shrink-0" />
-                          <span className="break-all">{e.link}</span>
-                        </a>
+                      {mine && (
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <button
+                            onClick={() => startEdit(e)}
+                            title={tc("edit")}
+                            aria-label={tc("edit")}
+                            className="inline-flex items-center rounded-base border border-border p-1.5 text-muted transition-colors hover:text-foreground"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setPendingDelete(e)}
+                            title={tc("delete")}
+                            aria-label={tc("delete")}
+                            className="inline-flex items-center rounded-base border border-[var(--border-danger)] p-1.5 text-[var(--fg-danger)] transition-colors hover:bg-[var(--danger-soft)]"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       )}
                     </div>
-                    {mine && (
-                      <div className="flex shrink-0 items-center gap-1.5">
-                        <button
-                          onClick={() => startEdit(e)}
-                          title={tc("edit")}
-                          aria-label={tc("edit")}
-                          className="inline-flex items-center rounded-base border border-border p-1.5 text-muted transition-colors hover:text-foreground"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setPendingDelete(e)}
-                          title={tc("delete")}
-                          aria-label={tc("delete")}
-                          className="inline-flex items-center rounded-base border border-[var(--border-danger)] p-1.5 text-[var(--fg-danger)] transition-colors hover:bg-[var(--danger-soft)]"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
