@@ -91,6 +91,9 @@ export default function SkillCardsPage() {
           {t('title')}
         </h1>
         <p className="mt-2 text-sm text-muted">{t('subtitle')}</p>
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
+          {t('intro')}
+        </p>
       </header>
 
       {/* Class tabs */}

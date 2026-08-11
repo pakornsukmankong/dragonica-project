@@ -304,6 +304,13 @@ export default function CodesPage() {
         </button>
       </header>
 
+      <div className="mb-6 -mt-2">
+        <p className="text-sm text-muted">{t("subtitle")}</p>
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
+          {t("intro")}
+        </p>
+      </div>
+
       {/* Add / edit form */}
       <AnimatePresence initial={false}>
         {formOpen && hasSession && (

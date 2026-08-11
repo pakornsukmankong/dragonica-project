@@ -575,6 +575,10 @@ export default function TimetablePage() {
         </button>
       </header>
 
+      <p className="mb-6 -mt-2 max-w-3xl text-sm leading-relaxed text-muted">
+        {t("intro")}
+      </p>
+
       {/* Month toolbar */}
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">
