@@ -31,6 +31,8 @@ const GROUPS = [
     key: 'help',
     links: [
       { href: '/guide', key: 'guide' },
+      { href: '/about', key: 'about' },
+      { href: '/contact', key: 'contact' },
       { href: '/support', key: 'support' },
       { href: '/tickets', key: 'tickets' },
       { href: '/privacy', key: 'privacyLink' },

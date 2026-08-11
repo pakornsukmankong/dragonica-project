@@ -135,6 +135,10 @@ export default function SkillsPage() {
         </Link>
       </header>
 
+      <p className="mb-6 -mt-2 max-w-3xl text-sm leading-relaxed text-muted">
+        {t('intro')}
+      </p>
+
       {/* Opening a build you already own is the repeat visit; picking a class is
           a one-off on the way to a new one. Reserve the row while it loads so
           the class grid below doesn't jump once the builds arrive. */}

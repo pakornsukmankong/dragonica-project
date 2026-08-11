@@ -57,7 +57,9 @@
     "footerYouTube": "FLOKZ CHANNEL on YouTube",
     "footerDisclaimer": "Fan project. Not affiliated with Dragonica.",
     "footerAnalytics": "We use analytics tools to improve this site.",
-    "timetable": "Event Timetable"
+    "timetable": "Event Timetable",
+    "about": "About",
+    "contact": "Contact"
   },
   "items": {
     "title": "Game Database",
@@ -196,7 +198,8 @@
       "moveSpeedFlat": "Move Speed",
       "dmgReduce": "Damage Reduction"
     },
-    "filters": "Filters"
+    "filters": "Filters",
+    "intro": "Filter by category, rarity, class, or slot to compare stats, then follow any item to the monsters that drop it — free, no account needed."
   },
   "monsters": {
     "title": "Monster Database",
@@ -247,7 +250,8 @@
     "sort": {
       "levelAsc": "Level: low → high",
       "nameAsc": "Name: A → Z"
-    }
+    },
+    "intro": "Each entry shows the monster that drops the card and the level you claim the skill from the Wanted quest, so you know what to farm."
   },
   "codes": {
     "title": "Item Codes",
@@ -297,7 +301,9 @@
     "deleteError": "Couldn't delete the code",
     "deleteTitle": "Delete Item Code",
     "deleteConfirm": "Delete \"{code}\"? This cannot be undone.",
-    "capNotice": "Showing the {count} most recent codes."
+    "capNotice": "Showing the {count} most recent codes.",
+    "subtitle": "Active in-game coupon codes, shared and kept up to date by the community.",
+    "intro": "Player-contributed and sorted with usable codes first; expired ones stay for reference but can no longer be copied. Sign in to add one."
   },
   "skills": {
     "title": "Skill Simulator",
@@ -359,7 +365,8 @@
     "loginToLike": "Sign in to like this build",
     "deleteCommentTitle": "Delete this comment?",
     "deleteCommentConfirm": "This comment will be permanently removed.",
-    "commentDeleted": "Comment deleted"
+    "commentDeleted": "Comment deleted",
+    "intro": "Plan a build point by point, preview how skills scale, then save to share — or browse builds from the community. No account needed to try."
   },
   "landing": {
     "badge": "Dragonica Tools",
@@ -1193,6 +1200,62 @@
       "current": "Ongoing & upcoming",
       "ended": "Ended"
     },
-    "noneInFilter": "No events in this filter."
+    "noneInFilter": "No events in this filter.",
+    "intro": "Anyone signed in can add an event with its dates, details, and a link, so everyone can see what is on now and what is coming next."
+  },
+  "about": {
+    "title": "About dgn-grind.dev",
+    "lead": "dgn-grind.dev is a free, community-run companion site for Dragonica (also known as Dragon Saga).",
+    "sections": {
+      "intro": {
+        "title": "What is dgn-grind.dev?",
+        "body": [
+          "dgn-grind.dev brings the tools and reference material a Dragonica player reaches for most often together in one fast, ad-supported site that anyone can use for free.",
+          "It started as a personal grind tracker and grew into a full companion: a searchable game database, a skill-build simulator with a community gallery, an up-to-date list of coupon codes, and a shared calendar of in-game events."
+        ]
+      },
+      "features": {
+        "title": "What you can do here",
+        "body": [
+          "Game Database — browse every item, costume, consumable, and material in the game, along with the monsters and dungeons that drop them.",
+          "Skill Simulator — plan a class build point by point, preview how skills scale, then save and share it or explore builds published by other players.",
+          "Grind Tracker — log your farming sessions and the gold and drops you collect, and see which dungeons are most rewarding for your character (a free account is required).",
+          "Item Codes & Event Timetable — a community-maintained list of active coupon codes and a calendar of what is running in-game right now."
+        ]
+      },
+      "community": {
+        "title": "Community",
+        "body": [
+          "The site is maintained alongside an active Discord community and a YouTube channel where guides and updates are posted. Everyone is welcome to join, suggest features, report a problem, or contribute codes and events."
+        ]
+      },
+      "disclaimer": {
+        "title": "A fan project",
+        "body": [
+          "dgn-grind.dev is an unofficial, fan-made project. It is not affiliated with, endorsed by, or sponsored by the developers or publishers of Dragonica / Dragon Saga. All game names, images, and trademarks are the property of their respective owners and are used here for reference and identification only."
+        ]
+      }
+    }
+  },
+  "contact": {
+    "title": "Contact",
+    "lead": "Have a question, a bug to report, or a feature idea? Here is how to reach us.",
+    "methods": {
+      "discord": {
+        "title": "Discord",
+        "body": "The fastest way to reach us. Join the community server to ask questions, report issues, or suggest features.",
+        "cta": "Join the Discord"
+      },
+      "youtube": {
+        "title": "YouTube",
+        "body": "Guides, updates, and announcements for the site and the game.",
+        "cta": "Open the channel"
+      },
+      "support": {
+        "title": "In-app support",
+        "body": "Signed-in users can open a support ticket from the Support page for account or payment help.",
+        "cta": "Go to Support"
+      }
+    }
   }
 }

@@ -460,6 +460,9 @@ export default function ItemsPage() {
           {t('title')}
         </h1>
         <p className="mt-2 text-sm text-muted">{t('subtitle')}</p>
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
+          {t('intro')}
+        </p>
       </header>
 
       {/* Category tabs, then Monsters — the other half of the database */}
