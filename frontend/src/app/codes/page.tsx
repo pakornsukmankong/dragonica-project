@@ -40,12 +40,6 @@ const LIST_LIMIT = 500;
 
 type SortedCode = ItemCode & { status: CodeStatus };
 
-const STATUS_ORDER: Record<CodeStatus, number> = {
-  active: 0,
-  scheduled: 1,
-  expired: 2,
-};
-
 // Green = usable now, amber = not live yet, red = done.
 const STATUS_BADGE: Record<CodeStatus, string> = {
   active:
@@ -56,43 +50,18 @@ const STATUS_BADGE: Record<CodeStatus, string> = {
     "border-[var(--border-danger)] bg-[var(--danger-soft)] text-[var(--fg-danger)]",
 };
 
-// Usable codes first, then ones that have not started, then dead ones. Within
-// Active soonest expiry first with no-expiry codes at the end of the group;
-// within Scheduled soonest start first; within Expired most recently expired
-// first. Reads the clock itself (rather than in the render body) so status and
-// ordering share one now.
+// Newest first: order purely by when each code was added, most recently
+// created at the top. Status is still attached (badges and the status filter
+// read it) but no longer affects the ordering. Reads the clock itself (rather
+// than in the render body) so status and ordering share one now.
 function sortCodes(codes: ItemCode[]): SortedCode[] {
   const now = Date.now();
   return [...codes]
     .map((c) => ({ ...c, status: statusOf(c, now) }))
-    .sort((a, b) => {
-      if (a.status !== b.status) {
-        return STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
-      }
-
-      const aExp = a.expire_date ? new Date(a.expire_date).getTime() : null;
-      const bExp = b.expire_date ? new Date(b.expire_date).getTime() : null;
-
-      if (a.status === "scheduled") {
-        return (
-          new Date(a.start_date ?? 0).getTime() -
-          new Date(b.start_date ?? 0).getTime()
-        );
-      }
-
-      if (a.status === "active") {
-        if (aExp === null && bExp === null) {
-          return (
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
-        }
-        if (aExp === null) return 1;
-        if (bExp === null) return -1;
-        return aExp - bExp;
-      }
-      // Both expired — most recently expired first.
-      return (bExp ?? 0) - (aExp ?? 0);
-    });
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
 }
 
 // Start/expire are day-level, so the form uses date-only pickers and the time
