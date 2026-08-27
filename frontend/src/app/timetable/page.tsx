@@ -105,13 +105,16 @@ function buildWeeks(year: number, month: number): string[][] {
 }
 
 // Assign every event a stable lane (row) so a multi-day event keeps one line
-// across the weeks it spans. Greedy interval colouring: an event takes the
-// first lane whose previous event has already ended before it starts.
+// across the weeks it spans. Events are placed newest-created first, so the
+// most recent event takes the top lane; each then takes the first lane whose
+// previous event has already ended before it starts. (Because lanes are global
+// across the month rather than packed per week, a newer short event on top can
+// leave an empty row above an older, longer event in the weeks the newer one
+// does not span — the trade-off for showing newest on top.)
 function assignLanes(events: GameEvent[]): Map<string, number> {
   const sorted = [...events].sort(
     (a, b) =>
-      a.start_date.localeCompare(b.start_date) ||
-      b.end_date.localeCompare(a.end_date) || // longer runs first
+      b.created_at.localeCompare(a.created_at) || // newest first → top lane
       a.id.localeCompare(b.id),
   );
   const laneEnd: string[] = []; // last end_date placed in each lane
@@ -230,12 +233,6 @@ function statusOf(e: GameEvent, now: string): EventStatus {
   return "active";
 }
 
-const STATUS_ORDER: Record<EventStatus, number> = {
-  active: 0,
-  upcoming: 1,
-  ended: 2,
-};
-
 const STATUS_BADGE: Record<EventStatus, string> = {
   active:
     "border-[var(--border-success)] bg-[var(--success-soft)] text-[var(--fg-success)]",
@@ -244,23 +241,21 @@ const STATUS_BADGE: Record<EventStatus, string> = {
   ended: "border-border bg-raised text-muted",
 };
 
-// Ongoing first, then the soonest upcoming, then the most-recently-ended. The
-// summary list under the calendar reads the same "now" the badges do.
+// Newest first: the summary list under the calendar orders purely by when each
+// event was added, most recently created at the top. Status is still attached
+// for the badges but no longer affects the ordering. Reads the same "now" the
+// badges do.
 function sortForList(
   events: GameEvent[],
   now: string,
 ): { event: GameEvent; status: EventStatus }[] {
   return events
     .map((e) => ({ event: e, status: statusOf(e, now) }))
-    .sort((a, b) => {
-      if (a.status !== b.status) {
-        return STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
-      }
-      if (a.status === "ended") {
-        return endInstant(b.event).localeCompare(endInstant(a.event));
-      }
-      return startInstant(a.event).localeCompare(startInstant(b.event));
-    });
+    .sort(
+      (a, b) =>
+        new Date(b.event.created_at).getTime() -
+        new Date(a.event.created_at).getTime(),
+    );
 }
 
 // A description that clamps to a few lines, with a Read more / Show less
