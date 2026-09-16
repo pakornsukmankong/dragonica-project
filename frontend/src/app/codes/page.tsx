@@ -50,18 +50,23 @@ const STATUS_BADGE: Record<CodeStatus, string> = {
     "border-[var(--border-danger)] bg-[var(--danger-soft)] text-[var(--fg-danger)]",
 };
 
-// Newest first: order purely by when each code was added, most recently
-// created at the top. Status is still attached (badges and the status filter
-// read it) but no longer affects the ordering. Reads the clock itself (rather
-// than in the render body) so status and ordering share one now.
+// Codes you can still use (active or scheduled) first, dead ones after — a
+// spent code should never sit between two usable ones. Within each of those two
+// groups the order is by when the code was added, newest at the top. Reads the
+// clock itself (rather than in the render body) so status and ordering share
+// one now.
 function sortCodes(codes: ItemCode[]): SortedCode[] {
   const now = Date.now();
   return [...codes]
     .map((c) => ({ ...c, status: statusOf(c, now) }))
-    .sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    );
+    .sort((a, b) => {
+      const aExpired = a.status === "expired" ? 1 : 0;
+      const bExpired = b.status === "expired" ? 1 : 0;
+      if (aExpired !== bExpired) return aExpired - bExpired;
+      return (
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    });
 }
 
 // Start/expire are day-level, so the form uses date-only pickers and the time
